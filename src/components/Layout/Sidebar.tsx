@@ -66,7 +66,29 @@ export default function Sidebar({ activeRole, onRoleChange, activeItem, onItemCh
     { id: 'bantuan-penjual', label: 'Bantuan & Panduan', icon: HelpCircle },
   ];
 
-  const items = activeRole === 'buyer' ? buyerItems : sellerItems;
+  const adminItems = [
+    { id: 'dashboard', label: 'Monitor Transaksi', icon: ShieldCheck },
+    { id: 'verifikasi', label: 'Verifikasi Pembayaran', icon: CreditCard, badge: '!' },
+    { id: 'pengguna', label: 'Kelola Pengguna', icon: Users },
+    { id: 'laporan', label: 'Laporan Sistem', icon: BarChart3 },
+    { id: 'pengaturan-admin', label: 'Konfigurasi Sistem', icon: Settings },
+  ];
+
+  const roleLabels = {
+    buyer: 'Pembeli',
+    seller: 'Petani',
+    admin: 'Administrator'
+  };
+
+  const getItems = () => {
+    switch (activeRole) {
+      case 'admin': return adminItems;
+      case 'seller': return sellerItems;
+      default: return buyerItems;
+    }
+  };
+
+  const items = getItems();
 
   return (
     <>
@@ -91,6 +113,24 @@ export default function Sidebar({ activeRole, onRoleChange, activeItem, onItemCh
         </div>
 
         <nav className="flex-1 px-4 space-y-0.5 overflow-y-auto custom-scrollbar pb-8">
+          <div className="px-4 mb-6">
+            <div 
+              onClick={() => onRoleChange(activeRole === 'buyer' ? 'seller' : activeRole === 'seller' ? 'admin' : 'buyer')}
+              className="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl flex items-center justify-between cursor-pointer group hover:bg-brand-50 transition-all shadow-sm"
+            >
+               <div className="flex items-center gap-3">
+                 <div className="w-8 h-8 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-brand-600 group-hover:border-brand-100 shadow-sm transition-all">
+                   <Users size={16} />
+                 </div>
+                 <div>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Mode Aktif</p>
+                    <p className="text-xs font-black text-slate-800 tracking-tight leading-none uppercase">{roleLabels[activeRole]}</p>
+                 </div>
+               </div>
+               <ChevronRight size={14} className="text-slate-300 group-hover:text-brand-300 group-hover:translate-x-1 transition-all" />
+            </div>
+          </div>
+
           {items.map((item) => (
             <div
               key={item.id}

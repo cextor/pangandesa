@@ -20,8 +20,13 @@ import Cart from './components/UI/Cart';
 import Tracking from './components/UI/Tracking';
 import AIChatPage from './pages/AIChatPage';
 import ChatBot from './components/Chat/ChatBot';
-import { AppRole, Product } from './types';
-import { Settings } from 'lucide-react';
+import { AppRole, Product, Order, ChatMessage, CartItem } from './types';
+import { Settings, Clock } from 'lucide-react';
+
+import AdminDashboard from './pages/AdminDashboard';
+import Invoice from './components/Transaction/Invoice';
+import OrderForum from './components/Transaction/OrderForum';
+import OrderShipping from './components/Transaction/OrderShipping';
 
 import AllProducts from './pages/buyer/AllProducts';
 import VillagesPage from './pages/buyer/VillagesPage';
@@ -47,6 +52,12 @@ export default function App() {
   const [isTrackingOpen, setIsTrackingOpen] = useState(false);
   const [isAIChatOpen, setIsAIChatOpen] = useState(false);
 
+  // New States for Workflow
+  const [orders, setOrders] = React.useState<Order[]>([]);
+  const [messages, setMessages] = React.useState<ChatMessage[]>([]);
+  const [currentOrderId, setCurrentOrderId] = React.useState<string | null>(null);
+  const [cartItems, setCartItems] = React.useState<CartItem[]>([]);
+
   const handleLogin = (role: AppRole) => {
     setActiveRole(role);
     setIsLoggedIn(true);
@@ -71,7 +82,42 @@ export default function App() {
     setIsAIChatOpen(false);
   };
 
+  const handleAdminConfirmPayment = (orderId: string, type: 'DP' | 'FINAL') => {
+    setOrders(prev => prev.map(o => {
+      if (o.id === orderId) {
+        if (type === 'DP') {
+          return { ...o, status: 'WAITING_HARVEST' as const };
+        } else {
+          return { ...o, status: 'SHIPPING' as const, trackingNumber: 'PROS-' + Math.floor(Math.random()*1000000) };
+        }
+      }
+      return o;
+    }));
+  };
+
+  const handleSendMessage = (orderId: string, content: string, role: string, attachmentType?: 'image' | 'file') => {
+    const newMessage: ChatMessage = {
+      id: Date.now().toString(),
+      orderId,
+      senderId: role,
+      senderRole: role as any,
+      senderName: role === 'buyer' ? 'Pembeli' : role === 'seller' ? 'Petani' : 'Admin',
+      content,
+      text: content,
+      role: role === 'buyer' ? 'user' : 'assistant',
+      timestamp: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+      attachmentType,
+      attachmentUrl: attachmentType === 'image' ? 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?q=80&w=600' : 
+                     attachmentType === 'file' ? 'https://example.com/harvest_report.pdf' : undefined
+    };
+    setMessages(prev => [...prev, newMessage]);
+  };
+
   const renderContent = () => {
+    if (activeRole === 'admin') {
+      return <AdminDashboard orders={orders} onConfirmPayment={handleAdminConfirmPayment} />;
+    }
+
     if (activeRole === 'buyer') {
       // Full screen overlays/pages take precedence
       if (isAIChatOpen) {
@@ -95,10 +141,32 @@ export default function App() {
               setActiveItem('beranda');
             }} 
             onCheckout={() => {
-              alert('Terima kasih! Pesanan Anda telah diterima dan akan segera diproses.');
+              const total = cartItems.reduce((acc: number, item: CartItem) => acc + (item.price * item.quantity), 0);
+              const newOrder: Order = {
+                id: Math.random().toString(36).substr(2, 9),
+                buyerId: 'user-1',
+                sellerId: 'farmer-1',
+                items: cartItems.map(item => ({
+                  productId: item.id,
+                  name: item.name,
+                  quantity: item.quantity,
+                  price: item.price,
+                  image: item.image,
+                  unit: item.unit
+                })),
+                totalAmount: total,
+                dpAmount: total * 0.3,
+                remainingAmount: total * 0.7,
+                status: 'WAITING_PAYMENT_DP',
+                createdAt: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
+                harvestConfirmedBySeller: false,
+                purchaseConfirmedByBuyer: false
+              };
+              setOrders([newOrder, ...orders]);
+              setCurrentOrderId(newOrder.id);
+              setCartItems([]);
               setIsCartOpen(false);
-              setActiveItem('lacak');
-              setIsTrackingOpen(true);
+              setActiveItem('transaksi-invoice');
             }} 
           />
         );
@@ -164,6 +232,113 @@ export default function App() {
           return <PaymentMethods />;
         case 'pengaturan':
           return <SettingsPage />;
+        case 'transaksi-invoice': {
+          const currentOrder = orders.find(o => o.id === currentOrderId);
+          if (!currentOrder) return <BuyerDashboard 
+            onProductSelect={setSelectedProduct} 
+            onCategorySelect={(cat) => { setSelectedCategory(cat); setActiveItem('produk'); }}
+            onTrackingSelect={() => { setIsTrackingOpen(true); setActiveItem('lacak'); }}
+            onMenuSelect={setActiveItem}
+          />;
+          
+          if (currentOrder.status === 'WAITING_PAYMENT_DP' || currentOrder.status === 'WAITING_FINAL_PAYMENT') {
+            return (
+              <Invoice 
+                order={currentOrder} 
+                onConfirm={() => {
+                  const newStatus = currentOrder.status === 'WAITING_PAYMENT_DP' ? 'WAITING_ADMIN_DP' : 'WAITING_ADMIN_FINAL';
+                  setOrders(prev => prev.map(o => o.id === currentOrder.id ? { ...o, status: newStatus as any } : o));
+                  setActiveItem('transaksi-waiting');
+                }} 
+              />
+            );
+          }
+          return null;
+        }
+        case 'transaksi-waiting':
+          return (
+            <div className="flex-1 flex items-center justify-center bg-white p-12 text-center">
+              <div className="max-w-md space-y-6">
+                <div className="w-24 h-24 bg-brand-50 rounded-full flex items-center justify-center mx-auto text-brand-600 animate-pulse border-4 border-brand-100">
+                  <Clock size={40} />
+                </div>
+                <h2 className="text-3xl font-black text-slate-800 uppercase tracking-tight">Menunggu Verifikasi</h2>
+                <p className="text-slate-500 font-medium leading-relaxed">
+                  Pembayaran Anda sedang diverifikasi oleh admin kami (biasanya 5-10 menit). Anda akan dialihkan ke forum panen setelah disetujui.
+                </p>
+                <div className="pt-4 flex gap-4">
+                   <button onClick={() => { setActiveRole('admin' as any); setActiveItem('dashboard'); }} className="flex-1 bg-brand-900 text-white py-4 rounded-2xl font-bold text-xs uppercase">Demo: Buka Admin</button>
+                   <button onClick={() => setActiveItem('beranda')} className="flex-1 border border-slate-200 py-4 rounded-2xl font-bold text-xs uppercase">Kembali Beranda</button>
+                </div>
+              </div>
+            </div>
+          );
+        case 'transaksi-panen': {
+          const harvestOrderBuyer = orders.find(o => 
+            o.status === 'WAITING_HARVEST' || 
+            o.status === 'HARVEST_CONFIRMED_SELLER' ||
+            o.status === 'WAITING_FINAL_PAYMENT'
+          );
+          if (!harvestOrderBuyer) return <BuyerDashboard 
+            onProductSelect={setSelectedProduct} 
+            onCategorySelect={(cat) => { setSelectedCategory(cat); setActiveItem('produk'); }}
+            onTrackingSelect={() => { setIsTrackingOpen(true); setActiveItem('lacak'); }}
+            onMenuSelect={setActiveItem}
+          />;
+          
+          if (harvestOrderBuyer.purchaseConfirmedByBuyer && harvestOrderBuyer.harvestConfirmedBySeller && harvestOrderBuyer.status === 'WAITING_HARVEST') {
+             // In a real app this would be a transition triggered by state change
+             // Here we just allow navigation to invoice
+          }
+
+          return (
+            <OrderForum 
+              order={harvestOrderBuyer} 
+              role="buyer" 
+              messages={messages.filter(m => m.orderId === harvestOrderBuyer.id)}
+              onSendMessage={(c, a) => handleSendMessage(harvestOrderBuyer.id, c, 'buyer', a)}
+              onConfirmPurchase={() => {
+                setOrders(prev => prev.map(o => {
+                  if (o.id === harvestOrderBuyer.id) {
+                    const updated = { ...o, purchaseConfirmedByBuyer: true };
+                    if (o.harvestConfirmedBySeller) {
+                      updated.status = 'WAITING_FINAL_PAYMENT';
+                    }
+                    return updated;
+                  }
+                  return o;
+                }));
+                // If both ready, go to invoice
+                const o = orders.find(oo => oo.id === harvestOrderBuyer.id);
+                if (o?.harvestConfirmedBySeller) {
+                   setCurrentOrderId(harvestOrderBuyer.id);
+                   setActiveItem('transaksi-invoice');
+                }
+              }}
+            />
+          );
+        }
+        case 'lacak':
+        case 'transaksi-tracking': {
+          const shippingOrder = orders.find(o => o.status === 'SHIPPING' || o.status === 'DELIVERED');
+          if (!shippingOrder) return <BuyerDashboard 
+            onProductSelect={setSelectedProduct} 
+            onCategorySelect={(cat) => { setSelectedCategory(cat); setActiveItem('produk'); }}
+            onTrackingSelect={() => { setIsTrackingOpen(true); setActiveItem('lacak'); }}
+            onMenuSelect={setActiveItem}
+          />;
+          
+          return (
+            <OrderShipping 
+              order={shippingOrder} 
+              role="buyer" 
+              onConfirmReceipt={() => {
+                setOrders(prev => prev.map(o => o.id === shippingOrder.id ? { ...o, status: 'COMPLETED' as any } : o));
+                setActiveItem('beranda');
+              }} 
+            />
+          );
+        }
         default:
           return <BuyerDashboard 
             onProductSelect={setSelectedProduct} 
@@ -193,6 +368,30 @@ export default function App() {
           return <ProductManagement />;
         case 'sales-analytics':
           return <SalesAnalytics onBack={() => setActiveItem('dashboard')} />;
+        case 'pre-order': {
+          const harvestOrder = orders.find(o => o.status === 'WAITING_HARVEST' || o.status === 'HARVEST_CONFIRMED_SELLER');
+          if (harvestOrder) {
+             return (
+               <OrderForum 
+                order={harvestOrder} 
+                role="seller" 
+                messages={messages.filter(m => m.orderId === harvestOrder.id)}
+                onSendMessage={(c, a) => handleSendMessage(harvestOrder.id, c, 'seller', a)}
+                onConfirmHarvest={() => setOrders(prev => prev.map(o => {
+                   if (o.id === harvestOrder.id) {
+                     const updated = { ...o, harvestConfirmedBySeller: true };
+                     if (o.purchaseConfirmedByBuyer) {
+                       updated.status = 'WAITING_FINAL_PAYMENT' as any;
+                     }
+                     return updated;
+                   }
+                   return o;
+                }))}
+              />
+             );
+          }
+          return <SellerDashboard onNavigate={setActiveItem} />;
+        }
         default:
           return (
             <div className="flex-1 flex items-center justify-center bg-white p-12">

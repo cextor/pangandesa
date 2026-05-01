@@ -1,3 +1,56 @@
+export type OrderStatus = 
+  | 'WAITING_PAYMENT_DP' 
+  | 'WAITING_ADMIN_DP'
+  | 'WAITING_HARVEST' 
+  | 'HARVEST_CONFIRMED_SELLER'
+  | 'WAITING_FINAL_PAYMENT'
+  | 'WAITING_ADMIN_FINAL'
+  | 'SHIPPING'
+  | 'DELIVERED'
+  | 'COMPLETED';
+
+export interface Order {
+  id: string;
+  buyerId: string;
+  sellerId: string;
+  items: {
+    productId: string;
+    name: string;
+    quantity: number;
+    price: number;
+    image: string;
+    unit: string;
+  }[];
+  totalAmount: number;
+  dpAmount: number;
+  remainingAmount: number;
+  status: OrderStatus;
+  createdAt: string;
+  harvestConfirmedBySeller: boolean;
+  purchaseConfirmedByBuyer: boolean;
+  paymentMethod?: string;
+  trackingNumber?: string;
+  bastUrl?: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  orderId?: string;
+  senderId?: string;
+  senderRole?: 'buyer' | 'seller' | 'admin';
+  senderName?: string;
+  content?: string;
+  timestamp: string | number;
+  attachmentUrl?: string;
+  attachmentType?: 'image' | 'file';
+  role?: 'user' | 'model' | 'assistant';
+  text?: string;
+}
+
+export interface CartItem extends Product {
+  quantity: number;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -24,11 +77,4 @@ export interface Seller {
   products: Product[];
 }
 
-export type AppRole = 'buyer' | 'seller';
-
-export interface ChatMessage {
-  id: string;
-  role: 'user' | 'model';
-  text: string;
-  timestamp: number;
-}
+export type AppRole = 'buyer' | 'seller' | 'admin';
