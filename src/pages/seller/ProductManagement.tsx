@@ -41,13 +41,29 @@ const INITIAL_PRODUCTS: Product[] = [
     farmer: 'Pak Joko', 
     village: 'Lembang', 
     category: 'Sayur', 
-    image: 'https://images.unsplash.com/photo-1588252391480-496af0cdbc7a?q=80&w=200', 
+    image: 'https://images.unsplash.com/photo-1599488615731-7e5c2823ff28?q=80&w=600', 
     harvestDate: '12 Mei 2024',
     rating: 4.9,
     reviewCount: 85,
     stock: 30,
     description: 'Cabai merah premium kualitas ekspor.',
     isPreOrder: false
+  },
+  { 
+    id: '3', 
+    name: 'Jagung Manis', 
+    price: 9500, 
+    unit: 'kg', 
+    farmer: 'Pak Joko', 
+    village: 'Lembang', 
+    category: 'Sayur', 
+    image: 'https://images.unsplash.com/photo-1551754655-cd27e38d2076?q=80&w=600', 
+    harvestDate: '15 Mei 2024',
+    rating: 4.7,
+    reviewCount: 42,
+    stock: 100,
+    description: 'Jagung manis organik, segar dari ladang.',
+    isPreOrder: true
   },
 ];
 

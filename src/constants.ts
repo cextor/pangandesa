@@ -35,7 +35,7 @@ export const MOCK_PRODUCTS: Product[] = [
     farmer: 'Ibu Siti',
     village: 'Desa Cipatujah, Cianjur',
     category: 'Sayuran',
-    image: 'https://images.unsplash.com/photo-1588252303782-cb80119abd6d?q=80&w=1000&auto=format&fit=crop',
+    image: 'https://images.unsplash.com/photo-1599488615731-7e5c2823ff28?q=80&w=1000&auto=format&fit=crop',
     harvestDate: '12 Mei 2024',
     rating: 4.9,
     reviewCount: 98,

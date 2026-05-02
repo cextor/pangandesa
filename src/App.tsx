@@ -15,6 +15,9 @@ import BuyerDashboard from './pages/BuyerDashboard';
 import SellerDashboard from './pages/SellerDashboard';
 import ProductManagement from './pages/seller/ProductManagement';
 import SalesAnalytics from './pages/seller/SalesAnalytics';
+import PreOrderManagement from './pages/seller/PreOrderManagement';
+import HarvestProduction from './pages/seller/HarvestProduction';
+import Customers from './pages/seller/Customers';
 import ProductDetail from './components/UI/ProductDetail';
 import Cart from './components/UI/Cart';
 import Tracking from './components/UI/Tracking';
@@ -39,6 +42,7 @@ import AddressPage from './pages/buyer/AddressPage';
 import PreOrderPage from './pages/buyer/PreOrderPage';
 import PromoPage from './pages/buyer/PromoPage';
 import HelpPage from './pages/buyer/HelpPage';
+import ActiveOrders from './pages/buyer/ActiveOrders';
 import LoginPage from './pages/LoginPage';
 
 export default function App() {
@@ -224,6 +228,14 @@ export default function App() {
           return <AIChatPage role="buyer" onBack={() => setActiveItem('beranda')} />;
         case 'favorit':
           return <FavoritesPage onProductSelect={setSelectedProduct} />;
+        case 'pesanan':
+          return <ActiveOrders 
+            orders={orders} 
+            onTrack={(order) => {
+              setIsTrackingOpen(true);
+              setActiveItem('lacak');
+            }} 
+          />;
         case 'riwayat':
           return <OrderHistory />;
         case 'alamat':
@@ -366,9 +378,13 @@ export default function App() {
           return <SellerDashboard onNavigate={setActiveItem} />;
         case 'produk-saya':
           return <ProductManagement />;
+        case 'panen-produksi':
+          return <HarvestProduction />;
+        case 'pelanggan':
+          return <Customers />;
         case 'sales-analytics':
           return <SalesAnalytics onBack={() => setActiveItem('dashboard')} />;
-        case 'pre-order': {
+        case 'pesanan': {
           const harvestOrder = orders.find(o => o.status === 'WAITING_HARVEST' || o.status === 'HARVEST_CONFIRMED_SELLER');
           if (harvestOrder) {
              return (
@@ -392,6 +408,9 @@ export default function App() {
           }
           return <SellerDashboard onNavigate={setActiveItem} />;
         }
+        case 'pre-order':
+        case 'preorder-masuk':
+          return <PreOrderManagement />;
         default:
           return (
             <div className="flex-1 flex items-center justify-center bg-white p-12">
