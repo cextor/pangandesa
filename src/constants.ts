@@ -1,5 +1,7 @@
 import { Product } from './types';
 
+export const APP_LOGO = "https://content.ai.studio/v1/projects/hqd6ij2nntsvpslc5rda73/artifacts/artifact-2026-05-02T23:07:01Z-71ac9043";
+
 export const CATEGORIES = [
   { id: '1', name: 'Sayuran', icon: 'Leaf' },
   { id: '2', name: 'Buah', icon: 'Apple' },
@@ -35,7 +37,7 @@ export const MOCK_PRODUCTS: Product[] = [
     farmer: 'Ibu Siti',
     village: 'Desa Cipatujah, Cianjur',
     category: 'Sayuran',
-    image: 'https://images.unsplash.com/photo-1599488615731-7e5c2823ff28?q=80&w=1000&auto=format&fit=crop',
+    image: 'https://images.unsplash.com/photo-1618161546200-5047b11933c0?q=80&w=1000&auto=format&fit=crop',
     harvestDate: '12 Mei 2024',
     rating: 4.9,
     reviewCount: 98,

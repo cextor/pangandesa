@@ -1,14 +1,14 @@
 import React from 'react';
 import { User, Lock, ShieldCheck, Mail, Phone, CreditCard, ChevronRight, Fingerprint, Bell } from 'lucide-react';
 
-export default function SettingsPage() {
+export default function SettingsPage({ onNavigate }: { onNavigate: (item: string) => void }) {
   const sections = [
     { 
       group: 'Profil & Keamanan',
       items: [
-        { label: 'Data Peribadi', desc: 'Ubah nama, email, dan biodata Anda', icon: <User />, type: 'profile' },
-        { label: 'Keamanan Akun', desc: 'Ganti password dan aktifkan 2FA', icon: <Lock />, type: 'security' },
-        { label: 'PIN PanganDesa', desc: 'Atur PIN transaksimu agar lebih aman', icon: <Fingerprint />, type: 'pin' },
+        { label: 'Data Pribadi', desc: 'Ubah nama, email, dan biodata Anda', icon: <User />, type: 'profil-detail' },
+        { label: 'Keamanan Akun', desc: 'Ganti password dan aktifkan 2FA', icon: <Lock />, type: 'ganti-password' },
+        { label: 'PIN PanganDesa', desc: 'Atur PIN transaksimu agar lebih aman', icon: <Fingerprint />, type: 'pin-keamanan' },
       ]
     },
     {
@@ -41,7 +41,7 @@ export default function SettingsPage() {
                 <h3 className="text-[10px] font-black text-brand-600 uppercase tracking-widest mb-6 px-4">{section.group}</h3>
                 <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden">
                    {section.items.map((item, i) => (
-                     <div key={i} className="group cursor-pointer">
+                     <div key={i} className="group cursor-pointer" onClick={() => onNavigate(item.type)}>
                         <div className="flex items-center justify-between p-8 hover:bg-slate-50 transition-all border-b border-slate-50 last:border-0">
                            <div className="flex items-center gap-6">
                               <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-brand-50 group-hover:text-brand-500 transition-all">

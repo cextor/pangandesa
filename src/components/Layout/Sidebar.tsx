@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { AppRole } from '../../types';
+import { APP_LOGO } from '../../constants';
 
 interface SidebarProps {
   activeRole: AppRole;
@@ -102,10 +103,12 @@ export default function Sidebar({ activeRole, onRoleChange, activeItem, onItemCh
         fixed lg:sticky top-0 left-0 z-50 h-screen w-80 bg-white border-r border-slate-100 flex flex-col transition-transform duration-300
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
-        <div className="p-8 flex items-center gap-3">
-          <div className="w-12 h-12 bg-brand-50 rounded-2xl flex items-center justify-center border border-brand-100 shadow-sm shadow-brand-500/10">
-            <Sprout size={28} className="text-brand-600" />
-          </div>
+        <div className="p-6 md:p-8 flex items-center gap-3">
+          <img 
+            src={APP_LOGO} 
+            alt="PanganDesa Logo" 
+            className="w-12 h-12 object-contain"
+          />
           <div>
             <h1 className="text-xl font-black text-slate-800 font-display leading-tight">PanganDesa</h1>
             <p className="text-[9px] text-brand-600 font-bold uppercase tracking-widest leading-none">Dari Desa, Untuk Indonesia</p>

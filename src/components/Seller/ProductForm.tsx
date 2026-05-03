@@ -5,6 +5,7 @@ import {
   Calendar, 
   Image as ImageIcon
 } from 'lucide-react';
+import { APP_LOGO } from '../../constants';
 import { Product } from '../../types';
 
 interface ProductFormProps {
@@ -34,39 +35,39 @@ export default function ProductForm({ product, onSave, onCancel }: ProductFormPr
   };
 
   return (
-    <div className="bg-white min-h-screen lg:min-h-0 lg:max-h-[90vh] lg:rounded-[40px] overflow-hidden flex flex-col shadow-2xl">
+    <div className="bg-white flex-1 lg:flex-none lg:h-auto lg:max-h-[90vh] lg:rounded-[40px] flex flex-col shadow-2xl overflow-hidden">
       {/* Header */}
-      <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-white sticky top-0 z-10 shrink-0">
-        <div className="flex items-center gap-4">
+      <div className="p-5 md:p-8 border-b border-slate-50 flex items-center justify-between bg-white sticky top-0 z-30 shrink-0">
+        <div className="flex items-center gap-3 md:gap-4">
           <button 
             type="button"
             onClick={onCancel}
-            className="w-12 h-12 flex items-center justify-center hover:bg-slate-50 rounded-2xl transition-all text-slate-400 hover:text-slate-800 border border-slate-100"
+            className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center hover:bg-slate-50 rounded-xl md:rounded-2xl transition-all text-slate-400 hover:text-slate-800 border border-slate-100 bg-white shadow-sm"
           >
-            <ChevronLeft size={24} />
+            <ChevronLeft size={20} className="md:w-6 md:h-6" />
           </button>
-          <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tight">
+          <h2 className="text-xl md:text-2xl font-black text-slate-800 uppercase tracking-tight">
             {product ? 'Edit Produk' : 'Tambah Produk Baru'}
           </h2>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar">
+      <form onSubmit={handleSubmit} className="flex-1 p-6 md:p-10 space-y-8 md:space-y-10 overflow-y-auto custom-scrollbar">
         {/* Simple Image Selector - More compact */}
-        <div className="bg-slate-50 border border-slate-100 rounded-[32px] p-6 flex flex-col sm:flex-row items-center gap-6">
-           <div className="w-24 h-24 shrink-0 rounded-2xl border-2 border-white shadow-sm overflow-hidden bg-white flex items-center justify-center">
+        <div className="bg-slate-50 border border-slate-100 rounded-[24px] md:rounded-[32px] p-5 md:p-6 flex flex-col sm:flex-row items-center gap-4 md:gap-6">
+           <div className="w-20 h-20 md:w-24 md:h-24 shrink-0 rounded-xl md:rounded-2xl border-2 border-white shadow-sm overflow-hidden bg-white flex items-center justify-center">
               {formData.image ? (
                 <img src={formData.image} className="w-full h-full object-cover" alt="Selected" />
               ) : (
-                <ImageIcon size={32} className="text-slate-200" />
+                <ImageIcon size={28} className="text-slate-200" />
               )}
            </div>
            <div className="flex-1 text-center sm:text-left">
-              <h4 className="text-sm font-black text-slate-800 uppercase tracking-tight mb-1">Foto Produk Utama</h4>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Gunakan foto berkualitas tinggi untuk hasil terbaik</p>
+              <h4 className="text-xs md:text-sm font-black text-slate-800 uppercase tracking-tight mb-1">Foto Produk Utama</h4>
+              <p className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 md:mb-4">Gunakan foto berkualitas tinggi</p>
               <button 
                 type="button"
-                className="bg-white border border-slate-200 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-600 hover:border-brand-500 hover:text-brand-600 transition-all shadow-sm"
+                className="bg-white border border-slate-200 px-5 md:px-6 py-2 md:py-2.5 rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-600 hover:border-brand-500 hover:text-brand-600 transition-all shadow-sm"
               >
                 Ganti Foto
               </button>
@@ -74,162 +75,162 @@ export default function ProductForm({ product, onSave, onCancel }: ProductFormPr
         </div>
 
         {/* Input Fields */}
-        <div className="space-y-8">
-          <div className="space-y-3">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Informasi Dasar</label>
+        <div className="space-y-6 md:space-y-8">
+          <div className="space-y-2 md:space-y-3">
+            <label className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Informasi Dasar</label>
             <input 
               type="text"
               value={formData.name}
               onChange={e => setFormData({ ...formData, name: e.target.value })}
               placeholder="Masukkan nama produk..."
-              className="w-full bg-slate-50/50 border border-slate-100 rounded-2xl p-5 text-sm font-bold focus:ring-4 focus:ring-brand-500/5 focus:border-brand-300 outline-none transition-all shadow-inner placeholder:text-slate-300"
+              className="w-full bg-slate-50 border border-slate-100 rounded-xl md:rounded-2xl p-4 md:p-5 text-sm font-bold focus:ring-4 focus:ring-brand-500/5 focus:border-brand-300 outline-none transition-all shadow-inner placeholder:text-slate-300"
               required
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Kategori</label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
+            <div className="space-y-1.5 md:space-y-2">
+              <label className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Kategori</label>
               <div className="relative">
                 <select 
                   value={formData.category}
                   onChange={e => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full bg-slate-50/50 border border-slate-100 rounded-2xl p-5 text-sm font-bold focus:ring-4 focus:ring-brand-500/5 focus:border-brand-300 outline-none transition-all shadow-inner appearance-none pr-12 text-slate-700"
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl md:rounded-2xl p-4 md:p-5 text-sm font-bold focus:ring-4 focus:ring-brand-500/5 focus:border-brand-300 outline-none transition-all shadow-inner appearance-none pr-12 text-slate-700"
                 >
                   <option>Buah</option>
                   <option>Sayur</option>
                   <option>Beras & Biji</option>
                   <option>Rempah</option>
                 </select>
-                <ChevronDown size={20} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <ChevronDown size={18} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Satuan Jual</label>
+            <div className="space-y-1.5 md:space-y-2">
+              <label className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Satuan Jual</label>
               <div className="relative">
                 <select 
                   value={formData.unit}
                   onChange={e => setFormData({ ...formData, unit: e.target.value })}
-                  className="w-full bg-slate-50/50 border border-slate-100 rounded-2xl p-5 text-sm font-bold focus:ring-4 focus:ring-brand-500/5 focus:border-brand-300 outline-none transition-all shadow-inner appearance-none pr-12 text-slate-700"
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl md:rounded-2xl p-4 md:p-5 text-sm font-bold focus:ring-4 focus:ring-brand-500/5 focus:border-brand-300 outline-none transition-all shadow-inner appearance-none pr-12 text-slate-700"
                 >
                   <option>kg</option>
                   <option>gram</option>
                   <option>ikat</option>
                   <option>karung</option>
                 </select>
-                <ChevronDown size={20} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <ChevronDown size={18} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Harga Per Satuan</label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
+            <div className="space-y-1.5 md:space-y-2">
+              <label className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Harga Per Satuan</label>
               <div className="relative">
-                <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 font-black text-xs uppercase tracking-widest">Rp</div>
+                <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 font-black text-[10px] uppercase tracking-widest">Rp</div>
                 <input 
                   type="number"
                   value={formData.price || ''}
                   onChange={e => setFormData({ ...formData, price: Number(e.target.value) })}
-                  className="w-full bg-slate-50/50 border border-slate-100 rounded-2xl py-5 pl-14 pr-5 text-sm font-black focus:ring-4 focus:ring-brand-500/5 focus:border-brand-300 outline-none transition-all shadow-inner"
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl md:rounded-2xl py-4 md:py-5 pl-14 pr-5 text-sm font-black focus:ring-4 focus:ring-brand-500/5 focus:border-brand-300 outline-none transition-all shadow-inner"
                   placeholder="0"
                   required
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Jumlah Stok</label>
+            <div className="space-y-1.5 md:space-y-2">
+              <label className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Jumlah Stok</label>
               <div className="relative">
                 <input 
                   type="number"
                   value={formData.stock || ''}
                   onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })}
-                  className="w-full bg-slate-50/50 border border-slate-100 rounded-2xl py-5 pl-5 pr-14 text-sm font-black focus:ring-4 focus:ring-brand-500/5 focus:border-brand-300 outline-none transition-all shadow-inner"
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl md:rounded-2xl py-4 md:py-5 pl-5 pr-14 text-sm font-black focus:ring-4 focus:ring-brand-500/5 focus:border-brand-300 outline-none transition-all shadow-inner"
                   placeholder="0"
                   required
                 />
-                <div className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 font-black text-[10px] uppercase tracking-widest">{formData.unit}</div>
+                <div className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 font-black text-[9px] md:text-[10px] uppercase tracking-widest">{formData.unit}</div>
               </div>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Deskripsi Detail</label>
+          <div className="space-y-1.5 md:space-y-2">
+            <label className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Deskripsi Detail</label>
             <textarea 
               value={formData.description}
               onChange={e => setFormData({ ...formData, description: e.target.value })}
-              className="w-full bg-slate-50/50 border border-slate-100 rounded-[32px] p-6 text-sm font-bold focus:ring-4 focus:ring-brand-500/5 focus:border-brand-300 outline-none transition-all shadow-inner min-h-[140px] resize-none leading-relaxed text-slate-700"
-              placeholder="Jelaskan kualitas, metode tanam, dan keunggulan produk Anda..."
+              className="w-full bg-slate-50 border border-slate-100 rounded-[24px] md:rounded-[32px] p-5 md:p-6 text-sm font-bold focus:ring-4 focus:ring-brand-500/5 focus:border-brand-300 outline-none transition-all shadow-inner min-h-[120px] md:min-h-[140px] resize-none leading-relaxed text-slate-700"
+              placeholder="Jelaskan kualitas dan keunggulan produk..."
               required
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Estimasi Panen</label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
+            <div className="space-y-1.5 md:space-y-2">
+              <label className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Estimasi Panen</label>
               <div className="relative">
                 <input 
                   type="text"
                   value={formData.harvestDate}
                   onChange={e => setFormData({ ...formData, harvestDate: e.target.value })}
-                  className="w-full bg-slate-50/50 border border-slate-100 rounded-2xl p-5 text-sm font-bold focus:ring-4 focus:ring-brand-500/5 focus:border-brand-300 outline-none transition-all shadow-inner text-slate-700"
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl md:rounded-2xl p-4 md:p-5 text-sm font-bold focus:ring-4 focus:ring-brand-500/5 focus:border-brand-300 outline-none transition-all shadow-inner text-slate-700"
                   placeholder="Contoh: 10 Mei 2024"
                 />
-                <Calendar size={20} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <Calendar size={18} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Metode Penanaman</label>
+            <div className="space-y-1.5 md:space-y-2">
+              <label className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Metode Penanaman</label>
               <div className="relative">
                 <select 
-                  className="w-full bg-slate-50/50 border border-slate-100 rounded-2xl p-5 text-sm font-bold focus:ring-4 focus:ring-brand-500/5 focus:border-brand-300 outline-none transition-all shadow-inner appearance-none pr-12 text-slate-700"
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl md:rounded-2xl p-4 md:p-5 text-sm font-bold focus:ring-4 focus:ring-brand-500/5 focus:border-brand-300 outline-none transition-all shadow-inner appearance-none pr-12 text-slate-700"
                 >
                   <option>Organik Berertifikat</option>
                   <option>Konvensional Aman</option>
                   <option>Hidroponik Modern</option>
                 </select>
-                <ChevronDown size={20} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <ChevronDown size={18} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               </div>
             </div>
           </div>
 
           <div 
-            className={`p-6 rounded-[32px] border-2 transition-all cursor-pointer flex items-center justify-between ${
+            className={`p-5 md:p-6 rounded-[24px] md:rounded-[32px] border-2 transition-all cursor-pointer flex items-center justify-between ${
                formData.isPreOrder 
                 ? 'bg-brand-50 border-brand-200' 
                 : 'bg-slate-50 border-slate-100'
             }`}
             onClick={() => setFormData({ ...formData, isPreOrder: !formData.isPreOrder })}
           >
-            <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${
+            <div className="flex items-center gap-3 md:gap-4">
+              <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center transition-all ${
                  formData.isPreOrder ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/20' : 'bg-slate-200 text-slate-400'
               }`}>
-                <Calendar size={24} />
+                <Calendar size={20} className="md:w-6 md:h-6" />
               </div>
               <div>
-                <p className="text-sm font-black text-slate-800 uppercase tracking-tight">Aktifkan Pre-Order</p>
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Pembeli dapat memesan sebelum panen</p>
+                <p className="text-xs md:text-sm font-black text-slate-800 uppercase tracking-tight">Aktifkan Pre-Order</p>
+                <p className="text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-tight">Pembeli dapat memesan awal</p>
               </div>
             </div>
-            <div className={`w-14 h-8 rounded-full relative transition-colors ${formData.isPreOrder ? 'bg-brand-600' : 'bg-slate-300'}`}>
-               <div className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-sm transition-all ${formData.isPreOrder ? 'left-7' : 'left-1'}`} />
+            <div className={`w-12 h-7 md:w-14 md:h-8 rounded-full relative transition-colors ${formData.isPreOrder ? 'bg-brand-600' : 'bg-slate-300'}`}>
+               <div className={`absolute top-0.5 md:top-1 w-6 h-6 bg-white rounded-full shadow-sm transition-all ${formData.isPreOrder ? 'left-5.5 md:left-7' : 'left-0.5 md:left-1'}`} />
             </div>
           </div>
         </div>
 
         {/* Footer Actions */}
-        <div className="pt-6 pb-12 flex flex-col gap-4">
+        <div className="pt-6 pb-10 flex flex-col gap-3 md:gap-4">
           <button 
             type="submit"
-            className="w-full bg-brand-900 text-white py-6 rounded-[28px] font-black uppercase tracking-widest shadow-2xl shadow-brand-900/20 active:scale-95 transition-all hover:bg-black"
+            className="w-full bg-brand-900 text-white py-5 md:py-6 rounded-xl md:rounded-[28px] text-xs md:text-sm font-black uppercase tracking-widest shadow-2xl shadow-brand-900/20 active:scale-95 transition-all hover:bg-black"
           >
             {product ? 'Perbarui Data Produk' : 'Terbitkan Produk Baru'}
           </button>
           <button 
             type="button"
             onClick={onCancel}
-            className="w-full text-slate-400 py-4 font-black uppercase tracking-widest text-[10px] hover:text-red-500 transition-colors"
+            className="w-full text-slate-400 py-3 md:py-4 font-black uppercase tracking-widest text-[9px] md:text-[10px] hover:text-red-500 transition-colors"
           >
              Batalkan & Buang Draft
           </button>

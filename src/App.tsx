@@ -18,6 +18,7 @@ import SalesAnalytics from './pages/seller/SalesAnalytics';
 import PreOrderManagement from './pages/seller/PreOrderManagement';
 import HarvestProduction from './pages/seller/HarvestProduction';
 import Customers from './pages/seller/Customers';
+import SellerProfilePage from './pages/seller/SellerProfilePage';
 import ProductDetail from './components/UI/ProductDetail';
 import Cart from './components/UI/Cart';
 import Tracking from './components/UI/Tracking';
@@ -38,6 +39,9 @@ import FavoritesPage from './pages/buyer/FavoritesPage';
 import OrderHistory from './pages/buyer/OrderHistory';
 import PaymentMethods from './pages/buyer/PaymentMethods';
 import SettingsPage from './pages/buyer/SettingsPage';
+import ProfileDetailPage from './pages/buyer/ProfileDetailPage';
+import ChangePasswordPage from './pages/buyer/ChangePasswordPage';
+import PinManagementPage from './pages/buyer/PinManagementPage';
 import AddressPage from './pages/buyer/AddressPage';
 import PreOrderPage from './pages/buyer/PreOrderPage';
 import PromoPage from './pages/buyer/PromoPage';
@@ -243,7 +247,13 @@ export default function App() {
         case 'metode-pembayaran':
           return <PaymentMethods />;
         case 'pengaturan':
-          return <SettingsPage />;
+          return <SettingsPage onNavigate={setActiveItem} />;
+        case 'profil-detail':
+          return <ProfileDetailPage onBack={() => setActiveItem('pengaturan')} />;
+        case 'ganti-password':
+          return <ChangePasswordPage onBack={() => setActiveItem('pengaturan')} />;
+        case 'pin-keamanan':
+          return <PinManagementPage onBack={() => setActiveItem('pengaturan')} />;
         case 'transaksi-invoice': {
           const currentOrder = orders.find(o => o.id === currentOrderId);
           if (!currentOrder) return <BuyerDashboard 
@@ -411,6 +421,12 @@ export default function App() {
         case 'pre-order':
         case 'preorder-masuk':
           return <PreOrderManagement />;
+        case 'profil-detail':
+          return <SellerProfilePage onBack={() => setActiveItem('dashboard')} />;
+        case 'ganti-password':
+          return <ChangePasswordPage onBack={() => setActiveItem('dashboard')} />;
+        case 'pin-keamanan':
+          return <PinManagementPage onBack={() => setActiveItem('dashboard')} />;
         default:
           return (
             <div className="flex-1 flex items-center justify-center bg-white p-12">
@@ -476,6 +492,8 @@ export default function App() {
               }
             }} 
             onLogout={handleLogout}
+            onNavigate={setActiveItem}
+            activeRole={activeRole}
           />
           <main className="flex-1 overflow-hidden flex flex-col">
             {renderContent()}

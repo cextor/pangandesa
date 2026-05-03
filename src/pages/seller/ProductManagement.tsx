@@ -10,6 +10,7 @@ import {
   Star, 
   Calendar,
   ChevronRight,
+  ChevronLeft,
   Package,
   AlertCircle
 } from 'lucide-react';
@@ -71,6 +72,7 @@ export default function ProductManagement() {
   const [products, setProducts] = React.useState<Product[]>(INITIAL_PRODUCTS);
   const [isAddingMode, setIsAddingMode] = React.useState(false);
   const [editingProduct, setEditingProduct] = React.useState<Product | null>(null);
+  const [selectedProductForDetail, setSelectedProductForDetail] = React.useState<Product | null>(null);
   const [searchQuery, setSearchQuery] = React.useState('');
 
   const handleDelete = (id: string) => {
@@ -103,8 +105,8 @@ export default function ProductManagement() {
 
   if (isAddingMode || editingProduct) {
     return (
-      <div className="flex-1 overflow-hidden bg-slate-50 p-0 lg:p-10 flex items-center justify-center">
-        <div className="w-full max-w-2xl h-full lg:h-auto overflow-hidden shadow-2xl">
+      <div className="flex-1 bg-slate-50 p-0 lg:p-10 flex flex-col items-center min-h-screen lg:h-full lg:overflow-hidden">
+        <div className="w-full max-w-2xl h-full lg:h-auto shadow-2xl lg:rounded-[40px] flex flex-col bg-white overflow-hidden">
           <ProductForm 
             product={editingProduct || undefined} 
             onSave={handleSave} 
@@ -113,6 +115,96 @@ export default function ProductManagement() {
               setEditingProduct(null);
             }} 
           />
+        </div>
+      </div>
+    );
+  }
+
+  if (selectedProductForDetail) {
+    return (
+      <div className="flex-1 overflow-y-auto custom-scrollbar bg-white p-6 lg:p-10">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center gap-6 mb-10">
+            <button 
+              onClick={() => setSelectedProductForDetail(null)}
+              className="w-12 h-12 flex items-center justify-center hover:bg-slate-50 rounded-2xl transition-all text-slate-400 hover:text-slate-800 border border-slate-100"
+            >
+              <ChevronLeft size={24} />
+            </button>
+            <h1 className="text-3xl font-black text-slate-800 uppercase tracking-tight">Detail Produk</h1>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            <div className="space-y-6">
+              <div className="aspect-square rounded-[48px] overflow-hidden border-8 border-slate-50 shadow-2xl">
+                <img src={selectedProductForDetail.image} className="w-full h-full object-cover" alt={selectedProductForDetail.name} />
+              </div>
+              <div className="flex gap-4">
+                 <div className="flex-1 bg-slate-50 p-6 rounded-[32px] border border-slate-100 text-center">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Rating</p>
+                    <div className="flex items-center justify-center gap-2">
+                       <Star className="text-yellow-400 fill-yellow-400" size={18} />
+                       <span className="text-xl font-black text-slate-800">{selectedProductForDetail.rating}</span>
+                    </div>
+                 </div>
+                 <div className="flex-1 bg-slate-50 p-6 rounded-[32px] border border-slate-100 text-center">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Ulasan</p>
+                    <span className="text-xl font-black text-slate-800">{selectedProductForDetail.reviewCount}</span>
+                 </div>
+              </div>
+            </div>
+
+            <div className="space-y-8">
+              <div>
+                 <div className="flex items-center gap-3 mb-2">
+                    <span className="bg-brand-100 text-brand-700 px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">{selectedProductForDetail.category}</span>
+                    {selectedProductForDetail.isPreOrder && <span className="bg-orange-100 text-orange-700 px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">Pre-Order</span>}
+                 </div>
+                 <h2 className="text-4xl font-black text-slate-800 uppercase tracking-tight mb-2">{selectedProductForDetail.name}</h2>
+                 <p className="text-3xl font-black text-brand-600">Rp {selectedProductForDetail.price.toLocaleString('id-ID')} <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">/ {selectedProductForDetail.unit}</span></p>
+              </div>
+
+              <div className="p-8 bg-slate-50 rounded-[40px] border border-slate-100 space-y-4">
+                 <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Status Stok</span>
+                    <span className={`px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${selectedProductForDetail.stock > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                       {selectedProductForDetail.stock > 0 ? 'Tersedia' : 'Habis'}
+                    </span>
+                 </div>
+                 <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Jumlah Stok</span>
+                    <span className="text-sm font-black text-slate-800">{selectedProductForDetail.stock} {selectedProductForDetail.unit}</span>
+                 </div>
+                 <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Estimasi Panen</span>
+                    <span className="text-sm font-black text-slate-800">{selectedProductForDetail.harvestDate}</span>
+                 </div>
+              </div>
+
+              <div className="space-y-3">
+                 <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Deskripsi Produk</h4>
+                 <p className="text-slate-600 font-medium leading-relaxed">{selectedProductForDetail.description || 'Tidak ada deskripsi detail.'}</p>
+              </div>
+
+              <div className="pt-6 flex gap-4">
+                 <button 
+                   onClick={() => {
+                     setEditingProduct(selectedProductForDetail);
+                     setSelectedProductForDetail(null);
+                   }}
+                   className="flex-1 bg-brand-900 text-white py-5 rounded-[24px] font-black uppercase tracking-widest shadow-xl shadow-brand-900/20 hover:bg-black transition-all"
+                 >
+                    Edit Produk
+                 </button>
+                 <button 
+                   onClick={() => handleDelete(selectedProductForDetail.id)}
+                   className="w-16 h-16 flex items-center justify-center bg-red-50 text-red-500 rounded-[24px] hover:bg-red-500 hover:text-white transition-all shadow-lg shadow-red-500/10"
+                 >
+                    <Trash2 size={24} />
+                 </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -162,7 +254,8 @@ export default function ProductManagement() {
               key={product.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden group hover:border-brand-200 transition-all"
+              onClick={() => setSelectedProductForDetail(product)}
+              className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden group hover:border-brand-200 transition-all cursor-pointer"
             >
               <div className="relative aspect-square">
                 <img src={product.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={product.name} />
@@ -174,13 +267,19 @@ export default function ProductManagement() {
                 </div>
                 <div className="absolute top-6 right-6 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                    <button 
-                    onClick={() => setEditingProduct(product)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingProduct(product);
+                    }}
                     className="w-10 h-10 bg-white rounded-xl shadow-xl flex items-center justify-center text-slate-600 hover:text-brand-600 hover:scale-110 transition-all"
                    >
                      <Edit3 size={18} />
                    </button>
                    <button 
-                    onClick={() => handleDelete(product.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(product.id);
+                    }}
                     className="w-10 h-10 bg-white rounded-xl shadow-xl flex items-center justify-center text-slate-600 hover:text-red-500 hover:scale-110 transition-all"
                    >
                      <Trash2 size={18} />
@@ -202,7 +301,10 @@ export default function ProductManagement() {
                      <p className="text-xl font-black text-slate-800">Rp {product.price.toLocaleString('id-ID')}</p>
                    </div>
                    <button 
-                    onClick={() => setEditingProduct(product)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingProduct(product);
+                    }}
                     className="p-4 bg-slate-50 text-slate-400 rounded-2xl hover:bg-brand-50 hover:text-brand-600 transition-all group/btn"
                    >
                      <Package size={20} className="group-hover/btn:scale-110 transition-transform" />

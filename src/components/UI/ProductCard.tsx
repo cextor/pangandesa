@@ -42,35 +42,35 @@ export default function ProductCard({ product, onAddToCart, onPreview }: Product
         </button>
       </div>
 
-      <div className="p-5 flex-1 flex flex-col">
+      <div className="p-4 sm:p-5 flex-1 flex flex-col">
         <div className="mb-2">
-          <h3 className="text-[15px] font-black text-slate-800 group-hover:text-brand-600 transition-colors uppercase tracking-tight leading-snug">{product.name}</h3>
-          <p className="text-[11px] font-bold text-slate-400 mt-0.5">{product.village}</p>
+          <h3 className="text-sm sm:text-[15px] font-black text-slate-800 group-hover:text-brand-600 transition-colors uppercase tracking-tight leading-tight sm:leading-snug line-clamp-2 sm:line-clamp-none">{product.name}</h3>
+          <p className="text-[10px] sm:text-[11px] font-bold text-slate-400 mt-0.5 truncate">{product.village}</p>
         </div>
 
-        <div className="mt-1">
-          <span className="text-sm font-black text-slate-800 leading-none">{formatter.format(product.price)}</span>
-          <span className="text-[10px] text-slate-400 font-bold ml-1">/{product.unit}</span>
+        <div className="mt-auto pt-1 flex items-baseline">
+          <span className="text-sm sm:text-base font-black text-slate-800 leading-none">{formatter.format(product.price)}</span>
+          <span className="text-[9px] sm:text-[10px] text-slate-400 font-bold ml-1">/{product.unit}</span>
         </div>
 
-        <div className="flex items-center gap-2 mt-3 text-slate-400">
-           <Calendar size={14} className="text-brand-500" />
-           <p className="text-[10px] font-bold">Panen: <span className="text-slate-700">{product.harvestDate}</span></p>
+        <div className="flex items-center gap-1.5 sm:gap-2 mt-2 sm:mt-3 text-slate-400">
+           <Calendar size={12} className="text-brand-500 shrink-0" />
+           <p className="text-[9px] sm:text-[10px] font-bold truncate">Panen: <span className="text-slate-700">{product.harvestDate}</span></p>
         </div>
 
-        <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between">
-           <div className="flex items-center gap-1.5">
-              <Star size={12} className="text-yellow-400 fill-yellow-400" />
-              <span className="text-[11px] font-black text-slate-800">{product.rating} <span className="text-slate-400 font-bold ml-0.5">({Math.floor(Math.random() * 100) + 20})</span></span>
+        <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-slate-50 flex items-center justify-between">
+           <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
+              <Star size={10} className="text-yellow-400 fill-yellow-400 shrink-0" />
+              <span className="text-[10px] sm:text-[11px] font-black text-slate-800 truncate">{product.rating} <span className="hidden xs:inline text-slate-400 font-bold ml-0.5">({Math.floor(Math.random() * 100) + 20})</span></span>
            </div>
            <button 
              onClick={(e) => {
                e.stopPropagation();
                onAddToCart?.(product);
              }}
-             className="w-8 h-8 bg-brand-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-brand-600/20 hover:scale-110 active:scale-95 transition-all"
+             className="w-7 h-7 sm:w-8 sm:h-8 bg-brand-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-brand-600/20 hover:scale-110 active:scale-95 transition-all shrink-0"
            >
-              <Plus size={18} strokeWidth={3} />
+              <Plus className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={3} />
            </button>
         </div>
       </div>

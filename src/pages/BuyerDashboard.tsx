@@ -62,25 +62,25 @@ export default function BuyerDashboard({ onProductSelect, onCategorySelect, onTr
         
         {/* Banner Hero Section */}
         <section className="relative grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-8 relative h-[380px] sm:h-[480px] rounded-[40px] overflow-hidden group shadow-2xl shadow-brand-900/10">
+          <div className="lg:col-span-8 relative min-h-[400px] sm:h-[480px] rounded-[32px] sm:rounded-[40px] overflow-hidden group shadow-2xl shadow-brand-900/10">
             <img 
               src="https://images.unsplash.com/photo-1500651230702-0e2d8a49d4ad?q=80&w=2000&auto=format&fit=crop" 
               alt="PanganDesa Hero"
-              className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
             />
-            <div className="absolute inset-0 bg-linear-to-r from-brand-900/40 via-brand-900/20 to-transparent p-8 sm:p-14 flex flex-col justify-center">
+            <div className="absolute inset-0 bg-linear-to-r from-brand-900/60 via-brand-900/30 to-transparent p-6 sm:p-14 flex flex-col justify-center">
               <motion.div
                 initial={{ opacity: 0, x: -30 }}
                 animate={{ opacity: 1, x: 0 }}
                 className="max-w-xl"
               >
-                <h1 className="text-4xl sm:text-5xl font-black text-white leading-tight mb-4 font-display">
-                  Pangan Segar Langsung <br /> dari Desa ke Rumah Anda
+                <h1 className="text-3xl sm:text-5xl font-black text-white leading-[1.1] mb-4 font-display">
+                  Pangan Segar Langsung <br className="hidden sm:block" /> dari Desa ke Rumah Anda
                 </h1>
-                <p className="text-sm sm:text-base text-brand-50 mb-8 leading-relaxed font-medium opacity-90 max-w-sm">
+                <p className="text-xs sm:text-base text-brand-50 mb-6 sm:mb-8 leading-relaxed font-medium opacity-90 max-w-sm">
                   Pre-order hari ini, panen khusus untuk Anda. Lebih segar, lebih hemat, petani lebih sejahtera.
                 </p>
-                <div className="flex flex-wrap items-center gap-4">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
                   <button className="bg-brand-900 text-white px-8 py-3.5 rounded-2xl font-black text-sm hover:bg-brand-800 transition-all shadow-xl active:scale-95">
                     Belanja Sekarang
                   </button>
@@ -92,7 +92,7 @@ export default function BuyerDashboard({ onProductSelect, onCategorySelect, onTr
             </div>
           </div>
 
-          <div className="lg:col-span-4 bg-slate-50 border border-brand-100 rounded-[40px] p-8 flex flex-col items-center justify-center text-center relative overflow-hidden h-[480px]">
+          <div className="lg:col-span-4 bg-slate-50 border border-brand-100 rounded-[32px] sm:rounded-[40px] p-8 flex flex-col items-center justify-center text-center relative overflow-hidden h-auto py-12 lg:h-[480px]">
              <div className="relative z-10 w-full">
                 <div className="w-20 h-20 bg-brand-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-brand-600/20">
                    <Bot size={42} className="text-white" />
@@ -169,7 +169,7 @@ export default function BuyerDashboard({ onProductSelect, onCategorySelect, onTr
                 Lihat Semua
               </button>
            </div>
-           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8">
              {MOCK_PRODUCTS.map((p) => (
                <ProductCard key={p.id} product={p} onPreview={onProductSelect} />
              ))}
@@ -187,23 +187,22 @@ export default function BuyerDashboard({ onProductSelect, onCategorySelect, onTr
                 Lihat Semua
               </button>
            </div>
-           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               {MOCK_PRODUCTS.slice(0, 4).map((p, i) => (
                 <div 
                   key={i} 
                   onClick={() => onProductSelect(p)}
-                  className="bg-white rounded-[32px] p-4 flex items-center gap-4 border border-slate-100 shadow-sm hover:shadow-xl hover:scale-[1.02] transition-all cursor-pointer group"
+                  className="bg-white rounded-[24px] sm:rounded-[32px] p-3 sm:p-4 flex items-center gap-3 sm:gap-4 border border-slate-100 shadow-sm hover:shadow-xl hover:scale-[1.02] transition-all cursor-pointer group"
                 >
-                   <div className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 rounded-2xl overflow-hidden border border-slate-50">
+                   <div className="w-14 h-14 sm:w-20 sm:h-20 shrink-0 rounded-xl sm:rounded-2xl overflow-hidden border border-slate-50">
                       <img src={p.image} className="w-full h-full object-cover" alt={p.name} />
                    </div>
-                   <div className="flex-1">
-                      <h4 className="font-bold text-slate-800 text-xs sm:text-sm mb-0.5 group-hover:text-brand-600 transition-colors line-clamp-1">{p.name}</h4>
-                      <p className="text-sm font-black text-brand-600 mb-0.5">{formatter.format(p.price)}<span className="text-[9px] text-slate-400 font-medium lowercase">/{p.unit}</span></p>
+                   <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-slate-800 text-[11px] sm:text-sm mb-0.5 group-hover:text-brand-600 transition-colors line-clamp-1">{p.name}</h4>
+                      <p className="text-xs sm:text-base font-black text-brand-600 mb-0.5 whitespace-nowrap">{formatter.format(p.price)}<span className="text-[9px] text-slate-400 font-medium lowercase">/{p.unit}</span></p>
                       <div className="flex items-center gap-1">
                          <Star size={10} className="text-yellow-400 fill-yellow-400" />
                          <span className="text-[9px] font-bold text-slate-700">{p.rating}</span>
-                         <span className="text-[9px] font-medium text-slate-400">({p.reviewCount})</span>
                       </div>
                    </div>
                 </div>

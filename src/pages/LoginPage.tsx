@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Sprout, Mail, Lock, ArrowRight, ShieldCheck, Leaf, Users, Heart } from 'lucide-react';
 import { AppRole } from '../types';
+import { APP_LOGO } from '../constants';
 
 interface LoginPageProps {
   onLogin: (role: AppRole) => void;
@@ -81,13 +82,17 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
           </motion.div>
 
           <div className="relative z-10 p-20 flex flex-col justify-between h-full text-white">
-            <div className="flex items-center gap-3">
-              <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/30 shadow-xl">
-                <Sprout size={32} className="text-brand-300" />
+            <div className="flex items-center gap-4">
+              <div className="bg-white p-2 rounded-2xl shadow-xl">
+                <img 
+                  src={APP_LOGO} 
+                  alt="PanganDesa Logo" 
+                  className="w-12 h-12 md:w-16 md:h-16 object-contain"
+                />
               </div>
               <div className="flex flex-col">
-                <h1 className="text-3xl font-black tracking-tight leading-none">PanganDesa</h1>
-                <span className="text-[9px] font-black text-brand-300 uppercase tracking-[0.4em] mt-1">Direct from village</span>
+                <h1 className="text-3xl font-black tracking-tight leading-none uppercase">PanganDesa</h1>
+                <span className="text-[9px] font-black text-brand-300 uppercase tracking-[0.4em] mt-1">Dari Desa, Untuk Indonesia</span>
               </div>
             </div>
 

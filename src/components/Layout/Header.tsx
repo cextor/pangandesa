@@ -19,10 +19,11 @@ interface HeaderProps {
   onCartClick: () => void;
   onMenuClick?: () => void;
   onLogout?: () => void;
+  onNavigate?: (id: string) => void;
   activeRole?: AppRole;
 }
 
-export default function Header({ onCartClick, onMenuClick, onLogout, activeRole = 'buyer' }: HeaderProps) {
+export default function Header({ onCartClick, onMenuClick, onLogout, onNavigate, activeRole = 'buyer' }: HeaderProps) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -47,10 +48,10 @@ export default function Header({ onCartClick, onMenuClick, onLogout, activeRole 
   }, [profileRef]);
 
   const menuItems = [
-    { label: 'Profil Saya', icon: User, color: 'text-blue-500' },
-    { label: 'Ganti Password', icon: Lock, color: 'text-amber-500' },
-    { label: 'Ubah PIN', icon: Key, color: 'text-emerald-500' },
-    { label: 'Keluar', icon: LogOut, color: 'text-red-500' },
+    { id: 'profil-detail', label: 'Profil Saya', icon: User, color: 'text-blue-500' },
+    { id: 'ganti-password', label: 'Ganti Password', icon: Lock, color: 'text-amber-500' },
+    { id: 'pin-keamanan', label: 'Ubah PIN', icon: Key, color: 'text-emerald-500' },
+    { id: 'keluar', label: 'Keluar', icon: LogOut, color: 'text-red-500' },
   ];
 
   return (
@@ -134,8 +135,10 @@ export default function Header({ onCartClick, onMenuClick, onLogout, activeRole 
                     key={i}
                     onClick={() => {
                       setIsProfileOpen(false);
-                      if (item.label === 'Keluar') {
+                      if (item.id === 'keluar') {
                         onLogout?.();
+                      } else if (onNavigate) {
+                        onNavigate(item.id);
                       }
                     }}
                     className="w-full flex items-center gap-4 p-3.5 rounded-2xl hover:bg-slate-50 transition-colors group text-left"

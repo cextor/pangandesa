@@ -1,5 +1,5 @@
 import React from 'react';
-import { CATEGORIES } from '../../constants';
+import { CATEGORIES, APP_LOGO } from '../../constants';
 import { Grid, ArrowRight, Sparkles } from 'lucide-react';
 
 interface CategoriesPageProps {
@@ -57,6 +57,11 @@ export default function CategoriesPage({ onCategorySelect }: CategoriesPageProps
 
         <div className="mt-20 flex flex-col items-center">
            <div className="w-20 h-1 bg-slate-200 rounded-full mb-8" />
+           <img 
+             src={APP_LOGO} 
+             alt="PanganDesa Logo" 
+             className="w-20 h-20 object-contain mb-4 opacity-50 grayscale hover:grayscale-0 hover:opacity-100 transition-all cursor-pointer"
+           />
            <p className="text-slate-400 font-display text-lg font-black uppercase tracking-[0.5em]">PanganDesa 2024</p>
         </div>
       </div>

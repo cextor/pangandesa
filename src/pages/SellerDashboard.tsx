@@ -191,33 +191,36 @@ export default function SellerDashboard({ onNavigate }: { onNavigate: (item: str
                     name="Tomat Segar"
                     weight="2 kg"
                     customer="Andi Wijaya"
+                    location="Gegerkalong, Bandung"
                     date="10 Mei 2024"
                     price="Rp 32.000"
                     status="Menunggu Konfirmasi"
                     statusColor="bg-orange-50 text-orange-600 border-orange-100"
-                    onClick={() => handleAction('Detail Pesanan: Tomat Segar', <p className="font-medium text-slate-600">Pesanan dari Andi Wijaya sebanyak 2kg Tomat Segar. Silakan konfirmasi stok.</p>)}
+                    onClick={() => handleAction('Detail Pesanan: Tomat Segar', <p className="font-medium text-slate-600">Pesanan dari Andi Wijaya (Gegerkalong) sebanyak 2kg Tomat Segar. Silakan konfirmasi stok.</p>)}
                  />
                  <OrderItem 
-                    img="https://images.unsplash.com/photo-1588252391480-496af0cdbc7a?q=80&w=200" 
+                    img="https://images.unsplash.com/photo-1618161546200-5047b11933c0?q=80&w=400" 
                     name="Cabai Merah Keriting"
                     weight="1 kg"
                     customer="Siti Khalimah"
+                    location="Sukasari, Bandung"
                     date="12 Mei 2024"
                     price="Rp 28.000"
                     status="Dikonfirmasi"
                     statusColor="bg-emerald-50 text-emerald-600 border-emerald-100"
-                    onClick={() => handleAction('Detail Pesanan: Cabai Merah', <p className="font-medium text-slate-600">Pesanan Siti Khalimah telah dikonfirmasi dan menunggu jadwal panen.</p>)}
+                    onClick={() => handleAction('Detail Pesanan: Cabai Merah', <p className="font-medium text-slate-600">Pesanan Siti Khalimah (Sukasari) telah dikonfirmasi dan menunggu jadwal panen.</p>)}
                  />
                  <OrderItem 
                     img="https://images.unsplash.com/photo-1551754655-cd27e38d2076?q=80&w=200" 
                     name="Jagung Manis"
                     weight="3 kg"
                     customer="Budi Santoso"
+                    location="Cimahi Tengah"
                     date="11 Mei 2024"
                     price="Rp 26.500"
                     status="Siap Dikirim"
                     statusColor="bg-blue-50 text-blue-600 border-blue-100"
-                    onClick={() => handleAction('Detail Pesanan: Jagung Manis', <p className="font-medium text-slate-600">Jagung Manis sudah dipack dan siap untuk dijemput kurir pagi ini.</p>)}
+                    onClick={() => handleAction('Detail Pesanan: Jagung Manis', <p className="font-medium text-slate-600">Jagung Manis Budi Santoso (Cimahi) sudah dipack dan siap untuk dijemput kurir pagi ini.</p>)}
                  />
               </div>
               <button 
@@ -344,7 +347,7 @@ export default function SellerDashboard({ onNavigate }: { onNavigate: (item: str
                     onClick={() => handleAction('Performa: Tomat Segar', <p className="font-medium text-slate-600">Tomat Segar menyumbang 40% dari total pendapatan minggu ini.</p>)}
                   />
                   <BestSellerItem 
-                    img="https://images.unsplash.com/photo-1588252391480-496af0cdbc7a?q=80&w=200" 
+                    img="https://images.unsplash.com/photo-1618161546200-5047b11933c0?q=80&w=400" 
                     name="Cabai Merah Keriting"
                     amount="65 kg"
                     revenue="Rp 1.820.000"
@@ -490,21 +493,30 @@ function StatStatCard({ label, value, subValue, onClick }: { label: string, valu
   );
 }
 
-function OrderItem({ img, name, weight, customer, date, price, status, statusColor, onClick }: any) {
+function OrderItem({ img, name, weight, customer, location, date, price, status, statusColor, onClick }: any) {
   return (
-    <div className="flex items-center gap-5 group cursor-pointer" onClick={onClick}>
-       <img src={img} className="w-14 h-14 rounded-2xl object-cover border border-slate-100 shadow-sm group-hover:scale-105 transition-transform" />
-       <div className="flex-1">
-          <div className="flex items-center justify-between mb-1">
-             <p className="text-sm font-black text-slate-800 uppercase tracking-tight group-hover:text-brand-600 transition-colors">{name} <span className="text-slate-400 text-[10px] italic">{weight}</span></p>
-             <span className={`text-[9px] font-black px-2.5 py-1 rounded-lg border uppercase tracking-widest ${statusColor}`}>{status}</span>
-          </div>
-          <div className="flex items-center gap-4 text-[10px] font-bold text-slate-400">
-             <span>{customer}</span>
-             <span className="w-1 h-1 bg-slate-200 rounded-full" />
-             <span className="flex items-center gap-1"><Calendar size={10} /> Panen: {date}</span>
-             <span className="w-1 h-1 bg-slate-200 rounded-full ml-auto" />
-             <span className="text-brand-600 font-black">{price}</span>
+    <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5 group cursor-pointer p-3 -m-3 rounded-2xl hover:bg-slate-50 transition-colors" onClick={onClick}>
+       <div className="flex items-center gap-4 flex-1 min-w-0">
+          <img src={img} className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl object-cover border border-slate-100 shadow-sm group-hover:scale-105 transition-transform shrink-0" />
+          <div className="flex-1 min-w-0">
+             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2 mb-2 sm:mb-1">
+                <p className="text-sm font-black text-slate-800 uppercase tracking-tight group-hover:text-brand-600 transition-colors truncate">
+                  {name} <span className="text-slate-400 text-[10px] font-bold italic tracking-normal">{weight}</span>
+                </p>
+                <span className={`self-start sm:self-auto text-[8px] sm:text-[9px] font-black px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg border uppercase tracking-widest whitespace-nowrap ${statusColor}`}>
+                  {status}
+                </span>
+             </div>
+             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-bold text-slate-400">
+                <div className="flex flex-col min-w-0">
+                   <span className="text-brand-700 truncate max-w-[120px] sm:max-w-none">{customer}</span>
+                   <span className="text-[8px] text-slate-400 -mt-0.5 truncate">{location}</span>
+                </div>
+                <span className="hidden sm:block w-1.5 h-1.5 border border-slate-200 rounded-full shrink-0" />
+                <span className="flex items-center gap-1 shrink-0"><Calendar size={10} /> {date}</span>
+                <span className="hidden sm:block w-1 h-1 bg-slate-200 rounded-full ml-auto sm:ml-0 shrink-0" />
+                <span className="text-brand-600 font-black ml-auto sm:ml-0 size-fit">{price}</span>
+             </div>
           </div>
        </div>
     </div>
