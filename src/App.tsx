@@ -33,7 +33,6 @@ import OrderForum from './components/Transaction/OrderForum';
 import OrderShipping from './components/Transaction/OrderShipping';
 
 import AllProducts from './pages/buyer/AllProducts';
-import VillagesPage from './pages/buyer/VillagesPage';
 import CategoriesPage from './pages/buyer/CategoriesPage';
 import FavoritesPage from './pages/buyer/FavoritesPage';
 import OrderHistory from './pages/buyer/OrderHistory';
@@ -47,6 +46,8 @@ import PreOrderPage from './pages/buyer/PreOrderPage';
 import PromoPage from './pages/buyer/PromoPage';
 import HelpPage from './pages/buyer/HelpPage';
 import ActiveOrders from './pages/buyer/ActiveOrders';
+import BuyerRequestPO from './pages/buyer/BuyerRequestPO';
+import BrowseBuyerRequests from './pages/seller/BrowseBuyerRequests';
 import LoginPage from './pages/LoginPage';
 
 export default function App() {
@@ -217,8 +218,6 @@ export default function App() {
           />;
         case 'preorder':
           return <PreOrderPage onProductSelect={setSelectedProduct} />;
-        case 'desa':
-          return <VillagesPage />;
         case 'kategori':
           return <CategoriesPage onCategorySelect={(cat) => {
             setSelectedCategory(cat);
@@ -242,6 +241,8 @@ export default function App() {
           />;
         case 'riwayat':
           return <OrderHistory />;
+        case 'request-po':
+          return <BuyerRequestPO />;
         case 'alamat':
           return <AddressPage />;
         case 'metode-pembayaran':
@@ -388,6 +389,8 @@ export default function App() {
           return <SellerDashboard onNavigate={setActiveItem} />;
         case 'produk-saya':
           return <ProductManagement />;
+        case 'ambil-po':
+          return <BrowseBuyerRequests />;
         case 'panen-produksi':
           return <HarvestProduction />;
         case 'pelanggan':

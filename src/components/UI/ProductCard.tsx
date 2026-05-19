@@ -45,7 +45,6 @@ export default function ProductCard({ product, onAddToCart, onPreview }: Product
       <div className="p-4 sm:p-5 flex-1 flex flex-col">
         <div className="mb-2">
           <h3 className="text-sm sm:text-[15px] font-black text-slate-800 group-hover:text-brand-600 transition-colors uppercase tracking-tight leading-tight sm:leading-snug line-clamp-2 sm:line-clamp-none">{product.name}</h3>
-          <p className="text-[10px] sm:text-[11px] font-bold text-slate-400 mt-0.5 truncate">{product.village}</p>
         </div>
 
         <div className="mt-auto pt-1 flex items-baseline">

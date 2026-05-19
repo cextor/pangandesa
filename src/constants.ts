@@ -1,6 +1,6 @@
-import { Product } from './types';
+import { Product, BuyerRequest } from './types';
 
-export const APP_LOGO = "https://content.ai.studio/v1/projects/hqd6ij2nntsvpslc5rda73/artifacts/artifact-2026-05-02T23:07:01Z-71ac9043";
+export const APP_LOGO = "https://images.unsplash.com/photo-1594894750236-455bc5793836?q=80&w=1000&auto=format&fit=crop";
 
 export const CATEGORIES = [
   { id: '1', name: 'Sayuran', icon: 'Leaf' },
@@ -19,14 +19,13 @@ export const MOCK_PRODUCTS: Product[] = [
     price: 16000,
     unit: 'kg',
     farmer: 'Pak Joko',
-    village: 'Desa Sukamaju, Lembang',
     category: 'Sayuran',
     image: 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?q=80&w=1000&auto=format&fit=crop',
     harvestDate: '10 Mei 2024',
     rating: 4.8,
     reviewCount: 120,
     stock: 50,
-    description: 'Tomat segar pilihan dari kebun Lembang, dipanen saat sudah matang sempurna.',
+    description: 'Tomat segar pilihan dari kebun mitra, dipanen saat sudah matang sempurna.',
     isPreOrder: true,
   },
   {
@@ -35,7 +34,6 @@ export const MOCK_PRODUCTS: Product[] = [
     price: 28000,
     unit: 'kg',
     farmer: 'Ibu Siti',
-    village: 'Desa Cipatujah, Cianjur',
     category: 'Sayuran',
     image: 'https://images.unsplash.com/photo-1618161546200-5047b11933c0?q=80&w=1000&auto=format&fit=crop',
     harvestDate: '12 Mei 2024',
@@ -51,7 +49,6 @@ export const MOCK_PRODUCTS: Product[] = [
     price: 22000,
     unit: 'kg',
     farmer: 'Bapak Ahmad',
-    village: 'Desa Cidadap, Garut',
     category: 'Beras & Biji',
     image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?q=80&w=1000&auto=format&fit=crop',
     harvestDate: '15 Mei 2024',
@@ -67,7 +64,6 @@ export const MOCK_PRODUCTS: Product[] = [
     price: 9500,
     unit: 'kg',
     farmer: 'Kang Budi',
-    village: 'Desa Sukamulya, Soreang',
     category: 'Sayuran',
     image: 'https://images.unsplash.com/photo-1551754655-cd27e38d2076?q=80&w=1000&auto=format&fit=crop',
     harvestDate: '11 Mei 2024',
@@ -77,4 +73,31 @@ export const MOCK_PRODUCTS: Product[] = [
     description: 'Jagung manis segar dipetik langsung saat dipesan.',
     isPreOrder: true,
   },
+];
+
+export const MOCK_BUYER_REQUESTS: BuyerRequest[] = [
+  {
+    id: 'req1',
+    buyerId: 'user-1',
+    buyerName: 'Budi Santoso',
+    panganType: 'Kentang Granola',
+    quantity: 500,
+    unit: 'kg',
+    deliveryPeriod: 'Juni 2024',
+    status: 'OPEN',
+    createdAt: '1 Mei 2024',
+    budget: 12000
+  },
+  {
+    id: 'req2',
+    buyerId: 'user-1',
+    buyerName: 'Budi Santoso',
+    panganType: 'Bawang Merah',
+    quantity: 200,
+    unit: 'kg',
+    deliveryPeriod: 'Akhir Mei 2024',
+    status: 'OPEN',
+    createdAt: '3 Mei 2024',
+    budget: 25000
+  }
 ];

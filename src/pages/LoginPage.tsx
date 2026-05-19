@@ -83,11 +83,22 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
 
           <div className="relative z-10 p-20 flex flex-col justify-between h-full text-white">
             <div className="flex items-center gap-4">
-              <div className="bg-white p-2 rounded-2xl shadow-xl">
+              <div className="bg-white p-2 rounded-2xl shadow-xl w-16 h-16 md:w-20 md:h-20 flex items-center justify-center overflow-hidden">
                 <img 
                   src={APP_LOGO} 
                   alt="PanganDesa Logo" 
-                  className="w-12 h-12 md:w-16 md:h-16 object-contain"
+                  className="w-full h-full object-contain"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    const parent = target.parentElement;
+                    if (parent) {
+                      const icon = document.createElement('div');
+                      icon.className = "text-brand-600 flex items-center justify-center w-full h-full";
+                      icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sprout"><path d="M7 20h10"/><path d="M10 20c5.5 0 5.5-10 10-10"/><path d="M14 20c-5.5 0-5.5-10-10-10"/></svg>';
+                      parent.appendChild(icon);
+                    }
+                  }}
                 />
               </div>
               <div className="flex flex-col">

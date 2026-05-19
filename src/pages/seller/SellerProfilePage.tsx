@@ -78,8 +78,8 @@ export default function SellerProfilePage({ onBack }: SellerProfileProps) {
                        <Store size={14} className="text-brand-500" /> Toko Berkah Tani
                     </div>
                     <div className="hidden md:block w-1 h-1 bg-slate-200 rounded-full" />
-                    <div className="flex items-center gap-1.5 text-[10px] md:text-xs font-bold uppercase tracking-widest">
-                       <MapPin size={14} className="text-brand-500" /> Lembang, Bandung
+                    <div className="flex items-center gap-1.5 text-[10px] md:text-xs font-bold uppercase tracking-widest text-emerald-500">
+                       <ShieldCheck size={14} /> Seller Terverifikasi
                     </div>
                  </div>
               </div>
@@ -170,35 +170,36 @@ export default function SellerProfilePage({ onBack }: SellerProfileProps) {
                     </div>
                  </div>
 
-                 {/* Shop Section */}
+                 {/* Legal Section */}
                  <div className="space-y-5 md:space-y-6">
                     <h3 className="text-[9px] md:text-[10px] font-black text-brand-600 uppercase tracking-[0.2em] px-1 flex items-center gap-3">
-                       <Globe size={14} /> Lokasi & Deskripsi
+                       <ShieldCheck size={14} /> Dokumen Legalitas (Wajib)
                     </h3>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
-                       <div className="space-y-1.5 md:space-y-2">
-                          <label className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Provinsi</label>
-                          <select className="w-full bg-slate-50 border border-slate-100 rounded-xl md:rounded-2xl p-4 md:p-5 text-xs md:text-sm font-bold focus:ring-4 focus:ring-brand-500/5 focus:bg-white outline-none transition-all shadow-inner appearance-none cursor-pointer">
-                             <option>Jawa Barat</option>
-                             <option>Jawa Tengah</option>
-                             <option>Jawa Timur</option>
-                          </select>
-                       </div>
-                       <div className="space-y-1.5 md:space-y-2">
-                          <label className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Desa / Kelurahan</label>
-                          <select className="w-full bg-slate-50 border border-slate-100 rounded-xl md:rounded-2xl p-4 md:p-5 text-xs md:text-sm font-bold focus:ring-4 focus:ring-brand-500/5 focus:bg-white outline-none transition-all shadow-inner appearance-none cursor-pointer">
-                             <option>Desa Lembang</option>
-                             <option>Desa Cikole</option>
-                             <option>Desa Jayagiri</option>
-                          </select>
+                       <div className="p-6 bg-slate-50 border-2 border-dashed border-slate-200 rounded-[28px] text-center space-y-3 group hover:border-brand-300 transition-all cursor-pointer">
+                          <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center mx-auto text-slate-400 group-hover:text-brand-600 shadow-sm border border-slate-100 transition-all">
+                             <Save size={24} />
+                          </div>
+                          <div>
+                             <p className="text-[10px] font-black text-slate-800 uppercase tracking-tight">Akte / SK Kemenkumham / Sertifikat Lahan</p>
+                             <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Format: PDF/JPG (Maks 10MB)</p>
+                          </div>
+                          <span className="inline-block text-[9px] font-black text-brand-600 uppercase tracking-widest bg-brand-50 px-3 py-1 rounded-lg">Pilih File</span>
                        </div>
                     </div>
+                 </div>
 
+                 {/* Shop Section */}
+                 <div className="space-y-5 md:space-y-6">
+                    <h3 className="text-[9px] md:text-[10px] font-black text-brand-600 uppercase tracking-[0.2em] px-1 flex items-center gap-3">
+                       <Globe size={14} /> Deskripsi Toko
+                    </h3>
+                    
                     <div className="space-y-1.5 md:space-y-2">
                        <label className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Deskripsi Toko</label>
                        <textarea 
-                         defaultValue="Menyediakan sayuran segar organik langsung dari ladang di Lembang. Kami mengedepankan kualitas dan harga yang bersahabat."
+                         defaultValue="Menyediakan sayuran segar organik langsung dari ladang. Kami mengedepankan kualitas dan harga yang bersahabat."
                          className="w-full bg-slate-50 border border-slate-100 rounded-2xl md:rounded-[32px] p-5 md:p-6 text-xs md:text-sm font-bold focus:ring-4 focus:ring-brand-500/5 focus:bg-white focus:border-brand-200 outline-none transition-all shadow-inner min-h-[100px] md:min-h-[120px] resize-none"
                          placeholder="Ceritakan tentang toko Anda..."
                        />

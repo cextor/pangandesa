@@ -21,70 +21,86 @@ export default function ProfileDetailPage({ onBack }: ProfileDetailProps) {
         </div>
 
         {/* Profile Image Section */}
-        <div className="bg-white p-6 md:p-10 rounded-[32px] md:rounded-[40px] border border-slate-100 shadow-sm flex flex-col items-center gap-4 md:gap-6">
+        <div className="bg-white p-6 sm:p-10 rounded-[28px] sm:rounded-[40px] border border-slate-100 shadow-sm flex flex-col items-center gap-4 sm:gap-6">
            <div className="relative">
-              <div className="w-24 h-24 md:w-32 md:h-32 rounded-[32px] md:rounded-[40px] overflow-hidden border-4 border-white shadow-xl ring-1 ring-slate-100">
+              <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-[28px] sm:rounded-[40px] overflow-hidden border-4 border-white shadow-xl ring-1 ring-slate-100">
                  <img src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?q=80&w=200" alt="Avatar" className="w-full h-full object-cover" />
               </div>
-              <button className="absolute -bottom-1 -right-1 md:-bottom-2 md:-right-2 bg-brand-600 text-white w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg hover:bg-brand-700 transition-all border-4 border-white">
-                 <Camera size={14} className="md:w-[18px] md:h-[18px]" />
+              <button className="absolute -bottom-1 -right-1 sm:-bottom-2 sm:-right-2 bg-brand-600 text-white w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg hover:bg-brand-700 transition-all border-4 border-white">
+                 <Camera size={14} className="sm:w-[18px] sm:h-[18px]" />
               </button>
            </div>
            <div className="text-center">
-              <h2 className="text-xl md:text-2xl font-black text-slate-800 uppercase tracking-tight">Budi Santoso</h2>
-              <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-1">ID Pelanggan: PD-882190</p>
+              <h2 className="text-xl sm:text-2xl font-black text-slate-800 uppercase tracking-tight">Budi Santoso</h2>
+              <p className="text-slate-400 font-bold text-[9px] sm:text-[10px] uppercase tracking-widest mt-1">ID Pelanggan: PD-882190</p>
            </div>
         </div>
 
         {/* Form Details */}
-        <div className="bg-white p-6 md:p-10 rounded-[32px] md:rounded-[40px] border border-slate-100 shadow-sm space-y-6 md:space-y-8">
-           <div className="space-y-5 md:space-y-6">
-              <h3 className="text-[9px] md:text-[10px] font-black text-brand-600 uppercase tracking-widest px-1">Informasi Personal</h3>
+        <div className="bg-white p-6 sm:p-10 rounded-[28px] sm:rounded-[40px] border border-slate-100 shadow-sm space-y-6 sm:space-y-8">
+           <div className="space-y-5 sm:space-y-6">
+              <h3 className="text-[9px] sm:text-[10px] font-black text-brand-600 uppercase tracking-widest px-1">Informasi Personal</h3>
               
-              <div className="space-y-1.5 md:space-y-2">
-                 <label className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nama Lengkap</label>
+              <div className="space-y-1.5 sm:space-y-2">
+                 <label className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nama Lengkap</label>
                  <div className="relative">
-                    <User className="absolute left-4 md:left-5 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                    <User size={16} className="absolute left-4 sm:left-5 top-1/2 -translate-y-1/2 text-slate-300 sm:w-[18px] sm:h-[18px]" />
                     <input 
                       type="text" 
                       defaultValue="Budi Santoso"
-                      className="w-full bg-slate-50 border border-slate-100 rounded-xl md:rounded-2xl p-4 md:p-5 pl-12 md:pl-14 text-xs md:text-sm font-bold focus:ring-4 focus:ring-brand-500/5 outline-none transition-all shadow-inner"
+                      className="w-full bg-slate-50 border border-slate-100 rounded-xl sm:rounded-2xl p-3.5 sm:p-5 pl-11 sm:pl-14 text-xs sm:text-sm font-bold focus:ring-4 focus:ring-brand-500/5 outline-none transition-all shadow-inner"
                     />
                  </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                 <div className="space-y-1.5 md:space-y-2">
-                    <label className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                 <div className="space-y-1.5 sm:space-y-2">
+                    <label className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Jenis Akun</label>
+                    <select className="w-full bg-slate-50 border border-slate-100 rounded-xl sm:rounded-2xl p-3.5 sm:p-5 text-xs sm:text-sm font-bold focus:ring-4 focus:ring-brand-500/5 outline-none appearance-none">
+                       <option>Individu / Perseorangan</option>
+                       <option>Perusahaan / Badan Hukum</option>
+                    </select>
+                 </div>
+                 <div className="space-y-1.5 sm:space-y-2">
+                    <label className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Dokumen Legalitas (Opsional)</label>
+                    <button className="w-full bg-slate-50 border border-dashed border-slate-300 rounded-xl py-3.5 sm:py-5 text-[9px] font-black uppercase text-slate-400 hover:border-brand-500 hover:text-brand-600 transition-all">
+                       Upload Dokumen (.pdf/jpg)
+                    </button>
+                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                 <div className="space-y-1.5 sm:space-y-2">
+                    <label className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email</label>
                     <div className="relative">
-                       <Mail className="absolute left-4 md:left-5 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                       <Mail size={16} className="absolute left-4 sm:left-5 top-1/2 -translate-y-1/2 text-slate-300 sm:w-[18px] sm:h-[18px]" />
                        <input 
                          type="email" 
                          defaultValue="budi.s@email.com"
-                         className="w-full bg-slate-50 border border-slate-100 rounded-xl md:rounded-2xl p-4 md:p-5 pl-12 md:pl-14 text-xs md:text-sm font-bold focus:ring-4 focus:ring-brand-500/5 outline-none transition-all shadow-inner"
+                         className="w-full bg-slate-50 border border-slate-100 rounded-xl sm:rounded-2xl p-3.5 sm:p-5 pl-11 sm:pl-14 text-xs sm:text-sm font-bold focus:ring-4 focus:ring-brand-500/5 outline-none transition-all shadow-inner"
                        />
                     </div>
                  </div>
-                 <div className="space-y-1.5 md:space-y-2">
-                    <label className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">No. WhatsApp</label>
+                 <div className="space-y-1.5 sm:space-y-2">
+                    <label className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">No. WhatsApp</label>
                     <div className="relative">
-                       <Phone className="absolute left-4 md:left-5 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                       <Phone size={16} className="absolute left-4 sm:left-5 top-1/2 -translate-y-1/2 text-slate-300 sm:w-[18px] sm:h-[18px]" />
                        <input 
                          type="tel" 
                          defaultValue="0812-3456-7890"
-                         className="w-full bg-slate-50 border border-slate-100 rounded-xl md:rounded-2xl p-4 md:p-5 pl-12 md:pl-14 text-xs md:text-sm font-bold focus:ring-4 focus:ring-brand-500/5 outline-none transition-all shadow-inner"
+                         className="w-full bg-slate-50 border border-slate-100 rounded-xl sm:rounded-2xl p-3.5 sm:p-5 pl-11 sm:pl-14 text-xs sm:text-sm font-bold focus:ring-4 focus:ring-brand-500/5 outline-none transition-all shadow-inner"
                        />
                     </div>
                  </div>
               </div>
 
-              <div className="space-y-1.5 md:space-y-2">
-                 <label className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Alamat Utama</label>
+              <div className="space-y-1.5 sm:space-y-2">
+                 <label className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Alamat Utama</label>
                  <div className="relative">
-                    <MapPin className="absolute left-4 md:left-5 top-7 -translate-y-1/2 text-slate-300" size={18} />
+                    <MapPin size={16} className="absolute left-4 sm:left-5 top-6 sm:top-7 -translate-y-1/2 text-slate-300 sm:w-[18px] sm:h-[18px]" />
                     <textarea 
                       defaultValue="Jl. Sudirman No. 123, Blok C, Kebayoran Baru, Jakarta Selatan, DKI Jakarta 12190"
-                      className="w-full bg-slate-50 border border-slate-100 rounded-xl md:rounded-2xl p-4 md:p-5 pl-12 md:pl-14 text-xs md:text-sm font-bold focus:ring-4 focus:ring-brand-500/5 outline-none transition-all shadow-inner min-h-[100px] resize-none"
+                      className="w-full bg-slate-50 border border-slate-100 rounded-xl sm:rounded-2xl p-3.5 sm:p-5 pl-11 sm:pl-14 text-xs sm:text-sm font-bold focus:ring-4 focus:ring-brand-500/5 outline-none transition-all shadow-inner min-h-[80px] sm:min-h-[100px] resize-none"
                     />
                  </div>
               </div>

@@ -27,15 +27,15 @@ export default function ProductDetail({ product, onBack, onPreOrder }: ProductDe
 
   return (
     <div className="flex-1 overflow-y-auto custom-scrollbar bg-white">
-      <div className="max-w-6xl mx-auto p-4 sm:p-8">
+      <div className="max-w-6xl mx-auto p-4 sm:p-8 pt-6 sm:pt-10">
         
         {/* Navigation */}
         <button 
           onClick={onBack}
-          className="flex items-center gap-2 text-slate-500 hover:text-brand-600 font-bold text-sm mb-6 sm:mb-8 transition-colors group"
+          className="flex items-center gap-2 text-slate-500 hover:text-brand-600 font-bold text-xs sm:text-sm mb-6 sm:mb-10 transition-colors group"
         >
           <div className="p-2 rounded-xl bg-slate-50 group-hover:bg-brand-50 transition-colors">
-            <ChevronLeft size={18} />
+            <ChevronLeft size={16} className="sm:w-5 sm:h-5" />
           </div>
           Kembali
         </button>
@@ -43,7 +43,7 @@ export default function ProductDetail({ product, onBack, onPreOrder }: ProductDe
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
           {/* Left Column: Images */}
           <div className="space-y-4 sm:space-y-6">
-            <div className="aspect-square rounded-[32px] sm:rounded-[40px] overflow-hidden border border-slate-100 shadow-sm relative group">
+            <div className="aspect-square rounded-[24px] sm:rounded-[40px] overflow-hidden border border-slate-100 shadow-sm relative group">
               <motion.img 
                 key={activeImage}
                 initial={{ opacity: 0, scale: 1.1 }}
@@ -53,16 +53,16 @@ export default function ProductDetail({ product, onBack, onPreOrder }: ProductDe
                 className="w-full h-full object-cover"
               />
               <button className="absolute top-4 right-4 sm:top-6 sm:right-6 p-3 sm:p-4 bg-white/90 backdrop-blur-md rounded-2xl text-slate-400 hover:text-red-500 shadow-xl transition-all active:scale-90">
-                <Heart size={20} className="sm:w-6 sm:h-6" />
+                <Heart size={18} className="sm:w-6 sm:h-6" />
               </button>
             </div>
             
-            <div className="flex gap-3 sm:gap-4">
+            <div className="flex gap-2 sm:gap-4 overflow-x-auto pb-2 scrollbar-hide">
               {thumbnails.map((img, i) => (
                 <button 
                   key={i}
                   onClick={() => setActiveImage(img)}
-                  className={`flex-1 aspect-square rounded-xl sm:rounded-2xl overflow-hidden border-2 transition-all ${activeImage === img ? 'border-brand-500 ring-2 sm:ring-4 ring-brand-100' : 'border-slate-100 hover:border-brand-200'}`}
+                  className={`shrink-0 w-16 h-16 sm:w-auto sm:flex-1 aspect-square rounded-xl sm:rounded-2xl overflow-hidden border-2 transition-all ${activeImage === img ? 'border-brand-500 ring-2 sm:ring-4 ring-brand-100' : 'border-slate-100 hover:border-brand-200'}`}
                 >
                   <img src={img} className="w-full h-full object-cover" alt={`Thumb ${i}`} />
                 </button>
@@ -72,95 +72,90 @@ export default function ProductDetail({ product, onBack, onPreOrder }: ProductDe
 
           {/* Right Column: Info */}
           <div className="flex flex-col">
-            <div className="mb-6 sm:mb-8">
+            <div className="mb-6 sm:mb-10">
               <div className="flex flex-wrap items-center gap-2 mb-3">
-                <span className="px-3 py-1 bg-brand-50 text-brand-600 text-[9px] sm:text-[10px] font-black uppercase tracking-widest rounded-full border border-brand-100">
+                <span className="px-2.5 py-1 bg-brand-50 text-brand-600 text-[8px] sm:text-[10px] font-black uppercase tracking-widest rounded-full border border-brand-100">
                   Pre-Order Tersedia
                 </span>
-                <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-50 text-slate-500 text-[9px] sm:text-[10px] font-black uppercase tracking-widest rounded-full border border-slate-100 italic">
+                <div className="flex items-center gap-1 px-2.5 py-1 bg-slate-50 text-slate-500 text-[8px] sm:text-[10px] font-black uppercase tracking-widest rounded-full border border-slate-100 italic">
                   Bersertifikat Organik
                 </div>
               </div>
-              <h1 className="text-3xl sm:text-5xl font-black text-slate-800 font-display mb-4 leading-tight">{product.name}</h1>
+              <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black text-slate-800 font-display mb-3 sm:mb-4 leading-tight uppercase tracking-tight">{product.name}</h1>
               <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
-                 <div className="flex items-center gap-1.5 font-display uppercase tracking-widest text-[10px] bg-slate-50 self-start px-3 py-1 rounded-lg">
-                    <MapPin size={14} className="text-brand-500" />
-                    <span className="font-black text-slate-600">{product.village}</span>
-                 </div>
-                 <div className="flex items-center gap-1.5">
-                    <Star size={16} className="text-yellow-400 fill-yellow-400" />
-                    <span className="text-sm font-bold text-slate-800">{product.rating}</span>
-                    <span className="text-sm font-medium text-slate-400">({product.reviewCount} ulasan)</span>
+                 <div className="flex items-center gap-1.5 self-start">
+                    <Star size={14} className="text-yellow-400 fill-yellow-400 sm:w-4 sm:h-4" />
+                    <span className="text-xs sm:text-sm font-bold text-slate-800">{product.rating}</span>
+                    <span className="text-[10px] sm:text-sm font-medium text-slate-400">({product.reviewCount} ulasan)</span>
                  </div>
               </div>
             </div>
 
-            <div className="bg-slate-50 rounded-[32px] p-6 sm:p-8 border border-slate-200/60 mb-8">
-               <div className="flex items-baseline gap-2 mb-4 sm:mb-6">
-                  <span className="text-3xl sm:text-4xl font-extrabold text-brand-600">{formatter.format(product.price)}</span>
-                  <span className="text-base sm:text-lg font-bold text-slate-400">/{product.unit}</span>
+            <div className="bg-slate-50/50 rounded-[28px] sm:rounded-[32px] p-5 sm:p-10 border border-slate-200/60 mb-6 sm:mb-10">
+               <div className="flex items-baseline gap-2 mb-4 sm:mb-8 border-b border-slate-200/50 pb-4 sm:pb-6">
+                  <span className="text-2xl sm:text-4xl font-black text-brand-600">{formatter.format(product.price)}</span>
+                  <span className="text-xs sm:text-lg font-bold text-slate-400">/{product.unit}</span>
                </div>
                
-               <p className="text-slate-500 text-sm leading-relaxed font-medium mb-6 sm:mb-8">
-                 Tomat segar berkualitas tinggi, dipanen saat matang sempurna langsung dari kebun petani mitra di {product.village}. Cocok untuk berbagai masakan sehat keluarga.
+               <p className="text-slate-500 text-xs sm:text-sm lg:text-base leading-relaxed font-medium mb-6 sm:mb-10">
+                 Tomat segar berkualitas tinggi, dipanen saat matang sempurna langsung dari kebun petani mitra.
                </p>
 
-               <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8">
+               <div className="grid grid-cols-2 gap-2.5 sm:gap-5 mb-6 sm:mb-10">
                  {[
-                   { label: 'Panen', val: product.harvestDate, icon: <Calendar size={14} /> },
-                   { label: 'Asal', val: product.village.split(',')[0], icon: <MapPin size={14} /> },
-                   { label: 'Petani', val: product.farmer, icon: <User size={14} /> },
-                   { label: 'Metode', val: 'Organik', icon: <Sprout size={14} /> }
+                   { label: 'Panen', val: product.harvestDate, icon: <Calendar size={13} /> },
+                   { label: 'Petani', val: product.farmer, icon: <User size={13} /> },
+                   { label: 'Metode', val: 'Organik', icon: <Sprout size={13} /> }
                  ].map((item, i) => (
-                    <div key={i} className="flex gap-3 bg-white p-2.5 sm:p-3 rounded-2xl border border-slate-100 shadow-sm min-w-0">
-                       <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center text-brand-500 shrink-0">
-                         {item.icon}
+                    <div key={i} className="flex gap-2.5 sm:gap-4 bg-white p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-100 shadow-xs min-w-0">
+                       <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-slate-50 flex items-center justify-center text-brand-500 shrink-0">
+                         {React.cloneElement(item.icon as React.ReactElement<any>, { size: 14 })}
                        </div>
                        <div className="min-w-0">
-                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">{item.label}</p>
-                         <p className="text-xs font-bold text-slate-700 truncate">{item.val}</p>
+                          <p className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{item.label}</p>
+                          <p className="text-[10px] sm:text-xs font-black text-slate-700 truncate">{item.val}</p>
                        </div>
                     </div>
                  ))}
                </div>
 
-               <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="flex items-center justify-between bg-white border border-slate-200 rounded-2xl p-1 shadow-sm shrink-0">
+               <div className="flex flex-col sm:flex-row gap-3 sm:gap-5">
+                  <div className="flex items-center justify-between bg-white border border-slate-200 rounded-xl sm:rounded-2xl p-1 shadow-xs shrink-0">
                     <button 
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="p-3 text-slate-400 hover:text-brand-600 hover:bg-slate-50 rounded-xl transition-all"
+                      className="p-2 sm:p-3 text-slate-400 hover:text-brand-600 hover:bg-slate-50 rounded-lg sm:rounded-xl transition-all"
                     >
-                      <Minus size={20} />
+                      <Minus size={18} className="sm:w-5 sm:h-5" />
                     </button>
-                    <div className="px-4 text-center">
-                       <span className="text-lg font-black text-slate-800">{quantity}</span>
-                       <span className="text-xs font-bold text-slate-400 ml-1">{product.unit}</span>
+                    <div className="px-3 sm:px-5 text-center min-w-[50px] sm:min-w-[70px]">
+                       <span className="text-base sm:text-xl font-black text-slate-800">{quantity}</span>
+                       <span className="text-[10px] sm:text-xs font-bold text-slate-400 ml-1">{product.unit}</span>
                     </div>
                     <button 
                       onClick={() => setQuantity(quantity + 1)}
-                      className="p-3 text-slate-400 hover:text-brand-600 hover:bg-slate-50 rounded-xl transition-all"
+                      className="p-2 sm:p-3 text-slate-400 hover:text-brand-600 hover:bg-slate-50 rounded-lg sm:rounded-xl transition-all"
                     >
-                      <Plus size={20} />
+                      <Plus size={18} className="sm:w-5 sm:h-5" />
                     </button>
                   </div>
                   <button 
                     onClick={() => onPreOrder(product, quantity)}
-                    className="flex-1 bg-brand-500 hover:bg-brand-600 text-white py-4 rounded-2xl font-black text-sm sm:text-lg shadow-xl shadow-brand-500/30 transition-all flex items-center justify-center gap-3"
+                    className="flex-1 bg-brand-600 hover:bg-brand-700 text-white py-3.5 sm:py-5 rounded-xl sm:rounded-2xl font-black text-xs sm:text-base lg:text-lg shadow-xl shadow-brand-600/20 transition-all flex items-center justify-center gap-2 sm:gap-3 uppercase tracking-tight"
                   >
-                    <ShoppingCart size={20} />
+                    <ShoppingCart size={18} className="sm:w-5 sm:h-5" />
                     Pre-Order Sekarang
                   </button>
                </div>
             </div>
 
-            <div className="flex items-center gap-4 text-slate-400 font-bold text-xs sm:text-sm">
-               <button className="flex items-center gap-2 hover:text-brand-600 transition-colors">
-                  <Share2 size={18} />
+            <div className="flex items-center gap-4 text-slate-400 font-bold text-[10px] sm:text-sm">
+               <button className="flex items-center gap-1.5 hover:text-brand-600 transition-colors">
+                  <Share2 size={16} className="sm:w-[18px] sm:h-[18px]" />
                   Bagikan
                </button>
-               <span className="border-l border-slate-200 h-4" />
-               <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+               <span className="border-l border-slate-200 h-3 sm:h-4" />
+               <div className="flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full animate-pulse" />
                   <span className="truncate">Stok: {product.stock} {product.unit}</span>
                </div>
             </div>
@@ -232,7 +227,7 @@ export default function ProductDetail({ product, onBack, onPreOrder }: ProductDe
                  <MapPin size={28} className="sm:w-8 sm:h-8" />
               </div>
               <h4 className="font-bold text-slate-800 mb-2 text-sm sm:text-base">Traceability Insight</h4>
-              <p className="text-[10px] sm:text-xs text-slate-500 font-medium mb-6">Lacak produk ini sampai ke petak lahan desa {product.village}.</p>
+              <p className="text-[10px] sm:text-xs text-slate-500 font-medium mb-6">Lacak produk ini sampai ke petak lahan desa petani mitra.</p>
               <button className="w-full bg-white text-brand-600 py-3 rounded-xl text-xs font-bold border border-brand-200 hover:bg-brand-500 hover:text-white hover:border-brand-500 transition-all font-display uppercase tracking-widest">
                 Cek Jejak Panen
               </button>

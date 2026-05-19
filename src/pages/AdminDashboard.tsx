@@ -20,13 +20,13 @@ interface AdminDashboardProps {
 }
 
 export default function AdminDashboard({ orders, onConfirmPayment }: AdminDashboardProps) {
-  const [filter, setFilter] = React.useState<'ALL' | 'PENDING'>('PENDING');
+  const [filter, setFilter] = React.useState<'ALL' | 'PENDING' | 'DOCS'>('PENDING');
 
   const paymentPendingOrders = orders.filter(o => 
     o.status === 'WAITING_ADMIN_DP' || o.status === 'WAITING_ADMIN_FINAL'
   );
 
-  const displayOrders = filter === 'PENDING' ? paymentPendingOrders : orders;
+  const displayOrders = filter === 'PENDING' ? paymentPendingOrders : (filter === 'ALL' ? orders : []);
 
   return (
     <div className="flex-1 flex flex-col bg-slate-50 overflow-hidden">
@@ -84,6 +84,14 @@ export default function AdminDashboard({ orders, onConfirmPayment }: AdminDashbo
                  >
                    Semua Transaksi
                  </button>
+                 <button 
+                  onClick={() => setFilter('DOCS')}
+                  className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-tight transition-all ${
+                    filter === 'DOCS' ? 'bg-brand-900 text-white' : 'text-slate-400 hover:text-slate-800'
+                  }`}
+                 >
+                   Verifikasi Berkas
+                 </button>
               </div>
               
               <div className="flex items-center gap-4">
@@ -98,9 +106,34 @@ export default function AdminDashboard({ orders, onConfirmPayment }: AdminDashbo
               </div>
            </div>
 
-           {/* Orders Table */}
+           {/* Orders or Docs Table */}
            <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden">
-              <table className="w-full text-left">
+              {filter === 'DOCS' ? (
+                <div className="p-8 sm:p-20 text-center">
+                   <div className="w-20 h-20 bg-brand-50 rounded-full flex items-center justify-center mx-auto mb-6 text-brand-600">
+                      <ShieldCheck size={40} />
+                   </div>
+                   <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight mb-2">Verifikasi Dokumen Legalitas</h3>
+                   <p className="text-slate-500 font-medium max-w-sm mx-auto mb-8">Antrian verifikasi Akte, NIB, dan Sertifikat Lahan untuk Seller & Buyer Company.</p>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+                      {[
+                        { id: 1, name: 'Pak Joko (Seller)', type: 'Sertifikat Lahan', date: '5 May 2024' },
+                        { id: 2, name: 'PT Panen Jaya (Buyer)', type: 'Akte Pendirian', date: '4 May 2024' }
+                      ].map(doc => (
+                        <div key={doc.id} className="p-6 bg-slate-50 rounded-3xl border border-slate-100 text-left flex items-center justify-between">
+                           <div>
+                              <p className="text-sm font-black text-slate-800">{doc.name}</p>
+                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{doc.type}</p>
+                           </div>
+                           <button className="p-3 bg-brand-600 text-white rounded-xl shadow-lg shadow-brand-600/20 hover:bg-black transition-all">
+                              <Eye size={16} />
+                           </button>
+                        </div>
+                      ))}
+                   </div>
+                </div>
+              ) : (
+                <table className="w-full text-left">
                  <thead>
                     <tr className="border-b border-slate-50">
                        <th className="p-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Transaksi</th>
@@ -169,6 +202,7 @@ export default function AdminDashboard({ orders, onConfirmPayment }: AdminDashbo
                     )}
                  </tbody>
               </table>
+              )}
            </div>
         </div>
       </div>

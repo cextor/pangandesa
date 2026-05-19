@@ -57,7 +57,6 @@ export interface Product {
   price: number;
   unit: string;
   farmer: string;
-  village: string;
   category: string;
   image: string;
   harvestDate: string;
@@ -66,6 +65,20 @@ export interface Product {
   stock: number;
   description: string;
   isPreOrder: boolean;
+}
+
+export interface BuyerRequest {
+  id: string;
+  buyerId: string;
+  buyerName: string;
+  panganType: string;
+  quantity: number;
+  unit: string;
+  deliveryPeriod: string;
+  status: 'OPEN' | 'TAKEN' | 'COMPLETED';
+  fulfilledBy?: string;
+  createdAt: string;
+  budget?: number;
 }
 
 export interface Seller {
