@@ -1,16 +1,10 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
+import React, { useState } from 'react';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import MainLayout from './components/Layout/MainLayout';
+import { useAuth } from './contexts/AuthContext';
+import { useCart } from './contexts/CartContext';
+import { useOrder } from './contexts/OrderContext';
 
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
-import React, { useState, useEffect } from 'react';
-import Sidebar from './components/Layout/Sidebar';
-import Header from './components/Layout/Header';
 import BuyerDashboard from './pages/BuyerDashboard';
 import SellerDashboard from './pages/SellerDashboard';
 import ProductManagement from './pages/seller/ProductManagement';
@@ -23,8 +17,7 @@ import ProductDetail from './components/UI/ProductDetail';
 import Cart from './components/UI/Cart';
 import Tracking from './components/UI/Tracking';
 import AIChatPage from './pages/AIChatPage';
-import ChatBot from './components/Chat/ChatBot';
-import { AppRole, Product, Order, ChatMessage, CartItem } from './types';
+import { Product, Order } from './types';
 import { Settings, Clock } from 'lucide-react';
 
 import AdminDashboard from './pages/AdminDashboard';
@@ -51,479 +44,173 @@ import BrowseBuyerRequests from './pages/seller/BrowseBuyerRequests';
 import LoginPage from './pages/LoginPage';
 
 export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [activeRole, setActiveRole] = useState<AppRole>('buyer');
-  const [activeItem, setActiveItem] = useState('beranda');
+  const navigate = useNavigate();
+  const { isLoggedIn, activeRole, login, setActiveRole } = useAuth();
+  const { cartItems, addToCart, clearCart } = useCart();
+  const { orders, messages, addOrder, updateOrderStatus, sendMessage } = useOrder();
+  
+  // Local state for product browsing (can be moved to a SearchContext later)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isCartOpen, setIsCartOpen] = useState(false);
-  const [isTrackingOpen, setIsTrackingOpen] = useState(false);
-  const [isAIChatOpen, setIsAIChatOpen] = useState(false);
-
-  // New States for Workflow
-  const [orders, setOrders] = React.useState<Order[]>([]);
-  const [messages, setMessages] = React.useState<ChatMessage[]>([]);
-  const [currentOrderId, setCurrentOrderId] = React.useState<string | null>(null);
-  const [cartItems, setCartItems] = React.useState<CartItem[]>([]);
-
-  const handleLogin = (role: AppRole) => {
-    setActiveRole(role);
-    setIsLoggedIn(true);
-    setActiveItem(role === 'buyer' ? 'beranda' : 'dashboard');
-  };
-
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    setActiveItem('beranda');
-    setSelectedProduct(null);
-    setSelectedCategory(null);
-  };
-
-  // Handle role change - reset active item to the default for that role
-  const handleRoleChange = (role: AppRole) => {
-    setActiveRole(role);
-    setActiveItem(role === 'buyer' ? 'beranda' : 'dashboard');
-    setSelectedProduct(null);
-    setSelectedCategory(null);
-    setIsCartOpen(false);
-    setIsTrackingOpen(false);
-    setIsAIChatOpen(false);
-  };
+  const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
 
   const handleAdminConfirmPayment = (orderId: string, type: 'DP' | 'FINAL') => {
-    setOrders(prev => prev.map(o => {
-      if (o.id === orderId) {
-        if (type === 'DP') {
-          return { ...o, status: 'WAITING_HARVEST' as const };
-        } else {
-          return { ...o, status: 'SHIPPING' as const, trackingNumber: 'PROS-' + Math.floor(Math.random()*1000000) };
-        }
-      }
-      return o;
-    }));
-  };
-
-  const handleSendMessage = (orderId: string, content: string, role: string, attachmentType?: 'image' | 'file') => {
-    const newMessage: ChatMessage = {
-      id: Date.now().toString(),
-      orderId,
-      senderId: role,
-      senderRole: role as any,
-      senderName: role === 'buyer' ? 'Pembeli' : role === 'seller' ? 'Petani' : 'Admin',
-      content,
-      text: content,
-      role: role === 'buyer' ? 'user' : 'assistant',
-      timestamp: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-      attachmentType,
-      attachmentUrl: attachmentType === 'image' ? 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?q=80&w=600' : 
-                     attachmentType === 'file' ? 'https://example.com/harvest_report.pdf' : undefined
-    };
-    setMessages(prev => [...prev, newMessage]);
-  };
-
-  const renderContent = () => {
-    if (activeRole === 'admin') {
-      return <AdminDashboard orders={orders} onConfirmPayment={handleAdminConfirmPayment} />;
+    if (type === 'DP') {
+      updateOrderStatus(orderId, 'WAITING_HARVEST');
+    } else {
+      updateOrderStatus(orderId, 'SHIPPING');
     }
+  };
 
-    if (activeRole === 'buyer') {
-      // Full screen overlays/pages take precedence
-      if (isAIChatOpen) {
-        return <AIChatPage role="buyer" onBack={() => {
-          setIsAIChatOpen(false);
-          setActiveItem('beranda');
-        }} />;
-      }
-      if (isTrackingOpen) {
-        return <Tracking onBack={() => {
-          setIsTrackingOpen(false);
-          setActiveItem('beranda');
-        }} />;
-      }
+  // Route protect
+  if (!isLoggedIn) {
+    return (
+      <Routes>
+        <Route path="/login" element={<LoginPage onLogin={async (role) => { await login(role); navigate(`/${role}`); }} />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
+  }
 
-      if (isCartOpen) {
-        return (
+  return (
+    <Routes>
+      <Route path="/" element={<Navigate to={`/${activeRole}`} replace />} />
+
+      {/* ADMIN ROUTES */}
+      <Route path="/admin" element={<MainLayout />}>
+        <Route index element={<AdminDashboard orders={orders} onConfirmPayment={handleAdminConfirmPayment} />} />
+      </Route>
+
+      {/* BUYER ROUTES */}
+      <Route path="/buyer" element={<MainLayout />}>
+        <Route index element={
+          selectedProduct ? (
+            <ProductDetail 
+              product={selectedProduct} 
+              onBack={() => setSelectedProduct(null)}
+              onPreOrder={(p, q) => {
+                setSelectedProduct(null);
+                addToCart(p, q);
+                navigate('/buyer/cart');
+              }}
+            />
+          ) : (
+            <BuyerDashboard 
+              onProductSelect={setSelectedProduct} 
+              onCategorySelect={(cat) => { setSelectedCategory(cat); navigate('/buyer/produk'); }}
+              onTrackingSelect={() => navigate('/buyer/lacak')}
+              onMenuSelect={(m) => navigate(`/buyer/${m}`)}
+            />
+          )
+        } />
+        <Route path="produk" element={<AllProducts onProductSelect={setSelectedProduct} initialCategory={selectedCategory} />} />
+        <Route path="preorder" element={<PreOrderPage onProductSelect={setSelectedProduct} />} />
+        <Route path="kategori" element={<CategoriesPage onCategorySelect={(cat) => { setSelectedCategory(cat); navigate('/buyer/produk'); }} />} />
+        <Route path="promo" element={<PromoPage />} />
+        <Route path="bantuan" element={<HelpPage />} />
+        <Route path="favorit" element={<FavoritesPage onProductSelect={setSelectedProduct} />} />
+        <Route path="pesanan" element={<ActiveOrders orders={orders} onTrack={() => navigate('/buyer/lacak')} />} />
+        <Route path="riwayat" element={<OrderHistory />} />
+        <Route path="request-po" element={<BuyerRequestPO />} />
+        <Route path="alamat" element={<AddressPage />} />
+        <Route path="metode-pembayaran" element={<PaymentMethods />} />
+        <Route path="pengaturan" element={<SettingsPage onNavigate={(m) => navigate(`/buyer/${m}`)} />} />
+        <Route path="profil-detail" element={<ProfileDetailPage onBack={() => navigate('/buyer/pengaturan')} />} />
+        <Route path="ganti-password" element={<ChangePasswordPage onBack={() => navigate('/buyer/pengaturan')} />} />
+        <Route path="pin-keamanan" element={<PinManagementPage onBack={() => navigate('/buyer/pengaturan')} />} />
+        <Route path="lacak" element={
+          orders.find(o => o.status === 'SHIPPING' || o.status === 'DELIVERED') ? (
+            <OrderShipping order={orders.find(o => o.status === 'SHIPPING' || o.status === 'DELIVERED')!} role="buyer" onConfirmReceipt={() => navigate('/buyer')} />
+          ) : <Tracking onBack={() => navigate('/buyer')} />
+        } />
+        
+        <Route path="chat" element={<AIChatPage role="buyer" onBack={() => navigate('/buyer')} />} />
+        <Route path="cart" element={
           <Cart 
-            onBack={() => {
-              setIsCartOpen(false);
-              setActiveItem('beranda');
-            }} 
+            onBack={() => navigate('/buyer')} 
             onCheckout={() => {
-              const total = cartItems.reduce((acc: number, item: CartItem) => acc + (item.price * item.quantity), 0);
+              const total = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
               const newOrder: Order = {
                 id: Math.random().toString(36).substr(2, 9),
                 buyerId: 'user-1',
                 sellerId: 'farmer-1',
                 items: cartItems.map(item => ({
-                  productId: item.id,
-                  name: item.name,
-                  quantity: item.quantity,
-                  price: item.price,
-                  image: item.image,
-                  unit: item.unit
+                  productId: item.id, name: item.name, quantity: item.quantity, price: item.price, image: item.image, unit: item.unit
                 })),
-                totalAmount: total,
-                dpAmount: total * 0.3,
-                remainingAmount: total * 0.7,
+                totalAmount: total, dpAmount: total * 0.3, remainingAmount: total * 0.7,
                 status: 'WAITING_PAYMENT_DP',
-                createdAt: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
-                harvestConfirmedBySeller: false,
-                purchaseConfirmedByBuyer: false
+                createdAt: new Date().toLocaleDateString('id-ID'),
+                harvestConfirmedBySeller: false, purchaseConfirmedByBuyer: false
               };
-              setOrders([newOrder, ...orders]);
+              addOrder(newOrder);
               setCurrentOrderId(newOrder.id);
-              setCartItems([]);
-              setIsCartOpen(false);
-              setActiveItem('transaksi-invoice');
+              clearCart();
+              navigate('/buyer/transaksi-invoice');
             }} 
           />
-        );
-      }
-      
-      if (selectedProduct) {
-        return (
-          <ProductDetail 
-            product={selectedProduct} 
-            onBack={() => setSelectedProduct(null)}
-            onPreOrder={(product, qty) => {
-              console.log('Pre-ordering', product.name, qty);
-              setSelectedProduct(null);
-              setIsCartOpen(true);
-              setActiveItem('pesanan');
-            }}
-          />
-        );
-      }
-
-      // Sidebar menu navigation content
-      switch (activeItem) {
-        case 'beranda':
-          return <BuyerDashboard 
-            onProductSelect={setSelectedProduct} 
-            onCategorySelect={(cat) => {
-              setSelectedCategory(cat);
-              setActiveItem('produk');
-            }}
-            onTrackingSelect={() => {
-              setIsTrackingOpen(true);
-              setActiveItem('lacak');
-            }}
-            onMenuSelect={setActiveItem}
-          />;
-        case 'produk':
-          return <AllProducts 
-            onProductSelect={setSelectedProduct} 
-            initialCategory={selectedCategory} 
-          />;
-        case 'preorder':
-          return <PreOrderPage onProductSelect={setSelectedProduct} />;
-        case 'kategori':
-          return <CategoriesPage onCategorySelect={(cat) => {
-            setSelectedCategory(cat);
-            setActiveItem('produk');
-          }} />;
-        case 'promo':
-          return <PromoPage />;
-        case 'bantuan':
-          return <HelpPage />;
-        case 'untuk-petani':
-          return <AIChatPage role="buyer" onBack={() => setActiveItem('beranda')} />;
-        case 'favorit':
-          return <FavoritesPage onProductSelect={setSelectedProduct} />;
-        case 'pesanan':
-          return <ActiveOrders 
-            orders={orders} 
-            onTrack={(order) => {
-              setIsTrackingOpen(true);
-              setActiveItem('lacak');
-            }} 
-          />;
-        case 'riwayat':
-          return <OrderHistory />;
-        case 'request-po':
-          return <BuyerRequestPO />;
-        case 'alamat':
-          return <AddressPage />;
-        case 'metode-pembayaran':
-          return <PaymentMethods />;
-        case 'pengaturan':
-          return <SettingsPage onNavigate={setActiveItem} />;
-        case 'profil-detail':
-          return <ProfileDetailPage onBack={() => setActiveItem('pengaturan')} />;
-        case 'ganti-password':
-          return <ChangePasswordPage onBack={() => setActiveItem('pengaturan')} />;
-        case 'pin-keamanan':
-          return <PinManagementPage onBack={() => setActiveItem('pengaturan')} />;
-        case 'transaksi-invoice': {
-          const currentOrder = orders.find(o => o.id === currentOrderId);
-          if (!currentOrder) return <BuyerDashboard 
-            onProductSelect={setSelectedProduct} 
-            onCategorySelect={(cat) => { setSelectedCategory(cat); setActiveItem('produk'); }}
-            onTrackingSelect={() => { setIsTrackingOpen(true); setActiveItem('lacak'); }}
-            onMenuSelect={setActiveItem}
-          />;
-          
-          if (currentOrder.status === 'WAITING_PAYMENT_DP' || currentOrder.status === 'WAITING_FINAL_PAYMENT') {
-            return (
-              <Invoice 
-                order={currentOrder} 
-                onConfirm={() => {
-                  const newStatus = currentOrder.status === 'WAITING_PAYMENT_DP' ? 'WAITING_ADMIN_DP' : 'WAITING_ADMIN_FINAL';
-                  setOrders(prev => prev.map(o => o.id === currentOrder.id ? { ...o, status: newStatus as any } : o));
-                  setActiveItem('transaksi-waiting');
-                }} 
-              />
-            );
-          }
-          return null;
-        }
-        case 'transaksi-waiting':
-          return (
-            <div className="flex-1 flex items-center justify-center bg-white p-12 text-center">
-              <div className="max-w-md space-y-6">
-                <div className="w-24 h-24 bg-brand-50 rounded-full flex items-center justify-center mx-auto text-brand-600 animate-pulse border-4 border-brand-100">
-                  <Clock size={40} />
-                </div>
-                <h2 className="text-3xl font-black text-slate-800 uppercase tracking-tight">Menunggu Verifikasi</h2>
-                <p className="text-slate-500 font-medium leading-relaxed">
-                  Pembayaran Anda sedang diverifikasi oleh admin kami (biasanya 5-10 menit). Anda akan dialihkan ke forum panen setelah disetujui.
-                </p>
-                <div className="pt-4 flex gap-4">
-                   <button onClick={() => { setActiveRole('admin' as any); setActiveItem('dashboard'); }} className="flex-1 bg-brand-900 text-white py-4 rounded-2xl font-bold text-xs uppercase">Demo: Buka Admin</button>
-                   <button onClick={() => setActiveItem('beranda')} className="flex-1 border border-slate-200 py-4 rounded-2xl font-bold text-xs uppercase">Kembali Beranda</button>
-                </div>
-              </div>
-            </div>
-          );
-        case 'transaksi-panen': {
-          const harvestOrderBuyer = orders.find(o => 
-            o.status === 'WAITING_HARVEST' || 
-            o.status === 'HARVEST_CONFIRMED_SELLER' ||
-            o.status === 'WAITING_FINAL_PAYMENT'
-          );
-          if (!harvestOrderBuyer) return <BuyerDashboard 
-            onProductSelect={setSelectedProduct} 
-            onCategorySelect={(cat) => { setSelectedCategory(cat); setActiveItem('produk'); }}
-            onTrackingSelect={() => { setIsTrackingOpen(true); setActiveItem('lacak'); }}
-            onMenuSelect={setActiveItem}
-          />;
-          
-          if (harvestOrderBuyer.purchaseConfirmedByBuyer && harvestOrderBuyer.harvestConfirmedBySeller && harvestOrderBuyer.status === 'WAITING_HARVEST') {
-             // In a real app this would be a transition triggered by state change
-             // Here we just allow navigation to invoice
-          }
-
-          return (
-            <OrderForum 
-              order={harvestOrderBuyer} 
-              role="buyer" 
-              messages={messages.filter(m => m.orderId === harvestOrderBuyer.id)}
-              onSendMessage={(c, a) => handleSendMessage(harvestOrderBuyer.id, c, 'buyer', a)}
-              onConfirmPurchase={() => {
-                setOrders(prev => prev.map(o => {
-                  if (o.id === harvestOrderBuyer.id) {
-                    const updated = { ...o, purchaseConfirmedByBuyer: true };
-                    if (o.harvestConfirmedBySeller) {
-                      updated.status = 'WAITING_FINAL_PAYMENT';
-                    }
-                    return updated;
-                  }
-                  return o;
-                }));
-                // If both ready, go to invoice
-                const o = orders.find(oo => oo.id === harvestOrderBuyer.id);
-                if (o?.harvestConfirmedBySeller) {
-                   setCurrentOrderId(harvestOrderBuyer.id);
-                   setActiveItem('transaksi-invoice');
-                }
-              }}
-            />
-          );
-        }
-        case 'lacak':
-        case 'transaksi-tracking': {
-          const shippingOrder = orders.find(o => o.status === 'SHIPPING' || o.status === 'DELIVERED');
-          if (!shippingOrder) return <BuyerDashboard 
-            onProductSelect={setSelectedProduct} 
-            onCategorySelect={(cat) => { setSelectedCategory(cat); setActiveItem('produk'); }}
-            onTrackingSelect={() => { setIsTrackingOpen(true); setActiveItem('lacak'); }}
-            onMenuSelect={setActiveItem}
-          />;
-          
-          return (
-            <OrderShipping 
-              order={shippingOrder} 
-              role="buyer" 
-              onConfirmReceipt={() => {
-                setOrders(prev => prev.map(o => o.id === shippingOrder.id ? { ...o, status: 'COMPLETED' as any } : o));
-                setActiveItem('beranda');
+        } />
+        <Route path="transaksi-invoice" element={
+           orders.find(o => o.id === currentOrderId) ? (
+             <Invoice 
+              order={orders.find(o => o.id === currentOrderId)!} 
+              onConfirm={() => {
+                const currentOrder = orders.find(o => o.id === currentOrderId)!;
+                const newStatus = currentOrder.status === 'WAITING_PAYMENT_DP' ? 'WAITING_ADMIN_DP' : 'WAITING_ADMIN_FINAL';
+                updateOrderStatus(currentOrder.id, newStatus);
+                navigate('/buyer/transaksi-waiting');
               }} 
             />
-          );
-        }
-        default:
-          return <BuyerDashboard 
-            onProductSelect={setSelectedProduct} 
-            onCategorySelect={(cat) => {
-              setSelectedCategory(cat);
-              setActiveItem('produk');
-            }}
-            onTrackingSelect={() => {
-              setIsTrackingOpen(true);
-              setActiveItem('lacak');
-            }}
-            onMenuSelect={setActiveItem}
-          />;
-      }
-    } else {
-      if (isAIChatOpen) {
-        return <AIChatPage role="seller" onBack={() => {
-          setIsAIChatOpen(false);
-          setActiveItem('dashboard');
-        }} />;
-      }
-      
-      switch (activeItem) {
-        case 'dashboard':
-          return <SellerDashboard onNavigate={setActiveItem} />;
-        case 'produk-saya':
-          return <ProductManagement />;
-        case 'ambil-po':
-          return <BrowseBuyerRequests />;
-        case 'panen-produksi':
-          return <HarvestProduction />;
-        case 'pelanggan':
-          return <Customers />;
-        case 'sales-analytics':
-          return <SalesAnalytics onBack={() => setActiveItem('dashboard')} />;
-        case 'pesanan': {
-          const harvestOrder = orders.find(o => o.status === 'WAITING_HARVEST' || o.status === 'HARVEST_CONFIRMED_SELLER');
-          if (harvestOrder) {
-             return (
-               <OrderForum 
-                order={harvestOrder} 
-                role="seller" 
-                messages={messages.filter(m => m.orderId === harvestOrder.id)}
-                onSendMessage={(c, a) => handleSendMessage(harvestOrder.id, c, 'seller', a)}
-                onConfirmHarvest={() => setOrders(prev => prev.map(o => {
-                   if (o.id === harvestOrder.id) {
-                     const updated = { ...o, harvestConfirmedBySeller: true };
-                     if (o.purchaseConfirmedByBuyer) {
-                       updated.status = 'WAITING_FINAL_PAYMENT' as any;
-                     }
-                     return updated;
-                   }
-                   return o;
-                }))}
-              />
-             );
-          }
-          return <SellerDashboard onNavigate={setActiveItem} />;
-        }
-        case 'pre-order':
-        case 'preorder-masuk':
-          return <PreOrderManagement />;
-        case 'profil-detail':
-          return <SellerProfilePage onBack={() => setActiveItem('dashboard')} />;
-        case 'ganti-password':
-          return <ChangePasswordPage onBack={() => setActiveItem('dashboard')} />;
-        case 'pin-keamanan':
-          return <PinManagementPage onBack={() => setActiveItem('dashboard')} />;
-        default:
-          return (
-            <div className="flex-1 flex items-center justify-center bg-white p-12">
-               <div className="text-center">
-                  <div className="w-24 h-24 bg-brand-50 rounded-full flex items-center justify-center mx-auto mb-6 text-brand-600">
-                     <Settings size={48} className="animate-spin-slow" />
-                  </div>
-                  <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tight">Halaman {activeItem} sedang dikembangkan</h3>
-                  <p className="text-slate-400 mt-2 font-medium">Fitur ini akan segera hadir untuk membantu operasional Anda.</p>
-                  <button 
-                    onClick={() => setActiveItem('dashboard')}
-                    className="mt-8 bg-brand-600 text-white px-8 py-3 rounded-2xl font-bold hover:bg-brand-700 transition-all"
-                  >
-                    Kembali ke Dashboard
-                  </button>
-               </div>
+           ) : <Navigate to="/buyer" />
+        } />
+        <Route path="transaksi-waiting" element={
+          <div className="flex-1 flex items-center justify-center bg-white p-12 text-center">
+            <div className="max-w-md space-y-6">
+              <div className="w-24 h-24 bg-brand-50 rounded-full flex items-center justify-center mx-auto text-brand-600 animate-pulse border-4 border-brand-100">
+                <Clock size={40} />
+              </div>
+              <h2 className="text-3xl font-black text-slate-800 uppercase tracking-tight">Menunggu Verifikasi</h2>
+              <button onClick={() => { setActiveRole('admin'); navigate('/admin'); }} className="mt-4 bg-brand-900 text-white py-4 px-8 rounded-2xl font-bold text-xs uppercase">Demo: Buka Admin</button>
             </div>
-          );
-      }
-    }
-  };
-
-  return (
-    !isLoggedIn ? (
-      <LoginPage onLogin={handleLogin} />
-    ) : (
-      <div className="flex bg-slate-50 min-h-screen">
-        <Sidebar 
-          activeRole={activeRole} 
-          onRoleChange={handleRoleChange} 
-          activeItem={activeItem}
-          isOpen={isSidebarOpen}
-          onClose={() => setIsSidebarOpen(false)}
-          onItemChange={(item) => {
-            setActiveItem(item);
-            // Reset special states when moving between main menu items
-            setIsAIChatOpen(false);
-            setIsCartOpen(false);
-            setIsTrackingOpen(false);
-            setSelectedProduct(null);
-            setSelectedCategory(null);
-
-            // Handle specific items that act as triggers
-            if (item === 'chat' && activeRole === 'buyer') {
-              setIsAIChatOpen(true);
-            } else if (item === 'ai-assistant' && activeRole === 'seller') {
-              setIsAIChatOpen(true);
-            } else if (item === 'pesanan' && activeRole === 'buyer') {
-              setIsCartOpen(true);
-            } else if (item === 'lacak' && activeRole === 'buyer') {
-              setIsTrackingOpen(true);
-            }
-          }}
-        />
-        <div className="flex-1 flex flex-col h-screen overflow-hidden">
-          <Header 
-            onMenuClick={() => setIsSidebarOpen(true)}
-            onCartClick={() => {
-              if (activeRole === 'buyer') {
-                setIsCartOpen(true);
-                setSelectedProduct(null);
-                setActiveItem('pesanan');
-              }
-            }} 
-            onLogout={handleLogout}
-            onNavigate={setActiveItem}
-            activeRole={activeRole}
+          </div>
+        } />
+        <Route path="transaksi-panen" element={
+          <OrderForum 
+            order={orders.find(o => o.status === 'WAITING_HARVEST' || o.status === 'HARVEST_CONFIRMED_SELLER' || o.status === 'WAITING_FINAL_PAYMENT')!} 
+            role="buyer" 
+            messages={messages.filter(m => m.orderId === orders.find(o => o.status === 'WAITING_HARVEST')?.id)}
+            onSendMessage={(c, a) => sendMessage('123', c, 'buyer', a)}
+            onConfirmPurchase={() => {}}
           />
-          <main className="flex-1 overflow-hidden flex flex-col">
-            {renderContent()}
-          </main>
-        </div>
+        } />
+      </Route>
+
+      {/* SELLER ROUTES */}
+      <Route path="/seller" element={<MainLayout />}>
+        <Route index element={<SellerDashboard onNavigate={(p) => navigate(`/seller/${p}`)} />} />
+        <Route path="produk-saya" element={<ProductManagement />} />
+        <Route path="ambil-po" element={<BrowseBuyerRequests />} />
+        <Route path="panen-produksi" element={<HarvestProduction />} />
+        <Route path="pelanggan" element={<Customers />} />
+        <Route path="sales-analytics" element={<SalesAnalytics onBack={() => navigate('/seller')} />} />
+        <Route path="preorder-masuk" element={<PreOrderManagement />} />
+        <Route path="ai-assistant" element={<AIChatPage role="seller" onBack={() => navigate('/seller')} />} />
+        <Route path="profil-detail" element={<SellerProfilePage onBack={() => navigate('/seller')} />} />
+        <Route path="ganti-password" element={<ChangePasswordPage onBack={() => navigate('/seller')} />} />
+        <Route path="pin-keamanan" element={<PinManagementPage onBack={() => navigate('/seller')} />} />
         
-        {/* Scrollbar styles */}
-        <style>{`
-          .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-          }
-          .custom-scrollbar::-webkit-scrollbar-track {
-            background: #f1f5f9;
-          }
-          .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 10px;
-          }
-          .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-          }
-          .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-          }
-        `}</style>
-      </div>
-    )
+        <Route path="*" element={
+          <div className="flex-1 flex items-center justify-center bg-white p-12">
+            <div className="text-center">
+              <Settings size={48} className="animate-spin-slow mx-auto text-brand-600 mb-6" />
+              <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tight">Halaman sedang dikembangkan</h3>
+              <button onClick={() => navigate('/seller')} className="mt-8 bg-brand-600 text-white px-8 py-3 rounded-2xl font-bold">Kembali</button>
+            </div>
+          </div>
+        } />
+      </Route>
+      
+      {/* Fallback Catch-all Route */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
-
