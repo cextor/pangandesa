@@ -1,8 +1,8 @@
 import React from 'react';
 import ProductCard from '../../components/UI/ProductCard';
-import { MOCK_PRODUCTS } from '../../constants';
-import { Search, SlidersHorizontal } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { Product } from '../../types';
+import { ProductService } from '../../services/ProductService';
 
 interface AllProductsProps {
   onProductSelect: (product: Product) => void;
@@ -10,6 +10,8 @@ interface AllProductsProps {
 }
 
 export default function AllProducts({ onProductSelect, initialCategory }: AllProductsProps) {
+  const [products, setProducts] = React.useState<Product[]>([]);
+  const [loading, setLoading] = React.useState(true);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [activeCategory, setActiveCategory] = React.useState<string | null>(initialCategory || null);
 
@@ -17,13 +19,20 @@ export default function AllProducts({ onProductSelect, initialCategory }: AllPro
     setActiveCategory(initialCategory || null);
   }, [initialCategory]);
 
-  const filteredProducts = MOCK_PRODUCTS.filter((p) => {
+  React.useEffect(() => {
+    ProductService.getAllProducts().then((data) => {
+      setProducts(data || []);
+      setLoading(false);
+    });
+  }, []);
+
+  const filteredProducts = products.filter((p) => {
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = activeCategory ? p.category === activeCategory : true;
     return matchesSearch && matchesCategory;
   });
 
-  const categories = ['Semua', ...new Set(MOCK_PRODUCTS.map(p => p.category))];
+  const categories = ['Semua', ...new Set(products.map(p => p.category).filter(Boolean))];
 
   return (
     <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50/30">
@@ -67,7 +76,17 @@ export default function AllProducts({ onProductSelect, initialCategory }: AllPro
           ))}
         </div>
 
-        {filteredProducts.length > 0 ? (
+        {loading ? (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-white rounded-3xl p-4 border border-slate-100 animate-pulse space-y-4">
+                <div className="aspect-square bg-slate-100 rounded-2xl w-full" />
+                <div className="h-4 bg-slate-100 rounded-md w-2/3" />
+                <div className="h-6 bg-slate-100 rounded-md w-1/3" />
+              </div>
+            ))}
+          </div>
+        ) : filteredProducts.length > 0 ? (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8">
             {filteredProducts.map((product) => (
               <ProductCard key={product.id} product={product} onPreview={onProductSelect} />

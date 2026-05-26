@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Plus, 
@@ -14,10 +14,14 @@ import {
 } from 'lucide-react';
 import { BuyerRequest } from '../../types';
 import { MOCK_BUYER_REQUESTS } from '../../constants';
+import apiClient from '../../services/apiClient';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function BuyerRequestPO() {
-  const [requests, setRequests] = useState<BuyerRequest[]>(MOCK_BUYER_REQUESTS);
+  const [requests, setRequests] = useState<BuyerRequest[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     panganType: '',
     quantity: 0,
@@ -26,19 +30,64 @@ export default function BuyerRequestPO() {
     budget: 0
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    apiClient.get('/buyer-requests')
+      .then((res) => {
+        const liveRequests = (res.data.data || []).map((req: any) => ({
+          id: req.id.toString(),
+          buyerId: req.buyer_id.toString(),
+          buyerName: req.buyer_name || 'Andi Wijaya',
+          panganType: req.pangan_type,
+          quantity: Number(req.quantity),
+          unit: req.unit,
+          deliveryPeriod: req.delivery_period,
+          status: req.status,
+          budget: Number(req.budget),
+          createdAt: new Date(req.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+        }));
+        setRequests(liveRequests);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('Failed to load live requests', err);
+        setRequests(MOCK_BUYER_REQUESTS);
+        setLoading(false);
+      });
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newReq: BuyerRequest = {
-      id: Math.random().toString(36).substr(2, 9),
-      buyerId: 'user-1',
-      buyerName: 'Budi Santoso',
-      ...formData,
-      status: 'OPEN',
-      createdAt: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+    const payload = {
+      buyer_id: user?.id || 3, // Default to user 3 (Andi Wijaya) in database
+      pangan_type: formData.panganType,
+      quantity: formData.quantity,
+      unit: formData.unit,
+      budget: formData.budget,
+      delivery_period: formData.deliveryPeriod,
+      status: 'OPEN'
     };
-    setRequests([newReq, ...requests]);
-    setIsAdding(false);
-    setFormData({ panganType: '', quantity: 0, unit: 'kg', deliveryPeriod: '', budget: 0 });
+
+    try {
+      const res = await apiClient.post('/buyer-requests', payload);
+      const created = res.data.data;
+      const newReq: BuyerRequest = {
+        id: created.id.toString(),
+        buyerId: created.buyer_id.toString(),
+        buyerName: user?.name || 'Andi Wijaya',
+        panganType: created.pangan_type,
+        quantity: Number(created.quantity),
+        unit: created.unit,
+        deliveryPeriod: created.delivery_period,
+        budget: Number(created.budget),
+        status: created.status,
+        createdAt: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+      };
+      setRequests(prev => [newReq, ...prev]);
+      setIsAdding(false);
+      setFormData({ panganType: '', quantity: 0, unit: 'kg', deliveryPeriod: '', budget: 0 });
+    } catch (err) {
+      console.error('Failed to post PO request', err);
+    }
   };
 
   return (
@@ -68,8 +117,19 @@ export default function BuyerRequestPO() {
           <div className="lg:col-span-2 space-y-6">
             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 ml-1">Request Aktif Anda</h3>
             
-            <AnimatePresence mode="popLayout">
-              {requests.map((req) => (
+            {loading ? (
+              [1, 2].map((i) => (
+                <div key={i} className="bg-white rounded-[32px] p-6 border border-slate-100 animate-pulse flex items-center gap-6">
+                   <div className="w-16 h-16 bg-slate-100 rounded-2xl shrink-0" />
+                   <div className="flex-1 space-y-3">
+                      <div className="h-6 bg-slate-100 rounded w-1/3" />
+                      <div className="h-4 bg-slate-100 rounded w-1/4" />
+                   </div>
+                </div>
+              ))
+            ) : (
+              <AnimatePresence mode="popLayout">
+                {requests.map((req) => (
                 <motion.div 
                   layout
                   key={req.id}
@@ -129,7 +189,8 @@ export default function BuyerRequestPO() {
                   )}
                 </motion.div>
               ))}
-            </AnimatePresence>
+              </AnimatePresence>
+            )}
           </div>
 
           {/* Guidelines */}

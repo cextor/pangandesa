@@ -26,7 +26,9 @@ class AuthController extends ResourceController
             $password = $this->request->getVar('password');
             $user = $userModel->where('email', $email)->first();
             
-            // In a real app: if (!password_verify($password, $user['password']))
+            if (!$user || !password_verify($password, $user['password'])) {
+                return $this->failUnauthorized('Invalid credentials');
+            }
         }
 
         if (!$user) {

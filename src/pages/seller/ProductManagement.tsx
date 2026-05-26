@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Product } from '../../types';
 import ProductForm from '../../components/Seller/ProductForm';
+import { ProductService } from '../../services/ProductService';
 
 const INITIAL_PRODUCTS: Product[] = [
   { 
@@ -66,30 +67,47 @@ const INITIAL_PRODUCTS: Product[] = [
 ];
 
 export default function ProductManagement() {
-  const [products, setProducts] = React.useState<Product[]>(INITIAL_PRODUCTS);
+  const [products, setProducts] = React.useState<Product[]>([]);
   const [isAddingMode, setIsAddingMode] = React.useState(false);
   const [editingProduct, setEditingProduct] = React.useState<Product | null>(null);
   const [selectedProductForDetail, setSelectedProductForDetail] = React.useState<Product | null>(null);
   const [searchQuery, setSearchQuery] = React.useState('');
 
-  const handleDelete = (id: string) => {
+  React.useEffect(() => {
+    ProductService.getAllProducts().then((data) => {
+      // Filter products for this seller (ID: 2) or show all for demo
+      const sellerProducts = (data || []).filter(p => p.sellerId === 2 || p.sellerId === '2' || !p.sellerId);
+      setProducts(sellerProducts.length > 0 ? sellerProducts : INITIAL_PRODUCTS);
+    });
+  }, []);
+
+  const handleDelete = async (id: string) => {
     if (window.confirm('Apakah Anda yakin ingin menghapus produk ini?')) {
-      setProducts(products.filter(p => p.id !== id));
+      try {
+        await ProductService.deleteProduct(id);
+        setProducts(products.filter(p => p.id !== id));
+        setSelectedProductForDetail(null);
+      } catch (err) {
+        alert('Gagal menghapus produk dari database.');
+      }
     }
   };
 
-  const handleSave = (productData: Partial<Product>) => {
+  const handleSave = async (productData: Partial<Product>) => {
     if (editingProduct) {
-      setProducts(products.map(p => p.id === editingProduct.id ? { ...p, ...productData } as Product : p));
+      try {
+        const updated = await ProductService.updateProduct(editingProduct.id, productData);
+        setProducts(products.map(p => p.id === editingProduct.id ? updated : p));
+      } catch (err) {
+        alert('Gagal memperbarui produk di database.');
+      }
     } else {
-      const newProduct: Product = {
-        ...productData,
-        id: Math.random().toString(36).substr(2, 9),
-        farmer: 'Pak Joko',
-        rating: 0,
-        reviewCount: 0,
-      } as Product;
-      setProducts([newProduct, ...products]);
+      try {
+        const newProduct = await ProductService.createProduct(productData);
+        setProducts([newProduct, ...products]);
+      } catch (err) {
+        alert('Gagal menambahkan produk baru ke database.');
+      }
     }
     setIsAddingMode(false);
     setEditingProduct(null);

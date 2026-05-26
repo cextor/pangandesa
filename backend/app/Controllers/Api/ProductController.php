@@ -38,4 +38,24 @@ class ProductController extends ResourceController
         
         return $this->failValidationErrors($this->model->errors());
     }
+
+    public function update($id = null)
+    {
+        $data = $this->request->getJSON(true) ?? $this->request->getRawInput();
+        
+        if ($this->model->update($id, $data)) {
+            return $this->respond(['status' => 200, 'message' => 'Product updated successfully', 'data' => $data]);
+        }
+        
+        return $this->failValidationErrors($this->model->errors());
+    }
+
+    public function delete($id = null)
+    {
+        if ($this->model->delete($id)) {
+            return $this->respondDeleted(['status' => 200, 'message' => 'Product deleted successfully']);
+        }
+        
+        return $this->failServerError('Failed to delete product');
+    }
 }

@@ -67,8 +67,16 @@ function ActionModal({ isOpen, onClose, title, children }: DashboardModalProps) 
   );
 }
 
-export default function SellerDashboard({ onNavigate }: { onNavigate: (item: string) => void }) {
+export default function SellerDashboard({ orders = [], onNavigate }: { orders?: any[], onNavigate: (item: string) => void }) {
   const [modalContent, setModalContent] = React.useState<{ title: string, content: React.ReactNode } | null>(null);
+
+  const activeOrders = (orders || []).filter(o => 
+    o.status === 'WAITING_HARVEST' || 
+    o.status === 'HARVEST_CONFIRMED_SELLER' || 
+    o.status === 'WAITING_FINAL_PAYMENT' || 
+    o.status === 'WAITING_PAYMENT_DP' || 
+    o.status === 'WAITING_ADMIN_DP'
+  );
 
   const handleAction = (title: string, content: React.ReactNode) => {
     setModalContent({ title, content });
@@ -179,30 +187,56 @@ export default function SellerDashboard({ onNavigate }: { onNavigate: (item: str
                 </button>
               </div>
               <div className="space-y-4 sm:space-y-6">
-                 <OrderItem 
-                    img="https://images.unsplash.com/photo-1592924357228-91a4daadcfea?q=80&w=200" 
-                    name="Tomat Segar"
-                    weight="2 kg"
-                    customer="Andi Wijaya"
-                    location="Gegerkalong"
-                    date="10 Mei"
-                    price="Rp 32rb"
-                    status="Menunggu"
-                    statusColor="bg-orange-50 text-orange-600 border-orange-100"
-                    onClick={() => handleAction('Detail Pesanan: Tomat Segar', <p className="font-medium text-slate-600">Pesanan dari Andi Wijaya (Gegerkalong) sebanyak 2kg Tomat Segar. Silakan konfirmasi stok.</p>)}
-                 />
-                 <OrderItem 
-                    img="https://images.unsplash.com/photo-1618161546200-5047b11933c0?q=80&w=400" 
-                    name="Cabai Merah"
-                    weight="1 kg"
-                    customer="Siti Khalimah"
-                    location="Sukasari"
-                    date="12 Mei"
-                    price="Rp 28rb"
-                    status="Dikonfirmasi"
-                    statusColor="bg-emerald-50 text-emerald-600 border-emerald-100"
-                    onClick={() => handleAction('Detail Pesanan: Cabai Merah', <p className="font-medium text-slate-600">Pesanan Siti Khalimah (Sukasari) telah dikonfirmasi dan menunggu jadwal panen.</p>)}
-                 />
+                 {activeOrders.length > 0 ? (
+                   activeOrders.map((o: any) => (
+                     <OrderItem 
+                        key={o.id}
+                        img={o.items[0]?.image || "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?q=80&w=200"} 
+                        name={o.items[0]?.name || "Produk"}
+                        weight={`${o.items[0]?.quantity || 1} ${o.items[0]?.unit || 'kg'}`}
+                        customer="Andi Wijaya"
+                        location="Sukamaju"
+                        date={o.createdAt}
+                        price={`Rp ${o.totalAmount.toLocaleString('id-ID')}`}
+                        status={o.status === 'WAITING_PAYMENT_DP' || o.status === 'WAITING_ADMIN_DP' ? 'Menunggu Bayar' : (o.status === 'WAITING_HARVEST' ? 'Proses Panen' : 'Panen Selesai')}
+                        statusColor={o.status === 'WAITING_HARVEST' ? "bg-orange-50 text-orange-600 border-orange-100" : "bg-emerald-50 text-emerald-600 border-emerald-100"}
+                        onClick={() => {
+                          if (o.status === 'WAITING_HARVEST' || o.status === 'HARVEST_CONFIRMED_SELLER' || o.status === 'WAITING_FINAL_PAYMENT') {
+                            onNavigate('transaksi-panen');
+                          } else {
+                            handleAction(`Detail Pesanan: ${o.items[0]?.name}`, <p className="font-medium text-slate-600">Pesanan ID #{o.id.toUpperCase()} sedang menunggu verifikasi pembayaran DP oleh Admin.</p>);
+                          }
+                        }}
+                     />
+                   ))
+                 ) : (
+                   <>
+                     <OrderItem 
+                        img="https://images.unsplash.com/photo-1592924357228-91a4daadcfea?q=80&w=200" 
+                        name="Tomat Segar"
+                        weight="2 kg"
+                        customer="Andi Wijaya"
+                        location="Gegerkalong"
+                        date="10 Mei"
+                        price="Rp 32rb"
+                        status="Menunggu"
+                        statusColor="bg-orange-50 text-orange-600 border-orange-100"
+                        onClick={() => handleAction('Detail Pesanan: Tomat Segar', <p className="font-medium text-slate-600">Pesanan dari Andi Wijaya (Gegerkalong) sebanyak 2kg Tomat Segar. Silakan konfirmasi stok.</p>)}
+                     />
+                     <OrderItem 
+                        img="https://images.unsplash.com/photo-1618161546200-5047b11933c0?q=80&w=400" 
+                        name="Cabai Merah"
+                        weight="1 kg"
+                        customer="Siti Khalimah"
+                        location="Sukasari"
+                        date="12 Mei"
+                        price="Rp 28rb"
+                        status="Dikonfirmasi"
+                        statusColor="bg-emerald-50 text-emerald-600 border-emerald-100"
+                        onClick={() => handleAction('Detail Pesanan: Cabai Merah', <p className="font-medium text-slate-600">Pesanan Siti Khalimah (Sukasari) telah dikonfirmasi dan menunggu jadwal panen.</p>)}
+                     />
+                   </>
+                 )}
               </div>
               <button 
                 onClick={() => handleAction('Kelola Sistem PO', <p className="font-medium text-slate-600">Halaman pengaturan alur kerja Pre-Order.</p>)}

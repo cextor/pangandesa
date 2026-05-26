@@ -1,6 +1,6 @@
 import React from 'react';
 import ProductCard from '../../components/UI/ProductCard';
-import { MOCK_PRODUCTS } from '../../constants';
+import { ProductService } from '../../services/ProductService';
 import { Calendar, Info, Clock, CheckCircle2 } from 'lucide-react';
 import { Product } from '../../types';
 
@@ -9,7 +9,17 @@ interface PreOrderPageProps {
 }
 
 export default function PreOrderPage({ onProductSelect }: PreOrderPageProps) {
-  // All our mock products are currently set up as pre-order candidates
+  const [products, setProducts] = React.useState<Product[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    ProductService.getAllProducts().then((data) => {
+      const preOrders = (data || []).filter(p => p.isPreOrder || p.is_preorder || p.is_preorder === 1);
+      setProducts(preOrders);
+      setLoading(false);
+    });
+  }, []);
+
   return (
     <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50/30">
       <div className="max-w-[1400px] mx-auto p-4 sm:p-8 lg:p-12">
@@ -26,9 +36,23 @@ export default function PreOrderPage({ onProductSelect }: PreOrderPageProps) {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16">
            <div className="order-2 lg:order-1 lg:col-span-8 grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-8">
-              {MOCK_PRODUCTS.map((product) => (
-                <ProductCard key={product.id} product={product} onPreview={onProductSelect} />
-              ))}
+              {loading ? (
+                 [1, 2, 3].map((i) => (
+                   <div key={i} className="bg-white rounded-[24px] sm:rounded-[32px] p-4 border border-slate-100 animate-pulse space-y-4" key={i}>
+                      <div className="aspect-square bg-slate-100 rounded-2xl w-full" />
+                      <div className="h-4 bg-slate-100 rounded-md w-2/3" />
+                      <div className="h-6 bg-slate-100 rounded-md w-1/3" />
+                   </div>
+                 ))
+              ) : products.length > 0 ? (
+                 products.map((product) => (
+                   <ProductCard key={product.id} product={product} onPreview={onProductSelect} />
+                 ))
+              ) : (
+                 <div className="col-span-full bg-white rounded-3xl p-10 text-center border border-slate-100">
+                    <p className="text-slate-400 font-bold uppercase">Belum ada pre-order tersedia</p>
+                 </div>
+              )}
            </div>
            
            <div className="order-1 lg:order-2 lg:col-span-4 space-y-6 sm:space-y-10">

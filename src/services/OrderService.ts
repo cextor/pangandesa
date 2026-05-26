@@ -7,7 +7,30 @@ export const OrderService = {
       const response = await apiClient.get('/orders', {
         params: { user_id: userId, role }
       });
-      return response.data.data;
+      const data = response.data.data;
+      return (data || []).map((o: any) => ({
+        id: o.id,
+        buyerId: String(o.buyer_id),
+        sellerId: String(o.seller_id),
+        totalAmount: Number(o.total_amount),
+        dpAmount: Number(o.dp_amount),
+        remainingAmount: Number(o.remaining_amount),
+        status: o.status,
+        createdAt: o.created_at ? new Date(o.created_at).toLocaleDateString('id-ID') : new Date().toLocaleDateString('id-ID'),
+        harvestConfirmedBySeller: o.harvest_confirmed_seller == 1,
+        purchaseConfirmedByBuyer: o.purchase_confirmed_buyer == 1,
+        paymentMethod: o.payment_method,
+        trackingNumber: o.tracking_number,
+        bastUrl: o.bast_url,
+        items: (o.items || []).map((item: any) => ({
+          productId: String(item.product_id),
+          name: item.name,
+          quantity: Number(item.quantity),
+          price: Number(item.price),
+          image: item.image || 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?q=80&w=1000&auto=format&fit=crop',
+          unit: item.unit
+        }))
+      }));
     } catch (error) {
       console.error('Failed to get orders', error);
       return [];
@@ -15,8 +38,39 @@ export const OrderService = {
   },
 
   createOrder: async (orderData: Partial<Order>): Promise<Order> => {
-    const response = await apiClient.post('/orders', orderData);
-    return response.data.data;
+    // Map camelCase to snake_case payload
+    const payload = {
+      id: orderData.id,
+      buyerId: orderData.buyerId,
+      sellerId: orderData.sellerId,
+      totalAmount: orderData.totalAmount,
+      dpAmount: orderData.dpAmount,
+      remainingAmount: orderData.remainingAmount,
+      items: (orderData.items || []).map(item => ({
+        productId: item.productId,
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+        unit: item.unit
+      }))
+    };
+    const response = await apiClient.post('/orders', payload);
+    const o = response.data.data;
+    
+    // Map back
+    return {
+      id: o.id,
+      buyerId: String(o.buyer_id),
+      sellerId: String(o.seller_id),
+      totalAmount: Number(o.total_amount),
+      dpAmount: Number(o.dp_amount),
+      remainingAmount: Number(o.remaining_amount),
+      status: o.status,
+      createdAt: new Date().toLocaleDateString('id-ID'),
+      harvestConfirmedBySeller: false,
+      purchaseConfirmedByBuyer: false,
+      items: orderData.items || []
+    };
   },
 
   updateOrderStatus: async (orderId: string, status: string): Promise<void> => {

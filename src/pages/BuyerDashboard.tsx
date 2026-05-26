@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import ProductCard from '../components/UI/ProductCard';
 import { MOCK_PRODUCTS, CATEGORIES } from '../constants';
+import { ProductService } from '../services/ProductService';
 
 interface BuyerDashboardProps {
   onProductSelect: (product: any) => void;
@@ -32,6 +33,16 @@ interface BuyerDashboardProps {
 }
 
 export default function BuyerDashboard({ onProductSelect, onCategorySelect, onTrackingSelect, onMenuSelect }: BuyerDashboardProps) {
+  const [products, setProducts] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    ProductService.getAllProducts().then((data) => {
+      setProducts(data && data.length > 0 ? data : MOCK_PRODUCTS);
+      setLoading(false);
+    });
+  }, []);
+
   const popularCategories = [
     { name: 'Sayuran', icon: '🥬' },
     { name: 'Buah', icon: '🍎' },
@@ -41,13 +52,6 @@ export default function BuyerDashboard({ onProductSelect, onCategorySelect, onTr
     { name: 'Olahan Desa', icon: '🍯' },
     { name: 'Produk Organik', icon: '🌿' },
     { name: 'Minuman', icon: '🧃' },
-  ];
-
-  const bestSellers = [
-    { name: 'Kentang Granola', price: 12000, unit: 'kg', rating: 4.8, reviews: 86, img: 'https://images.unsplash.com/photo-1518977676601-b53f02bad675?q=80&w=200&auto=format&fit=crop' },
-    { name: 'Bayam Organik', price: 8000, unit: 'ikat', rating: 4.9, reviews: 123, img: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?q=80&w=200&auto=format&fit=crop' },
-    { name: 'Melon Premium', price: 25000, unit: 'kg', rating: 4.8, reviews: 74, img: 'https://images.unsplash.com/photo-1571575173749-bef820af310d?q=80&w=200&auto=format&fit=crop' },
-    { name: 'Telur Ayam Kampung', price: 32000, unit: 'kg', rating: 4.9, reviews: 109, img: 'https://images.unsplash.com/photo-1582722872445-44c501f3c834?q=80&w=200&auto=format&fit=crop' },
   ];
 
   const formatter = new Intl.NumberFormat('id-ID', {
@@ -172,11 +176,23 @@ export default function BuyerDashboard({ onProductSelect, onCategorySelect, onTr
                 Lihat Semua
               </button>
            </div>
-           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8">
-             {MOCK_PRODUCTS.map((p) => (
-               <ProductCard key={p.id} product={p} onPreview={onProductSelect} />
-             ))}
-           </div>
+           {loading ? (
+             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8">
+               {[1, 2, 3, 4].map((i) => (
+                 <div key={i} className="bg-white rounded-[24px] sm:rounded-[32px] p-4 border border-slate-100 animate-pulse space-y-4">
+                    <div className="aspect-square bg-slate-100 rounded-2xl w-full" />
+                    <div className="h-4 bg-slate-100 rounded-md w-2/3" />
+                    <div className="h-6 bg-slate-100 rounded-md w-1/3" />
+                 </div>
+               ))}
+             </div>
+           ) : (
+             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8">
+               {products.map((p) => (
+                 <ProductCard key={p.id} product={p} onPreview={onProductSelect} />
+               ))}
+             </div>
+           )}
         </section>
 
         {/* Best Sellers Section */}
@@ -190,27 +206,41 @@ export default function BuyerDashboard({ onProductSelect, onCategorySelect, onTr
                 Lihat Semua
               </button>
            </div>
-           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-              {MOCK_PRODUCTS.slice(0, 4).map((p, i) => (
-                <div 
-                  key={i} 
-                  onClick={() => onProductSelect(p)}
-                  className="bg-white rounded-[20px] sm:rounded-[32px] p-3 sm:p-4 flex items-center gap-3 sm:gap-4 border border-slate-100 shadow-sm hover:shadow-xl hover:scale-[1.02] transition-all cursor-pointer group"
-                >
-                   <div className="w-14 h-14 sm:w-20 sm:h-20 shrink-0 rounded-xl sm:rounded-2xl overflow-hidden border border-slate-50">
-                      <img src={p.image} className="w-full h-full object-cover" alt={p.name} />
-                   </div>
-                   <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-slate-800 text-[11px] sm:text-sm mb-0.5 group-hover:text-brand-600 transition-colors line-clamp-1">{p.name}</h4>
-                      <p className="text-xs sm:text-base font-black text-brand-600 mb-0.5 whitespace-nowrap">{formatter.format(p.price)}<span className="text-[9px] sm:text-[10px] text-slate-400 font-medium lowercase">/{p.unit}</span></p>
-                      <div className="flex items-center gap-1">
-                         <Star size={10} className="text-yellow-400 fill-yellow-400 sm:w-3 sm:h-3" />
-                         <span className="text-[9px] sm:text-[10px] font-bold text-slate-700">{p.rating}</span>
-                      </div>
-                   </div>
-                </div>
-              ))}
-           </div>
+           {loading ? (
+             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+               {[1, 2, 3, 4].map((i) => (
+                 <div key={i} className="bg-white rounded-[20px] sm:rounded-[32px] p-4 border border-slate-100 animate-pulse flex items-center gap-4">
+                    <div className="w-20 h-20 bg-slate-100 rounded-2xl shrink-0" />
+                    <div className="flex-1 space-y-2">
+                       <div className="h-4 bg-slate-100 rounded w-2/3" />
+                       <div className="h-4 bg-slate-100 rounded w-1/2" />
+                    </div>
+                 </div>
+               ))}
+             </div>
+           ) : (
+             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                {products.slice(0, 4).map((p, i) => (
+                  <div 
+                    key={i} 
+                    onClick={() => onProductSelect(p)}
+                    className="bg-white rounded-[20px] sm:rounded-[32px] p-3 sm:p-4 flex items-center gap-3 sm:gap-4 border border-slate-100 shadow-sm hover:shadow-xl hover:scale-[1.02] transition-all cursor-pointer group"
+                  >
+                     <div className="w-14 h-14 sm:w-20 sm:h-20 shrink-0 rounded-xl sm:rounded-2xl overflow-hidden border border-slate-50">
+                        <img src={p.image} className="w-full h-full object-cover" alt={p.name} />
+                     </div>
+                     <div className="flex-1 min-w-0">
+                        <h4 className="font-bold text-slate-800 text-[11px] sm:text-sm mb-0.5 group-hover:text-brand-600 transition-colors line-clamp-1">{p.name}</h4>
+                        <p className="text-xs sm:text-base font-black text-brand-600 mb-0.5 whitespace-nowrap">{formatter.format(p.price)}<span className="text-[9px] sm:text-[10px] text-slate-400 font-medium lowercase">/{p.unit}</span></p>
+                        <div className="flex items-center gap-1">
+                           <Star size={10} className="text-yellow-400 fill-yellow-400 sm:w-3 sm:h-3" />
+                           <span className="text-[9px] sm:text-[10px] font-bold text-slate-700">{p.rating}</span>
+                        </div>
+                     </div>
+                  </div>
+                ))}
+             </div>
+           )}
         </section>
 
         {/* How it Works Section */}

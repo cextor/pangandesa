@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { 
   Sprout, 
@@ -13,10 +13,53 @@ import {
 } from 'lucide-react';
 import { BuyerRequest } from '../../types';
 import { MOCK_BUYER_REQUESTS } from '../../constants';
+import apiClient from '../../services/apiClient';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function BrowseBuyerRequests() {
-  const [activeRequests] = useState<BuyerRequest[]>(MOCK_BUYER_REQUESTS);
+  const [requests, setRequests] = useState<BuyerRequest[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isCekDetail, setIsCekDetail] = useState<BuyerRequest | null>(null);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    apiClient.get('/buyer-requests')
+      .then((res) => {
+        const live = (res.data.data || []).map((req: any) => ({
+          id: req.id.toString(),
+          buyerId: req.buyer_id.toString(),
+          buyerName: req.buyer_name || 'Andi Wijaya',
+          panganType: req.pangan_type,
+          quantity: Number(req.quantity),
+          unit: req.unit,
+          deliveryPeriod: req.delivery_period,
+          status: req.status,
+          budget: Number(req.budget),
+          createdAt: new Date(req.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+        })).filter((req: any) => req.status === 'OPEN');
+        setRequests(live);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('Failed to load buyer requests', err);
+        setRequests(MOCK_BUYER_REQUESTS.filter(r => r.status === 'OPEN'));
+        setLoading(false);
+      });
+  }, []);
+
+  const handleTakeRequest = async (requestId: string) => {
+    try {
+      await apiClient.put(`/buyer-requests/${requestId}/status`, {
+        status: 'TAKEN',
+        fulfilledBy: user?.id || 2 // Default to Petani Maju (id = 2)
+      });
+      setRequests(prev => prev.filter(r => r.id !== requestId));
+      setIsCekDetail(null);
+      alert('Berhasil mengambil request! Pembeli akan segera dihubungi untuk melakukan transaksi DP.');
+    } catch (err) {
+      console.error('Failed to take request', err);
+    }
+  };
 
   return (
     <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50/50">
@@ -71,66 +114,88 @@ export default function BrowseBuyerRequests() {
 
         {/* Requests List */}
         <div className="space-y-6">
-           {activeRequests.map((req) => (
-             <motion.div 
-              key={req.id}
-              whileHover={{ y: -5 }}
-              className="bg-white rounded-[40px] p-8 border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-brand-500/5 transition-all group cursor-pointer"
-              onClick={() => setIsCekDetail(req)}
-             >
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
-                   <div className="flex gap-6">
-                      <div className="w-20 h-20 bg-slate-50 rounded-[28px] flex items-center justify-center text-brand-600 shrink-0 border border-slate-100 group-hover:bg-brand-50 transition-colors relative">
-                        <Sprout size={36} className="group-hover:rotate-12 transition-transform" />
-                        <div className="absolute -top-2 -right-2 bg-emerald-500 text-white w-6 h-6 rounded-full flex items-center justify-center border-4 border-white shadow-sm">
-                           <ShieldCheck size={12} />
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-3 mb-1">
-                           <h4 className="text-xl font-black text-slate-800 uppercase tracking-tight">{req.panganType}</h4>
-                           <span className="bg-brand-50 text-brand-600 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border border-brand-100 italic">Volume Besar</span>
-                        </div>
-                        <p className="text-brand-600 font-black text-2xl mb-4">Rp {req.budget?.toLocaleString('id-ID')} <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Target Harga / {req.unit}</span></p>
-                        
-                        <div className="flex flex-wrap items-center gap-6">
-                           <div className="flex items-center gap-2">
-                              <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400">
-                                 <Package size={16} />
-                              </div>
-                              <div>
-                                 <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest leading-none mb-1">Kuantitas</p>
-                                 <p className="text-xs font-black text-slate-700">{req.quantity} {req.unit}</p>
-                              </div>
-                           </div>
-                           <div className="flex items-center gap-2">
-                              <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400">
-                                 <Calendar size={16} />
-                              </div>
-                              <div>
-                                 <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest leading-none mb-1">Pengiriman</p>
-                                 <p className="text-xs font-black text-slate-700 uppercase">{req.deliveryPeriod}</p>
-                              </div>
-                           </div>
-                           <div className="flex items-center gap-2">
-                              <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400">
-                                 <User size={16} />
-                              </div>
-                              <div>
-                                 <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest leading-none mb-1">Buyer</p>
-                                 <p className="text-xs font-black text-slate-700 uppercase">{req.buyerName}</p>
-                              </div>
-                           </div>
-                        </div>
+           {loading ? (
+             [1, 2].map((i) => (
+                <div key={i} className="bg-white rounded-[40px] p-8 border border-slate-100 animate-pulse flex flex-col md:flex-row md:items-center justify-between gap-8">
+                   <div className="flex gap-6 items-center flex-1">
+                      <div className="w-20 h-20 bg-slate-100 rounded-[28px] shrink-0" />
+                      <div className="flex-1 space-y-3">
+                         <div className="h-6 bg-slate-100 rounded w-1/3" />
+                         <div className="h-4 bg-slate-100 rounded w-1/4" />
                       </div>
                    </div>
-
-                   <button className="bg-brand-900 text-white px-8 py-5 rounded-[24px] font-black text-xs uppercase tracking-widest shadow-xl shadow-brand-900/20 hover:bg-black transition-all flex items-center gap-3 self-center sm:self-auto">
-                      Ambil Request Ini <ArrowUpRight size={18} />
-                   </button>
+                   <div className="w-40 h-14 bg-slate-100 rounded-[24px]" />
                 </div>
-             </motion.div>
-           ))}
+             ))
+           ) : requests.length > 0 ? (
+             requests.map((req) => (
+               <motion.div 
+                key={req.id}
+                whileHover={{ y: -5 }}
+                className="bg-white rounded-[40px] p-8 border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-brand-500/5 transition-all group cursor-pointer"
+                onClick={() => setIsCekDetail(req)}
+               >
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
+                     <div className="flex gap-6">
+                        <div className="w-20 h-20 bg-slate-50 rounded-[28px] flex items-center justify-center text-brand-600 shrink-0 border border-slate-100 group-hover:bg-brand-50 transition-colors relative">
+                          <Sprout size={36} className="group-hover:rotate-12 transition-transform" />
+                          <div className="absolute -top-2 -right-2 bg-emerald-500 text-white w-6 h-6 rounded-full flex items-center justify-center border-4 border-white shadow-sm">
+                             <ShieldCheck size={12} />
+                          </div>
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-3 mb-1">
+                             <h4 className="text-xl font-black text-slate-800 uppercase tracking-tight">{req.panganType}</h4>
+                             <span className="bg-brand-50 text-brand-600 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border border-brand-100 italic">Volume Besar</span>
+                          </div>
+                          <p className="text-brand-600 font-black text-2xl mb-4">Rp {req.budget?.toLocaleString('id-ID')} <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Target Harga / {req.unit}</span></p>
+                          
+                          <div className="flex flex-wrap items-center gap-6">
+                             <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400">
+                                   <Package size={16} />
+                                </div>
+                                <div>
+                                   <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest leading-none mb-1">Kuantitas</p>
+                                   <p className="text-xs font-black text-slate-700">{req.quantity} {req.unit}</p>
+                                </div>
+                             </div>
+                             <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400">
+                                   <Calendar size={16} />
+                                </div>
+                                <div>
+                                   <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest leading-none mb-1">Pengiriman</p>
+                                   <p className="text-xs font-black text-slate-700 uppercase">{req.deliveryPeriod}</p>
+                                </div>
+                             </div>
+                             <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400">
+                                   <User size={16} />
+                                </div>
+                                <div>
+                                   <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest leading-none mb-1">Buyer</p>
+                                   <p className="text-xs font-black text-slate-700 uppercase">{req.buyerName}</p>
+                                </div>
+                             </div>
+                          </div>
+                        </div>
+                     </div>
+  
+                     <button 
+                       onClick={(e) => { e.stopPropagation(); handleTakeRequest(req.id); }}
+                       className="bg-brand-900 text-white px-8 py-5 rounded-[24px] font-black text-xs uppercase tracking-widest shadow-xl shadow-brand-900/20 hover:bg-black transition-all flex items-center gap-3 self-center sm:self-auto"
+                     >
+                        Ambil Request Ini <ArrowUpRight size={18} />
+                     </button>
+                  </div>
+               </motion.div>
+             ))
+           ) : (
+             <div className="bg-white rounded-[40px] p-10 text-center border border-slate-100">
+                <p className="text-slate-400 font-bold uppercase tracking-widest">Belum ada request pre-order dari pembeli</p>
+             </div>
+           )}
         </div>
       </div>
 
@@ -190,7 +255,7 @@ export default function BrowseBuyerRequests() {
                         Kembali
                       </button>
                       <button 
-                        onClick={() => setIsCekDetail(null)}
+                        onClick={() => handleTakeRequest(isCekDetail.id)}
                         className="flex-2 bg-brand-900 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-brand-900/20 hover:bg-black transition-all"
                       >
                         Konfirmasi Kesediaan

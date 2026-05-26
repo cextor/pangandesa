@@ -127,4 +127,11 @@ INSERT INTO `categories` (`name`, `slug`, `icon`) VALUES
 ('Sayur', 'sayur', 'leaf'),
 ('Buah', 'buah', 'apple');
 
+-- Insert Dummy Products
+INSERT INTO `products` (`seller_id`, `category_id`, `name`, `description`, `price`, `unit`, `stock`, `is_preorder`, `harvest_date`, `image`, `rating`, `review_count`) VALUES
+(2, 2, 'Tomat Segar', 'Tomat segar pilihan dari kebun mitra, dipanen saat sudah matang sempurna.', 16000.00, 'kg', 50, TRUE, '2026-06-10', 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?q=80&w=1000&auto=format&fit=crop', 4.8, 120),
+(2, 2, 'Cabai Merah Keriting', 'Cabai merah keriting organik, pedas mantap dan segar.', 28000.00, 'kg', 20, TRUE, '2026-06-12', 'https://images.unsplash.com/photo-1618161546200-5047b11933c0?q=80&w=1000&auto=format&fit=crop', 4.9, 98),
+(2, 1, 'Beras Merah Organik', 'Beras merah organik tanpa pestisida, kaya serat dan sehat.', 22000.00, 'kg', 100, TRUE, '2026-06-15', 'https://images.unsplash.com/photo-1586201375761-83865001e31c?q=80&w=1000&auto=format&fit=crop', 4.7, 76),
+(2, 2, 'Jagung Manis', 'Jagung manis segar dipetik langsung saat dipesan.', 9500.00, 'kg', 30, TRUE, '2026-06-11', 'https://images.unsplash.com/photo-1551754655-cd27e38d2076?q=80&w=1000&auto=format&fit=crop', 4.7, 64);
+
 COMMIT;
