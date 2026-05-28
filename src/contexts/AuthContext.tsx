@@ -7,7 +7,7 @@ interface AuthContextType {
   isLoggedIn: boolean;
   activeRole: AppRole;
   user: any | null;
-  login: (role: AppRole) => Promise<void>;
+  login: (emailOrRole: string, password?: string) => Promise<void>;
   logout: () => void;
   setActiveRole: (role: AppRole) => void;
 }
@@ -30,13 +30,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const login = async (role: AppRole) => {
+  const login = async (emailOrRole: string, password?: string) => {
     try {
-      const response = await AuthService.login(role);
+      const response = await AuthService.login(emailOrRole, password);
       localStorage.setItem('token', response.token);
-      localStorage.setItem('role', role);
+      localStorage.setItem('role', response.user.role);
       setIsLoggedIn(true);
-      setActiveRoleState(role);
+      setActiveRoleState(response.user.role);
       setUser(response.user);
     } catch (error) {
       console.error('Login failed', error);

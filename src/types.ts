@@ -53,6 +53,7 @@ export interface CartItem extends Product {
 
 export interface Product {
   id: string;
+  sellerId?: string | number;
   name: string;
   price: number;
   unit: string;

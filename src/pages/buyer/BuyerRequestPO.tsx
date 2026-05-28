@@ -50,7 +50,7 @@ export default function BuyerRequestPO() {
       })
       .catch((err) => {
         console.error('Failed to load live requests', err);
-        setRequests(MOCK_BUYER_REQUESTS);
+        setRequests([]);
         setLoading(false);
       });
   }, []);

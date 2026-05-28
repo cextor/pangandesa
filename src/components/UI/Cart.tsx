@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { ShoppingBag, ChevronLeft, MapPin, CreditCard, Wallet, Landmark, Smartphone, Trash2, Clock, CheckCircle2 } from 'lucide-react';
-import { MOCK_PRODUCTS } from '../../constants';
+import { useCart } from '../../contexts/CartContext';
 
 interface CartProps {
   onBack: () => void;
@@ -9,14 +9,10 @@ interface CartProps {
 }
 
 export default function Cart({ onBack, onCheckout }: CartProps) {
-  const cartItems = [
-    { ...MOCK_PRODUCTS[0], quantity: 2 },
-    { ...MOCK_PRODUCTS[2], quantity: 1 },
-    { ...MOCK_PRODUCTS[3], quantity: 3 },
-  ];
+  const { cartItems, removeFromCart } = useCart();
 
   const totalProduk = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-  const ongkir = 15000;
+  const ongkir = cartItems.length > 0 ? 15000 : 0;
   const totalPembayaran = totalProduk + ongkir;
 
   const formatter = new Intl.NumberFormat('id-ID', {
@@ -66,13 +62,21 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
                             <CheckCircle2 size={12} fill="currentColor" className="text-white" />
                              <span className="text-[10px] font-bold uppercase tracking-wider">Ready for Harvest</span>
                          </div>
-                         <button className="text-[10px] font-bold text-red-500 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                         <button 
+                           onClick={() => removeFromCart(item.id)}
+                           className="text-[10px] font-bold text-red-500 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 cursor-pointer"
+                         >
                            <Trash2 size={12} /> Hapus
                          </button>
                       </div>
                     </div>
                   </div>
                 ))}
+                {cartItems.length === 0 && (
+                  <div className="text-center py-12 text-slate-400">
+                    <p className="font-bold uppercase tracking-widest">Keranjang Anda masih kosong</p>
+                  </div>
+                )}
               </div>
 
               <div className="mt-12 pt-8 border-t border-slate-100 space-y-4">
@@ -91,7 +95,12 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
                 
                 <button 
                   onClick={onCheckout}
-                  className="w-full bg-brand-500 hover:bg-brand-600 text-white py-5 rounded-[24px] font-black text-lg shadow-xl shadow-brand-500/30 transition-all mt-4"
+                  disabled={cartItems.length === 0}
+                  className={`w-full py-5 rounded-[24px] font-black text-lg shadow-xl transition-all mt-4 ${
+                    cartItems.length === 0 
+                      ? 'bg-slate-300 text-slate-450 cursor-not-allowed shadow-none' 
+                      : 'bg-brand-500 hover:bg-brand-600 text-white shadow-brand-500/30'
+                  }`}
                 >
                   Checkout
                 </button>

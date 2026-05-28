@@ -121,15 +121,15 @@ export default function Header({ onCartClick, onMenuClick, onLogout, onNavigate,
 
           {/* Profile Dropdown */}
           {isProfileOpen && (
-            <div className="absolute top-full right-0 mt-4 w-52 sm:w-60 bg-white rounded-[24px] sm:rounded-[32px] border border-slate-100 shadow-2xl shadow-slate-200/50 p-2 sm:p-3 overflow-hidden animate-in fade-in zoom-in duration-200 origin-top-right">
-              <div className="p-4 border-b border-slate-50 mb-2">
-                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Status Akun</p>
-                 <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 ${activeRole === 'seller' ? 'bg-brand-500' : 'bg-emerald-500'} rounded-full animate-pulse`} />
-                    <span className="text-xs font-black text-slate-700 uppercase tracking-tight">{userStatus}</span>
+            <div className="absolute top-full right-0 mt-3 w-48 sm:w-52 bg-white rounded-[20px] border border-slate-100 shadow-2xl shadow-slate-200/50 p-1.5 overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-right">
+              <div className="p-2 px-3 border-b border-slate-50 mb-1 flex flex-col">
+                 <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Status Akun</p>
+                 <div className="flex items-center gap-1.5">
+                    <div className={`w-1.5 h-1.5 ${activeRole === 'seller' ? 'bg-brand-500' : 'bg-emerald-500'} rounded-full animate-pulse`} />
+                    <span className="text-[10px] font-black text-slate-650 uppercase tracking-tight leading-none">{userStatus}</span>
                  </div>
               </div>
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 {menuItems.map((item, i) => (
                   <button 
                     key={i}
@@ -141,12 +141,12 @@ export default function Header({ onCartClick, onMenuClick, onLogout, onNavigate,
                         onNavigate(item.id);
                       }
                     }}
-                    className="w-full flex items-center gap-4 p-3.5 rounded-2xl hover:bg-slate-50 transition-colors group text-left"
+                    className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition-colors group text-left cursor-pointer"
                   >
-                    <div className={`w-9 h-9 rounded-xl bg-white border border-slate-100 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform ${item.color}`}>
-                      <item.icon size={18} />
+                    <div className={`w-7 h-7 rounded-lg bg-white border border-slate-100 flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform ${item.color} shrink-0`}>
+                      <item.icon size={14} />
                     </div>
-                    <span className="text-sm font-black text-slate-700 uppercase tracking-tight">{item.label}</span>
+                    <span className="text-[11px] font-black text-slate-700 uppercase tracking-tight">{item.label}</span>
                   </button>
                 ))}
               </div>

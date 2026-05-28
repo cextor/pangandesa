@@ -14,7 +14,7 @@ export default function PreOrderPage({ onProductSelect }: PreOrderPageProps) {
 
   React.useEffect(() => {
     ProductService.getAllProducts().then((data) => {
-      const preOrders = (data || []).filter(p => p.isPreOrder || p.is_preorder || p.is_preorder === 1);
+      const preOrders = (data || []).filter(p => p.isPreOrder);
       setProducts(preOrders);
       setLoading(false);
     });
@@ -38,7 +38,7 @@ export default function PreOrderPage({ onProductSelect }: PreOrderPageProps) {
            <div className="order-2 lg:order-1 lg:col-span-8 grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-8">
               {loading ? (
                  [1, 2, 3].map((i) => (
-                   <div key={i} className="bg-white rounded-[24px] sm:rounded-[32px] p-4 border border-slate-100 animate-pulse space-y-4" key={i}>
+                   <div key={i} className="bg-white rounded-[24px] sm:rounded-[32px] p-4 border border-slate-100 animate-pulse space-y-4">
                       <div className="aspect-square bg-slate-100 rounded-2xl w-full" />
                       <div className="h-4 bg-slate-100 rounded-md w-2/3" />
                       <div className="h-6 bg-slate-100 rounded-md w-1/3" />

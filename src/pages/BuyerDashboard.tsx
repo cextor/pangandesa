@@ -38,7 +38,7 @@ export default function BuyerDashboard({ onProductSelect, onCategorySelect, onTr
 
   React.useEffect(() => {
     ProductService.getAllProducts().then((data) => {
-      setProducts(data && data.length > 0 ? data : MOCK_PRODUCTS);
+      setProducts(data || []);
       setLoading(false);
     });
   }, []);
@@ -66,7 +66,7 @@ export default function BuyerDashboard({ onProductSelect, onCategorySelect, onTr
         
         {/* Banner Hero Section */}
         <section className="relative grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-8 relative min-h-[300px] sm:min-h-[400px] md:h-[480px] rounded-[24px] sm:rounded-[40px] overflow-hidden group shadow-2xl shadow-brand-900/10">
+          <div className="lg:col-span-12 relative min-h-[300px] sm:min-h-[400px] md:h-[480px] rounded-[24px] sm:rounded-[40px] overflow-hidden group shadow-2xl shadow-brand-900/10">
             <img 
               src="https://images.unsplash.com/photo-1500651230702-0e2d8a49d4ad?q=80&w=2000" 
               alt="PanganDesa Hero"
@@ -97,23 +97,6 @@ export default function BuyerDashboard({ onProductSelect, onCategorySelect, onTr
                 </div>
               </motion.div>
             </div>
-          </div>
-
-          <div className="lg:col-span-4 bg-slate-50 border border-brand-100 rounded-[24px] sm:rounded-[40px] p-6 sm:p-8 flex flex-col items-center justify-center text-center relative overflow-hidden h-auto py-10 lg:h-[480px]">
-             <div className="relative z-10 w-full max-w-[280px]">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-brand-600 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-xl shadow-brand-600/20">
-                   <Bot size={36} className="sm:w-[42px] sm:h-[42px] text-white" />
-                </div>
-                <h3 className="text-lg sm:text-xl font-black text-slate-800 font-display mb-2 uppercase tracking-tight">AI Assistant</h3>
-                <div className="space-y-4 mb-6 sm:mb-8">
-                   <p className="text-xs sm:text-[15px] font-bold text-slate-700 italic leading-snug">"Halo Andi! 👋 Saya siap membantu rekomendasi produk terbaik untuk Anda."</p>
-                </div>
-                <button className="w-full bg-white border-2 border-brand-100 text-brand-600 py-3.5 rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm hover:bg-brand-50 transition-all shadow-sm">
-                   Mulai Chat
-                </button>
-             </div>
-             <div className="absolute top-0 right-0 w-32 h-32 bg-brand-50 rounded-full -mr-16 -mt-16 blur-2xl opacity-50" />
-             <div className="absolute bottom-0 left-0 w-32 h-32 bg-brand-100 rounded-full -ml-16 -mb-16 blur-2xl opacity-50" />
           </div>
         </section>
 

@@ -9,8 +9,7 @@ interface FavoritesPageProps {
 }
 
 export default function FavoritesPage({ onProductSelect }: FavoritesPageProps) {
-  // Mock favorites - just taking a subset of mock products
-  const favorites = [MOCK_PRODUCTS[0], MOCK_PRODUCTS[2], MOCK_PRODUCTS[3]];
+  const favorites: Product[] = [];
 
   return (
     <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50/30">

@@ -2,11 +2,11 @@ import apiClient from './apiClient';
 import { AppRole } from '../types';
 
 export const AuthService = {
-  login: async (role: AppRole): Promise<{ token: string; user: any }> => {
+  login: async (emailOrRole: string, password?: string): Promise<{ token: string; user: any }> => {
     try {
-      // Backend CI4 kita sudah disetting untuk menerima 'role' dan otomatis login
-      // ke akun dummy (Admin, Petani, Pembeli) berdasarkan parameter role ini.
-      const response = await apiClient.post('/auth/login', { role });
+      // Mendukung login dengan email+password nyata atau parameter role (untuk demo)
+      const payload = password ? { email: emailOrRole, password } : { role: emailOrRole };
+      const response = await apiClient.post('/auth/login', payload);
       return response.data;
     } catch (error) {
       console.error('Login failed:', error);

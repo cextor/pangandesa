@@ -5,6 +5,7 @@ import { getPanganAIResponse } from '../../services/aiService';
 import { ChatMessage } from '../../types';
 
 export default function ChatBot() {
+  return null;
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([

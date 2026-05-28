@@ -24,7 +24,7 @@ class Filters extends BaseConfig
         'honeypot'      => Honeypot::class,
         'invalidchars'  => InvalidChars::class,
         'secureheaders' => SecureHeaders::class,
-        'cors'          => \CodeIgniter\Filters\Cors::class,
+        'cors'          => \App\Filters\Cors::class,
     ];
 
     /**

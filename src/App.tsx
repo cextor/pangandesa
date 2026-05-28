@@ -45,7 +45,7 @@ import LoginPage from './pages/LoginPage';
 
 export default function App() {
   const navigate = useNavigate();
-  const { isLoggedIn, activeRole, login, setActiveRole } = useAuth();
+  const { isLoggedIn, activeRole, login, setActiveRole, user } = useAuth();
   const { cartItems, addToCart, clearCart } = useCart();
   const { orders, messages, addOrder, updateOrderStatus, sendMessage } = useOrder();
   
@@ -66,7 +66,7 @@ export default function App() {
   if (!isLoggedIn) {
     return (
       <Routes>
-        <Route path="/login" element={<LoginPage onLogin={async (role) => { await login(role); navigate(`/${role}`); }} />} />
+        <Route path="/login" element={<LoginPage onLogin={async (username, password) => { await login(username, password); navigate(`/${localStorage.getItem('role') || 'buyer'}`); }} />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );

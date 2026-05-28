@@ -42,7 +42,7 @@ export default function BrowseBuyerRequests() {
       })
       .catch((err) => {
         console.error('Failed to load buyer requests', err);
-        setRequests(MOCK_BUYER_REQUESTS.filter(r => r.status === 'OPEN'));
+        setRequests([]);
         setLoading(false);
       });
   }, []);

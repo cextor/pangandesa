@@ -72,24 +72,29 @@ export default function ProductManagement() {
   const [editingProduct, setEditingProduct] = React.useState<Product | null>(null);
   const [selectedProductForDetail, setSelectedProductForDetail] = React.useState<Product | null>(null);
   const [searchQuery, setSearchQuery] = React.useState('');
+  const [productToDelete, setProductToDelete] = React.useState<Product | null>(null);
+  const [isDeleting, setIsDeleting] = React.useState(false);
 
   React.useEffect(() => {
     ProductService.getAllProducts().then((data) => {
       // Filter products for this seller (ID: 2) or show all for demo
       const sellerProducts = (data || []).filter(p => p.sellerId === 2 || p.sellerId === '2' || !p.sellerId);
-      setProducts(sellerProducts.length > 0 ? sellerProducts : INITIAL_PRODUCTS);
+      setProducts(sellerProducts);
     });
   }, []);
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Apakah Anda yakin ingin menghapus produk ini?')) {
-      try {
-        await ProductService.deleteProduct(id);
-        setProducts(products.filter(p => p.id !== id));
-        setSelectedProductForDetail(null);
-      } catch (err) {
-        alert('Gagal menghapus produk dari database.');
-      }
+  const confirmDelete = async () => {
+    if (!productToDelete) return;
+    setIsDeleting(true);
+    try {
+      await ProductService.deleteProduct(productToDelete.id);
+      setProducts(products.filter(p => p.id !== productToDelete.id));
+      setSelectedProductForDetail(null);
+      setProductToDelete(null);
+    } catch (err) {
+      alert('Gagal menghapus produk. Produk mungkin terikat dengan transaksi pesanan yang aktif di database.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -210,16 +215,56 @@ export default function ProductManagement() {
                  >
                     Edit Produk
                  </button>
-                 <button 
-                   onClick={() => handleDelete(selectedProductForDetail.id)}
-                   className="w-16 h-16 flex items-center justify-center bg-red-50 text-red-500 rounded-[24px] hover:bg-red-500 hover:text-white transition-all shadow-lg shadow-red-500/10"
-                 >
-                    <Trash2 size={24} />
-                 </button>
+                  <button 
+                    onClick={() => setProductToDelete(selectedProductForDetail)}
+                    className="w-16 h-16 flex items-center justify-center bg-red-50 text-red-500 rounded-[24px] hover:bg-red-500 hover:text-white transition-all shadow-lg shadow-red-500/10 cursor-pointer"
+                  >
+                     <Trash2 size={24} />
+                  </button>
               </div>
             </div>
           </div>
         </div>
+        {/* Premium Tailwind Delete Confirmation Modal inside Detail View */}
+        {productToDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div 
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" 
+              onClick={() => setProductToDelete(null)}
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              className="relative w-full max-w-md bg-white rounded-[32px] shadow-2xl p-8 border border-slate-100 overflow-hidden text-center z-10"
+            >
+              <div className="w-16 h-16 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-red-100">
+                 <Trash2 size={28} />
+              </div>
+              <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight mb-2">Hapus Produk</h3>
+              <p className="text-xs text-slate-500 font-medium leading-relaxed mb-8 px-4">
+                Apakah Anda yakin ingin menghapus produk <span className="font-bold text-slate-800">"{productToDelete.name}"</span> secara permanen? Tindakan ini tidak dapat dibatalkan.
+              </p>
+              <div className="flex gap-4">
+                 <button 
+                   onClick={() => setProductToDelete(null)}
+                   disabled={isDeleting}
+                   className="flex-1 border border-slate-200 py-4 rounded-xl font-black text-xs uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-all cursor-pointer disabled:opacity-50"
+                 >
+                   Batal
+                 </button>
+                 <button 
+                   onClick={confirmDelete}
+                   disabled={isDeleting}
+                   className="flex-1 bg-red-500 text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest shadow-xl shadow-red-500/20 hover:bg-red-650 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+                 >
+                   {isDeleting ? (
+                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                   ) : 'Ya, Hapus'}
+                 </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
       </div>
     );
   }
@@ -261,82 +306,86 @@ export default function ProductManagement() {
         </div>
 
         {/* Product Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {filteredProducts.map((product) => (
             <motion.div 
               layout
               key={product.id}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              onClick={() => setSelectedProductForDetail(product)}
-              className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden group hover:border-brand-200 transition-all cursor-pointer"
+              onClick={(e) => {
+                const target = e.target as HTMLElement;
+                if (target.closest('button')) return;
+                setSelectedProductForDetail(product);
+              }}
+              className="bg-white rounded-[24px] border border-slate-100 shadow-sm overflow-hidden group hover:border-brand-200 hover:shadow-md transition-all duration-300 cursor-pointer"
             >
-              <div className="relative aspect-square">
+              <div className="relative h-44 w-full overflow-hidden">
                 <img src={product.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={product.name} />
-                <div className="absolute top-6 left-6 flex gap-2">
+                <div className="absolute top-4 left-4 flex gap-1.5">
                    {product.isPreOrder && (
-                     <span className="bg-brand-600/90 backdrop-blur-md text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg">Pre-Order</span>
+                     <span className="bg-brand-600/90 backdrop-blur-md text-white px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-widest shadow-sm">Pre-Order</span>
                    )}
-                   <span className="bg-white/90 backdrop-blur-md text-slate-800 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg">{product.category}</span>
+                   <span className="bg-white/90 backdrop-blur-md text-slate-800 px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-widest shadow-sm">{product.category}</span>
                 </div>
-                <div className="absolute top-6 right-6 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute top-4 right-4 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                    <button 
                     onClick={(e) => {
                       e.stopPropagation();
                       setEditingProduct(product);
                     }}
-                    className="w-10 h-10 bg-white rounded-xl shadow-xl flex items-center justify-center text-slate-600 hover:text-brand-600 hover:scale-110 transition-all"
+                    className="w-8 h-8 bg-white rounded-lg shadow-md flex items-center justify-center text-slate-600 hover:text-brand-600 hover:scale-110 transition-all cursor-pointer"
                    >
-                     <Edit3 size={18} />
+                     <Edit3 size={14} />
                    </button>
                    <button 
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleDelete(product.id);
+                      setProductToDelete(product);
                     }}
-                    className="w-10 h-10 bg-white rounded-xl shadow-xl flex items-center justify-center text-slate-600 hover:text-red-500 hover:scale-110 transition-all"
+                    className="w-8 h-8 bg-white rounded-lg shadow-md flex items-center justify-center text-slate-600 hover:text-red-500 hover:scale-110 transition-all cursor-pointer"
                    >
-                     <Trash2 size={18} />
+                     <Trash2 size={14} />
                    </button>
                 </div>
               </div>
-              <div className="p-8">
-                <div className="flex items-center justify-between mb-2">
-                   <h3 className="text-xl font-black text-slate-800">{product.name}</h3>
-                   <div className="flex items-center gap-1">
-                      <Star size={14} className="text-yellow-400 fill-yellow-400" />
-                      <span className="text-sm font-bold text-slate-800">{product.rating}</span>
+              <div className="p-5">
+                <div className="flex items-center justify-between mb-1.5">
+                   <h3 className="text-sm font-black text-slate-800 leading-tight truncate pr-2">{product.name}</h3>
+                   <div className="flex items-center gap-1 shrink-0">
+                      <Star size={12} className="text-yellow-400 fill-yellow-400" />
+                      <span className="text-xs font-bold text-slate-700">{product.rating}</span>
                    </div>
                 </div>
-                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-6">Stok: {product.stock} {product.unit}</p>
-                <div className="flex items-center justify-between pt-6 border-t border-slate-50">
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-4 leading-none">Stok: {product.stock} {product.unit}</p>
+                <div className="flex items-center justify-between pt-4 border-t border-slate-50">
                    <div>
-                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Harga per {product.unit}</p>
-                     <p className="text-xl font-black text-slate-800">Rp {product.price.toLocaleString('id-ID')}</p>
+                     <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">Harga per {product.unit}</p>
+                     <p className="text-base font-black text-slate-800">Rp {product.price.toLocaleString('id-ID')}</p>
                    </div>
                    <button 
                     onClick={(e) => {
                       e.stopPropagation();
                       setEditingProduct(product);
                     }}
-                    className="p-4 bg-slate-50 text-slate-400 rounded-2xl hover:bg-brand-50 hover:text-brand-600 transition-all group/btn"
+                    className="p-3 bg-slate-50 text-slate-400 rounded-xl hover:bg-brand-50 hover:text-brand-600 transition-all group/btn cursor-pointer"
                    >
-                     <Package size={20} className="group-hover/btn:scale-110 transition-transform" />
+                     <Package size={16} className="group-hover/btn:scale-110 transition-transform" />
                    </button>
                 </div>
               </div>
             </motion.div>
           ))}
-
+ 
           {/* Empty State / Add New Card */}
           <div 
             onClick={() => setIsAddingMode(true)}
-            className="bg-slate-50 border-4 border-dashed border-slate-100 rounded-[40px] flex flex-col items-center justify-center p-12 gap-4 cursor-pointer hover:border-brand-200 hover:bg-brand-50/10 transition-all group"
+            className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-[24px] flex flex-col items-center justify-center p-8 gap-3 cursor-pointer hover:border-brand-200 hover:bg-brand-50/5 transition-all group min-h-[268px]"
           >
-             <div className="w-20 h-20 bg-white rounded-[32px] shadow-sm flex items-center justify-center text-slate-300 group-hover:text-brand-600 group-hover:scale-110 transition-all group-hover:shadow-xl group-hover:shadow-brand-500/10">
-                <Plus size={40} />
+             <div className="w-14 h-14 bg-white rounded-2xl shadow-sm flex items-center justify-center text-slate-300 group-hover:text-brand-600 group-hover:scale-110 transition-all group-hover:shadow-md group-hover:shadow-brand-500/5">
+                <Plus size={28} />
              </div>
-             <p className="text-sm font-black text-slate-400 uppercase tracking-widest group-hover:text-brand-600 mt-2">Tambah Produk Baru</p>
+             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-brand-600 mt-1">Tambah Produk</p>
           </div>
         </div>
 
@@ -360,6 +409,47 @@ export default function ProductManagement() {
           </div>
         )}
       </div>
+
+      {/* Premium Tailwind Delete Confirmation Modal */}
+      {productToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" 
+            onClick={() => setProductToDelete(null)}
+          />
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="relative w-full max-w-md bg-white rounded-[32px] shadow-2xl p-8 border border-slate-100 overflow-hidden text-center z-10"
+          >
+            <div className="w-16 h-16 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-red-100">
+               <Trash2 size={28} />
+            </div>
+            <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight mb-2">Hapus Produk</h3>
+            <p className="text-xs text-slate-500 font-medium leading-relaxed mb-8 px-4">
+              Apakah Anda yakin ingin menghapus produk <span className="font-bold text-slate-800">"{productToDelete.name}"</span> secara permanen? Tindakan ini tidak dapat dibatalkan.
+            </p>
+            <div className="flex gap-4">
+               <button 
+                 onClick={() => setProductToDelete(null)}
+                 disabled={isDeleting}
+                 className="flex-1 border border-slate-200 py-4 rounded-xl font-black text-xs uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-all cursor-pointer disabled:opacity-50"
+               >
+                 Batal
+               </button>
+               <button 
+                 onClick={confirmDelete}
+                 disabled={isDeleting}
+                 className="flex-1 bg-red-500 text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest shadow-xl shadow-red-500/20 hover:bg-red-650 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+               >
+                 {isDeleting ? (
+                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                 ) : 'Ya, Hapus'}
+               </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

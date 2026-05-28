@@ -44,7 +44,6 @@ export default function Sidebar({ activeRole, onRoleChange, activeItem, onItemCh
     { id: 'promo', label: 'Promo', icon: Tag },
     { id: 'favorit', label: 'Favorit', icon: Heart },
     { id: 'pesanan', label: 'Pesanan Saya', icon: ShoppingBag },
-    { id: 'chat', label: 'Chat AI Assistant', icon: MessageSquare, badge: 'AI' },
     { id: 'lacak', label: 'Lacak Pesanan', icon: Truck },
     { id: 'riwayat', label: 'Riwayat', icon: History },
     { id: 'metode-pembayaran', label: 'Metode Pembayaran', icon: CreditCard },
@@ -59,7 +58,6 @@ export default function Sidebar({ activeRole, onRoleChange, activeItem, onItemCh
     { id: 'preorder-masuk', label: 'Pre-Order Masuk', icon: Calendar },
     { id: 'pesanan', label: 'Pesanan', icon: ShoppingBag },
     { id: 'panen-produksi', label: 'Panen & Produksi', icon: Sprout },
-    { id: 'ai-assistant', label: 'AI Assistant', icon: MessageSquare, badge: 'AI' },
     { id: 'analitik', label: 'Analitik Penjualan', icon: BarChart3 },
     { id: 'keuangan', label: 'Keuangan', icon: CreditCard },
     { id: 'ulasan', label: 'Ulasan & Rating', icon: History },
@@ -130,23 +128,7 @@ export default function Sidebar({ activeRole, onRoleChange, activeItem, onItemCh
         </div>
 
         <nav className="flex-1 px-4 space-y-0.5 overflow-y-auto custom-scrollbar pb-8">
-          <div className="px-4 mb-6">
-            <div 
-              onClick={() => onRoleChange(activeRole === 'buyer' ? 'seller' : activeRole === 'seller' ? 'admin' : 'buyer')}
-              className="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl flex items-center justify-between cursor-pointer group hover:bg-brand-50 transition-all shadow-sm"
-            >
-               <div className="flex items-center gap-3">
-                 <div className="w-8 h-8 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-brand-600 group-hover:border-brand-100 shadow-sm transition-all">
-                   <Users size={16} />
-                 </div>
-                 <div>
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Mode Aktif</p>
-                    <p className="text-xs font-black text-slate-800 tracking-tight leading-none uppercase">{roleLabels[activeRole]}</p>
-                 </div>
-               </div>
-               <ChevronRight size={14} className="text-slate-300 group-hover:text-brand-300 group-hover:translate-x-1 transition-all" />
-            </div>
-          </div>
+
 
           {items.map((item) => (
             <div

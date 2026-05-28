@@ -1,6 +1,7 @@
 import { Product, BuyerRequest } from './types';
+import appLogo from './logo.jpg';
 
-export const APP_LOGO = "https://images.unsplash.com/photo-1594894750236-455bc5793836?q=80&w=1000&auto=format&fit=crop";
+export const APP_LOGO = appLogo;
 
 export const CATEGORIES = [
   { id: '1', name: 'Sayuran', icon: 'Leaf' },

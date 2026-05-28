@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Konfigurasi dasar Axios
 const apiClient = axios.create({
-  baseURL: (import.meta as any).env?.VITE_API_URL || 'http://localhost:8080/api', // Disesuaikan dengan URL CI4 nantinya
+  baseURL: (import.meta as any).env?.VITE_API_URL || 'http://127.0.0.1:8081/api', // Disesuaikan dengan URL CI4 nantinya
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
