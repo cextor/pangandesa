@@ -74,7 +74,7 @@ export default function PreOrderPage({ onProductSelect }: PreOrderPageProps) {
                      onPreview={onProductSelect} 
                      onAddToCart={(p) => {
                        addToCart(p, 1, p.selectedHarvestDate);
-                       navigate('/buyer/cart');
+                       alert(`Berhasil menambahkan ${p.name} ke keranjang!`);
                      }}
                    />
                  ))

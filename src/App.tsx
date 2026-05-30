@@ -52,7 +52,7 @@ import RegisterPage from './pages/RegisterPage';
 export default function App() {
   const navigate = useNavigate();
   const { isLoggedIn, activeRole, login, setActiveRole, user } = useAuth();
-  const { cartItems, addToCart, clearCart } = useCart();
+  const { cartItems, addToCart, clearCart, removeFromCart } = useCart();
   const { orders, messages, addOrder, updateOrderStatus, sendMessage } = useOrder();
   
   // Local state for product browsing (can be moved to a SearchContext later)
@@ -111,7 +111,7 @@ export default function App() {
               onPreOrder={(p, q, date) => {
                 setSelectedProduct(null);
                 addToCart(p, q, date);
-                navigate('/buyer/cart');
+                alert(`Berhasil menambahkan ${p.name} ke keranjang!`);
               }}
             />
           ) : (
@@ -158,14 +158,15 @@ export default function App() {
         <Route path="cart" element={
           <Cart 
             onBack={() => navigate('/buyer')} 
-            onCheckout={() => {
-              const total = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-              const activeSellerId = cartItems[0]?.sellerId || '2';
+            onCheckout={(selectedItems) => {
+              if (selectedItems.length === 0) return;
+              const total = selectedItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+              const activeSellerId = selectedItems[0]?.sellerId || '2';
               const newOrder: Order = {
                 id: Math.random().toString(36).substr(2, 9),
                 buyerId: user?.id ? String(user.id) : '3',
                 sellerId: String(activeSellerId),
-                items: cartItems.map(item => ({
+                items: selectedItems.map(item => ({
                   productId: item.id,
                   name: item.name + (item.selectedHarvestDate ? ` (Panen: ${ensureDayMonthYear(item.selectedHarvestDate)})` : ''),
                   quantity: item.quantity,
@@ -180,7 +181,8 @@ export default function App() {
               };
               addOrder(newOrder);
               setCurrentOrderId(newOrder.id);
-              clearCart();
+              // Remove only the checked items from the cart!
+              selectedItems.forEach(item => removeFromCart(item.id, item.selectedHarvestDate));
               navigate('/buyer/transaksi-invoice');
             }} 
           />
