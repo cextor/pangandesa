@@ -275,7 +275,7 @@ export default function HarvestProduction() {
                 onClick={() => setIsSuccessOpen(false)}
                 className="w-full bg-[#1a4d2e] text-white py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-emerald-950/20 active:scale-95 transition-all cursor-pointer"
               >
-                Kembali ke Panel
+                Selesai
               </button>
             </motion.div>
           </div>
