@@ -20,6 +20,7 @@ import {
 import { Order } from '../../types';
 import { useNavigate } from 'react-router-dom';
 import { ensureDayMonthYear } from '../../utils/harvestHelper';
+import { useOrder } from '../../contexts/OrderContext';
 
 interface ActiveOrdersProps {
   orders: Order[];
@@ -30,6 +31,7 @@ interface ActiveOrdersProps {
 
 export default function ActiveOrders({ orders, onTrack, onPayPelunasan, onOpenForum }: ActiveOrdersProps) {
   const navigate = useNavigate();
+  const { updateOrderStatus } = useOrder();
 
   // Filter for all active orders
   const activeStatuses = [
@@ -177,13 +179,25 @@ export default function ActiveOrders({ orders, onTrack, onPayPelunasan, onOpenFo
 
                           {/* Bayar DP Button */}
                           {order.status === 'WAITING_PAYMENT_DP' && onPayPelunasan && (
-                            <button 
-                              onClick={() => onPayPelunasan(order.id)}
-                              className="flex-1 sm:flex-none bg-brand-900 hover:bg-black text-white px-5 py-2.5 rounded-xl font-black text-[9px] sm:text-[10px] uppercase tracking-widest transition-all cursor-pointer shadow-md border-0"
-                            >
-                               Bayar DP (30%)
-                            </button>
-                          )}
+                             <div className="flex gap-2 w-full sm:w-auto">
+                               <button 
+                                 onClick={async () => {
+                                   if (window.confirm("Apakah Anda yakin ingin membatalkan pesanan pre-order ini?")) {
+                                     await updateOrderStatus(order.id, 'CANCELLED');
+                                   }
+                                 }}
+                                 className="flex-1 sm:flex-none bg-red-50 hover:bg-red-500 text-red-500 hover:text-white px-4 py-2.5 rounded-xl font-black text-[9px] sm:text-[10px] uppercase tracking-widest border border-red-100 active:scale-95 transition-all cursor-pointer flex items-center justify-center"
+                               >
+                                 Batalkan Pesanan
+                               </button>
+                               <button 
+                                 onClick={() => onPayPelunasan(order.id)}
+                                 className="flex-1 sm:flex-none bg-brand-900 hover:bg-black text-white px-5 py-2.5 rounded-xl font-black text-[9px] sm:text-[10px] uppercase tracking-widest transition-all cursor-pointer shadow-md border-0"
+                               >
+                                 Bayar DP (30%)
+                               </button>
+                             </div>
+                           )}
 
                           {/* Bayar Pelunasan Button */}
                           {(order.status === 'HARVEST_CONFIRMED_SELLER' || order.status === 'WAITING_FINAL_PAYMENT') && onPayPelunasan && (

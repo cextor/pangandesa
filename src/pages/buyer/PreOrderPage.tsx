@@ -3,6 +3,9 @@ import ProductCard from '../../components/UI/ProductCard';
 import { ProductService } from '../../services/ProductService';
 import { Calendar, Info, Clock, CheckCircle2 } from 'lucide-react';
 import { Product } from '../../types';
+import { useCart } from '../../contexts/CartContext';
+import { useNavigate } from 'react-router-dom';
+import { parseHarvestSchedules } from '../../utils/harvestHelper';
 
 interface PreOrderPageProps {
   onProductSelect: (product: Product) => void;
@@ -11,11 +14,30 @@ interface PreOrderPageProps {
 export default function PreOrderPage({ onProductSelect }: PreOrderPageProps) {
   const [products, setProducts] = React.useState<Product[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const { addToCart } = useCart();
+  const navigate = useNavigate();
 
   React.useEffect(() => {
     ProductService.getAllProducts().then((data) => {
-      const preOrders = (data || []).filter(p => p.isPreOrder);
-      setProducts(preOrders);
+      const flattened: any[] = [];
+      (data || []).forEach(p => {
+        const schedules = parseHarvestSchedules(p.harvestDate, p.stock, p.price, p.isPreOrder);
+        // Only include ready pre-order schedules
+        const readySchedules = schedules.filter(s => s.status === 'READY' && s.isPreOrder);
+        if (readySchedules.length > 0) {
+          readySchedules.forEach((sch, idx) => {
+            flattened.push({
+              ...p,
+              // Maintain unique key identifier for rendering
+              scheduleId: `${p.id}-${sch.date}`,
+              price: sch.price,
+              stock: sch.stock,
+              selectedHarvestDate: sch.date
+            });
+          });
+        }
+      });
+      setProducts(flattened);
       setLoading(false);
     });
   }, []);
@@ -45,8 +67,16 @@ export default function PreOrderPage({ onProductSelect }: PreOrderPageProps) {
                    </div>
                  ))
               ) : products.length > 0 ? (
-                 products.map((product) => (
-                   <ProductCard key={product.id} product={product} onPreview={onProductSelect} />
+                 products.map((product: any) => (
+                   <ProductCard 
+                     key={product.scheduleId} 
+                     product={product} 
+                     onPreview={onProductSelect} 
+                     onAddToCart={(p) => {
+                       addToCart(p, 1, p.selectedHarvestDate);
+                       navigate('/buyer/cart');
+                     }}
+                   />
                  ))
               ) : (
                  <div className="col-span-full bg-white rounded-3xl p-10 text-center border border-slate-100">

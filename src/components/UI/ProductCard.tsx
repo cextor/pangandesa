@@ -9,7 +9,7 @@ interface ProductCardProps {
   layout?: 'grid' | 'list';
 }
 
-import { parseHarvestSchedules } from '../../utils/harvestHelper';
+import { parseHarvestSchedules, ensureDayMonthYear } from '../../utils/harvestHelper';
 
 const cleanHarvestDate = (dateStr?: string) => {
   if (!dateStr) return '';
@@ -67,6 +67,10 @@ export default function ProductCard({ product, onAddToCart, onPreview, layout = 
           <div className="space-y-1.5">
             <h3 className="text-sm sm:text-lg font-black text-slate-800 group-hover:text-brand-600 transition-colors uppercase tracking-tight leading-tight line-clamp-1">{product.name}</h3>
             
+            <div className="flex items-center gap-1.5 text-emerald-700 font-bold text-[9px] sm:text-xs uppercase tracking-wider mt-0.5">
+               <span>🧑‍🌾 {product.farmer || 'Petani PanganDesa'}</span>
+            </div>
+
             <div className="flex items-baseline mt-1">
               <span className="text-sm sm:text-lg font-black text-slate-800 leading-none">{formatter.format(product.price)}</span>
               <span className="text-[9px] sm:text-xs text-slate-400 font-bold ml-1">/{product.unit}</span>
@@ -74,7 +78,7 @@ export default function ProductCard({ product, onAddToCart, onPreview, layout = 
 
             <div className="flex items-center gap-1.5 text-slate-400 mt-1">
                <Calendar size={12} className="text-brand-500 shrink-0" />
-               <p className="text-[10px] sm:text-xs font-bold truncate">Panen: <span className="text-slate-700">{cleanHarvestDate(product.harvestDate)}</span></p>
+               <p className="text-[10px] sm:text-xs font-bold truncate">Panen: <span className="text-slate-700">{(product as any).selectedHarvestDate ? ensureDayMonthYear((product as any).selectedHarvestDate) : cleanHarvestDate(product.harvestDate)}</span></p>
             </div>
           </div>
 
@@ -137,8 +141,12 @@ export default function ProductCard({ product, onAddToCart, onPreview, layout = 
       </div>
 
       <div className="p-4 sm:p-5 flex-1 flex flex-col">
-        <div className="mb-2">
+        <div className="mb-1">
           <h3 className="text-sm sm:text-[15px] font-black text-slate-800 group-hover:text-brand-600 transition-colors uppercase tracking-tight leading-tight sm:leading-snug line-clamp-2 sm:line-clamp-none">{product.name}</h3>
+        </div>
+
+        <div className="flex items-center gap-1 text-emerald-700 font-bold text-[8.5px] sm:text-[10px] uppercase tracking-wider mb-2">
+           <span>🧑‍🌾 {product.farmer || 'Petani PanganDesa'}</span>
         </div>
 
         <div className="mt-auto pt-1 flex items-baseline">
@@ -148,7 +156,7 @@ export default function ProductCard({ product, onAddToCart, onPreview, layout = 
 
         <div className="flex items-center gap-1.5 sm:gap-2 mt-2 sm:mt-3 text-slate-400">
            <Calendar size={12} className="text-brand-500 shrink-0" />
-           <p className="text-[9px] sm:text-[10px] font-bold truncate">Panen: <span className="text-slate-700">{cleanHarvestDate(product.harvestDate)}</span></p>
+           <p className="text-[9px] sm:text-[10px] font-bold truncate">Panen: <span className="text-slate-700">{(product as any).selectedHarvestDate ? ensureDayMonthYear((product as any).selectedHarvestDate) : cleanHarvestDate(product.harvestDate)}</span></p>
         </div>
 
         <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-slate-50 flex items-center justify-between">

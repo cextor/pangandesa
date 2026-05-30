@@ -91,6 +91,7 @@ export interface Product {
   description: string;
   isPreOrder: boolean;
   images?: ProductImage[];
+  selectedHarvestDate?: string;
 }
 
 export interface BuyerRequest {

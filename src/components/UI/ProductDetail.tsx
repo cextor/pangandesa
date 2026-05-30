@@ -47,7 +47,12 @@ export default function ProductDetail({ product, onBack, onPreOrder }: ProductDe
   const allSchedules = parseHarvestSchedules(product.harvestDate, product.stock, product.price, product.isPreOrder);
   const schedules = allSchedules.filter(s => s.status === 'READY' && s.isPreOrder);
 
-  const [selectedSchedule, setSelectedSchedule] = useState<any>(schedules[0] || null);
+  // Auto-select schedule matching selectedHarvestDate if passed from the card
+  const matchedSchedule = (product as any).selectedHarvestDate 
+    ? (schedules.find(s => s.date === (product as any).selectedHarvestDate) || schedules[0] || null)
+    : (schedules[0] || null);
+
+  const [selectedSchedule, setSelectedSchedule] = useState<any>(matchedSchedule);
 
   const activePrice = selectedSchedule ? selectedSchedule.price : product.price;
   const activeStock = selectedSchedule ? selectedSchedule.stock : product.stock;
