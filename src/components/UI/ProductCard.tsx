@@ -6,15 +6,102 @@ interface ProductCardProps {
   product: Product;
   onAddToCart?: (product: Product) => void;
   onPreview?: (product: Product) => void;
-  key?: React.Key;
+  layout?: 'grid' | 'list';
 }
 
-export default function ProductCard({ product, onAddToCart, onPreview }: ProductCardProps) {
+import { parseHarvestSchedules } from '../../utils/harvestHelper';
+
+const cleanHarvestDate = (dateStr?: string) => {
+  if (!dateStr) return '';
+  const schedules = parseHarvestSchedules(dateStr, 0, 0, true);
+  return schedules
+    .filter(s => s.status === 'READY' && s.isPreOrder)
+    .map(s => {
+      const parts = s.date.split('-');
+      if (parts.length === 3) {
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+      }
+      return s.date;
+    })
+    .join(', ');
+};
+
+export default function ProductCard({ product, onAddToCart, onPreview, layout = 'grid' }: ProductCardProps) {
   const formatter = new Intl.NumberFormat('id-ID', {
     style: 'currency',
     currency: 'IDR',
     minimumFractionDigits: 0,
   });
+
+  if (layout === 'list') {
+    return (
+      <div 
+        onClick={() => onPreview?.(product)}
+        className="bg-white rounded-3xl border border-slate-100 overflow-hidden group hover:shadow-xl hover:shadow-brand-500/5 transition-all duration-500 flex flex-row cursor-pointer p-4 gap-4 sm:gap-6 relative"
+      >
+        <div className="w-24 h-24 sm:w-36 sm:h-36 rounded-2xl overflow-hidden shrink-0 relative bg-slate-50 flex items-center justify-center border border-slate-100">
+          {product.image ? (
+            <img 
+              src={product.image} 
+              alt={product.name}
+              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+            />
+          ) : (
+            <div className="w-full h-full bg-slate-50 flex flex-col items-center justify-center p-2">
+               <div className="w-8 h-8 rounded-lg bg-slate-100/50 flex items-center justify-center text-slate-300 mb-1">🌾</div>
+               <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest text-center">Belum Ada Foto</span>
+            </div>
+          )}
+          
+          <div className="absolute top-2 left-2 flex flex-col gap-2">
+            {product.isPreOrder && (
+              <div className="bg-brand-900/80 backdrop-blur-md text-white text-[8px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm border border-white/20">
+                <Calendar size={8} />
+                <span>PRE-ORDER</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex-1 flex flex-col justify-between min-w-0">
+          <div className="space-y-1.5">
+            <h3 className="text-sm sm:text-lg font-black text-slate-800 group-hover:text-brand-600 transition-colors uppercase tracking-tight leading-tight line-clamp-1">{product.name}</h3>
+            
+            <div className="flex items-baseline mt-1">
+              <span className="text-sm sm:text-lg font-black text-slate-800 leading-none">{formatter.format(product.price)}</span>
+              <span className="text-[9px] sm:text-xs text-slate-400 font-bold ml-1">/{product.unit}</span>
+            </div>
+
+            <div className="flex items-center gap-1.5 text-slate-400 mt-1">
+               <Calendar size={12} className="text-brand-500 shrink-0" />
+               <p className="text-[10px] sm:text-xs font-bold truncate">Panen: <span className="text-slate-700">{cleanHarvestDate(product.harvestDate)}</span></p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between pt-2 border-t border-slate-50 mt-2">
+             <div className="flex items-center gap-1 min-w-0">
+                <Star size={10} className="text-yellow-400 fill-yellow-400 shrink-0" />
+                <span className="text-[10px] sm:text-xs font-black text-slate-800 truncate">{product.rating}</span>
+             </div>
+             
+             <button 
+               onClick={(e) => {
+                 e.stopPropagation();
+                 onAddToCart?.(product);
+               }}
+               className="bg-brand-600 hover:bg-brand-700 text-white rounded-xl py-2 px-4 flex items-center justify-center gap-2 shadow-lg shadow-brand-600/10 active:scale-95 transition-all text-[9px] sm:text-[10px] font-black uppercase tracking-widest cursor-pointer"
+             >
+                Tambah <Plus className="w-3 h-3" strokeWidth={3} />
+             </button>
+          </div>
+        </div>
+
+        <button className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 text-slate-400 hover:text-red-500">
+          <Heart size={18} />
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div 
@@ -61,7 +148,7 @@ export default function ProductCard({ product, onAddToCart, onPreview }: Product
 
         <div className="flex items-center gap-1.5 sm:gap-2 mt-2 sm:mt-3 text-slate-400">
            <Calendar size={12} className="text-brand-500 shrink-0" />
-           <p className="text-[9px] sm:text-[10px] font-bold truncate">Panen: <span className="text-slate-700">{product.harvestDate}</span></p>
+           <p className="text-[9px] sm:text-[10px] font-bold truncate">Panen: <span className="text-slate-700">{cleanHarvestDate(product.harvestDate)}</span></p>
         </div>
 
         <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-slate-50 flex items-center justify-between">

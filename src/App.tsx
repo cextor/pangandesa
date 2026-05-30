@@ -23,6 +23,7 @@ import Tracking from './components/UI/Tracking';
 import AIChatPage from './pages/AIChatPage';
 import { Product, Order } from './types';
 import { Settings, Clock } from 'lucide-react';
+import { ensureDayMonthYear } from './utils/harvestHelper';
 
 import AdminDashboard from './pages/AdminDashboard';
 import Invoice from './components/Transaction/Invoice';
@@ -85,6 +86,19 @@ export default function App() {
       {/* ADMIN ROUTES */}
       <Route path="/admin" element={<MainLayout />}>
         <Route index element={<AdminDashboard orders={orders} onConfirmPayment={handleAdminConfirmPayment} />} />
+        <Route path="transaksi-panen" element={
+          orders.find(o => o.status === 'WAITING_HARVEST' || o.status === 'HARVEST_CONFIRMED_SELLER' || o.status === 'WAITING_FINAL_PAYMENT') ? (
+            <OrderForum 
+              order={orders.find(o => o.status === 'WAITING_HARVEST' || o.status === 'HARVEST_CONFIRMED_SELLER' || o.status === 'WAITING_FINAL_PAYMENT')!} 
+              role="admin" 
+              messages={messages}
+              onSendMessage={(c, a) => {
+                const activeOrder = orders.find(o => o.status === 'WAITING_HARVEST' || o.status === 'HARVEST_CONFIRMED_SELLER' || o.status === 'WAITING_FINAL_PAYMENT')!;
+                return sendMessage(activeOrder.id, c, 'admin', a);
+              }}
+            />
+          ) : <Navigate to="/admin" />
+        } />
       </Route>
 
       {/* BUYER ROUTES */}
@@ -94,9 +108,9 @@ export default function App() {
             <ProductDetail 
               product={selectedProduct} 
               onBack={() => setSelectedProduct(null)}
-              onPreOrder={(p, q) => {
+              onPreOrder={(p, q, date) => {
                 setSelectedProduct(null);
-                addToCart(p, q);
+                addToCart(p, q, date);
                 navigate('/buyer/cart');
               }}
             />
@@ -115,7 +129,17 @@ export default function App() {
         <Route path="promo" element={<PromoPage />} />
         <Route path="bantuan" element={<HelpPage />} />
         <Route path="favorit" element={<FavoritesPage onProductSelect={setSelectedProduct} />} />
-        <Route path="pesanan" element={<ActiveOrders orders={orders} onTrack={() => navigate('/buyer/lacak')} />} />
+        <Route path="pesanan" element={
+          <ActiveOrders 
+            orders={orders} 
+            onTrack={() => navigate('/buyer/lacak')} 
+            onPayPelunasan={(orderId) => {
+              setCurrentOrderId(orderId);
+              navigate('/buyer/transaksi-invoice');
+            }}
+            onOpenForum={() => navigate('/buyer/transaksi-panen')}
+          />
+        } />
         <Route path="riwayat" element={<OrderHistory />} />
         <Route path="request-po" element={<BuyerRequestPO />} />
         <Route path="alamat" element={<AddressPage />} />
@@ -142,7 +166,12 @@ export default function App() {
                 buyerId: user?.id ? String(user.id) : '3',
                 sellerId: String(activeSellerId),
                 items: cartItems.map(item => ({
-                  productId: item.id, name: item.name, quantity: item.quantity, price: item.price, image: item.image, unit: item.unit
+                  productId: item.id,
+                  name: item.name + (item.selectedHarvestDate ? ` (Panen: ${ensureDayMonthYear(item.selectedHarvestDate)})` : ''),
+                  quantity: item.quantity,
+                  price: item.price,
+                  image: item.image,
+                  unit: item.unit
                 })),
                 totalAmount: total, dpAmount: total * 0.3, remainingAmount: total * 0.7,
                 status: 'WAITING_PAYMENT_DP',

@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { ShoppingBag, ChevronLeft, MapPin, CreditCard, Wallet, Landmark, Smartphone, Trash2, Clock, CheckCircle2 } from 'lucide-react';
 import { useCart } from '../../contexts/CartContext';
+import { ensureDayMonthYear } from '../../utils/harvestHelper';
 
 interface CartProps {
   onBack: () => void;
@@ -47,7 +48,7 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
 
               <div className="space-y-6">
                 {cartItems.map((item) => (
-                  <div key={item.id} className="flex gap-6 p-4 rounded-3xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100 group relative">
+                  <div key={`${item.id}-${item.selectedHarvestDate || ''}`} className="flex gap-6 p-4 rounded-3xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100 group relative">
                     <div className="w-24 h-24 rounded-2xl overflow-hidden border border-slate-100 shrink-0">
                       <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
                     </div>
@@ -56,18 +57,26 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
                         <h3 className="font-bold text-slate-800">{item.name}</h3>
                         <p className="font-black text-brand-600">{formatter.format(item.price * item.quantity)}</p>
                       </div>
-                      <p className="text-[11px] text-slate-400 font-medium mb-3">{item.quantity} {item.unit} x {formatter.format(item.price)}</p>
-                      <div className="flex items-center gap-4">
-                         <div className="flex items-center gap-1.5 text-yellow-500">
-                            <CheckCircle2 size={12} fill="currentColor" className="text-white" />
-                             <span className="text-[10px] font-bold uppercase tracking-wider">Ready for Harvest</span>
-                         </div>
-                         <button 
-                           onClick={() => removeFromCart(item.id)}
-                           className="text-[10px] font-bold text-red-500 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 cursor-pointer"
-                         >
-                           <Trash2 size={12} /> Hapus
-                         </button>
+                      <p className="text-[11px] text-slate-400 font-medium mb-1">{item.quantity} {item.unit} x {formatter.format(item.price)}</p>
+                      
+                      {item.selectedHarvestDate && (
+                        <div className="flex items-center gap-1.5 text-orange-600 mb-2 mt-0.5">
+                           <Clock size={12} />
+                           <span className="text-[10px] font-black uppercase tracking-wider">Estimasi Panen: {ensureDayMonthYear(item.selectedHarvestDate)}</span>
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-4 mt-1">
+                          <div className="flex items-center gap-1.5 text-yellow-500">
+                             <CheckCircle2 size={12} fill="currentColor" className="text-white" />
+                              <span className="text-[10px] font-bold uppercase tracking-wider">Ready for Harvest</span>
+                          </div>
+                          <button 
+                            onClick={() => removeFromCart(item.id, item.selectedHarvestDate)}
+                            className="text-[10px] font-bold text-red-500 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 cursor-pointer border-0 bg-transparent"
+                          >
+                            <Trash2 size={12} /> Hapus
+                          </button>
                       </div>
                     </div>
                   </div>

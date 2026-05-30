@@ -54,8 +54,25 @@ export interface ChatMessage {
   text?: string;
 }
 
+export interface HarvestSchedule {
+  date: string;
+  status: string;
+  actualDate?: string;
+  stock: number;
+  price: number;
+  isPreOrder: boolean;
+}
+
 export interface CartItem extends Product {
   quantity: number;
+  selectedHarvestDate?: string;
+}
+
+export interface ProductImage {
+  id?: string;
+  productId?: string;
+  imagePath: string;
+  isMain: boolean;
 }
 
 export interface Product {
@@ -73,6 +90,7 @@ export interface Product {
   stock: number;
   description: string;
   isPreOrder: boolean;
+  images?: ProductImage[];
 }
 
 export interface BuyerRequest {

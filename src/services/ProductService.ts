@@ -21,6 +21,7 @@ export const ProductService = {
         stock: Number(p.stock || 0),
         description: p.description || '',
         isPreOrder: p.is_preorder == 1 || p.isPreOrder == true,
+        images: p.images || [],
       }));
     } catch (error) {
       console.error('Failed to fetch products:', error);
@@ -47,6 +48,7 @@ export const ProductService = {
         stock: Number(p.stock || 0),
         description: p.description || '',
         isPreOrder: p.is_preorder == 1 || p.isPreOrder == true,
+        images: p.images || [],
       };
     } catch (error) {
       console.error(`Failed to fetch product ${id}:`, error);
@@ -78,6 +80,7 @@ export const ProductService = {
         is_preorder: productData.isPreOrder ? 1 : 0,
         harvest_date: productData.harvestDate || '2026-06-10',
         image: productData.image,
+        images: productData.images || [],
         rating: 0,
         review_count: 0
       };
@@ -100,6 +103,7 @@ export const ProductService = {
         stock: Number(p.stock),
         description: p.description,
         isPreOrder: p.is_preorder == 1 || p.isPreOrder == true,
+        images: p.images || [],
       };
     } catch (error) {
       console.error('Failed to create product:', error);
@@ -130,6 +134,7 @@ export const ProductService = {
         is_preorder: productData.isPreOrder ? 1 : 0,
         harvest_date: productData.harvestDate || '2026-06-10',
         image: productData.image,
+        images: productData.images || [],
       };
 
       const response = await apiClient.put(`/products/${id}`, payload);
@@ -149,6 +154,7 @@ export const ProductService = {
         stock: Number(productData.stock || 0),
         description: productData.description || '',
         isPreOrder: !!productData.isPreOrder,
+        images: p.images || productData.images || [],
       };
     } catch (error) {
       console.error('Failed to update product:', error);

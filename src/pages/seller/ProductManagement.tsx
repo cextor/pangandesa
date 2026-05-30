@@ -12,59 +12,30 @@ import {
   ChevronRight,
   ChevronLeft,
   Package,
-  AlertCircle
+  AlertCircle,
+  LayoutGrid,
+  List
 } from 'lucide-react';
 import { Product } from '../../types';
 import ProductForm from '../../components/Seller/ProductForm';
 import { ProductService } from '../../services/ProductService';
 
-const INITIAL_PRODUCTS: Product[] = [
-  { 
-    id: '1', 
-    name: 'Tomat Segar', 
-    price: 16000, 
-    unit: 'kg', 
-    farmer: 'Pak Joko', 
-    category: 'Buah', 
-    image: 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?q=80&w=200', 
-    harvestDate: '10 Mei 2024',
-    rating: 4.8,
-    reviewCount: 132,
-    stock: 50,
-    description: 'Tomat segar dipanen langsung dari kebun kami.',
-    isPreOrder: true
-  },
-  { 
-    id: '2', 
-    name: 'Cabai Merah Keriting', 
-    price: 28000, 
-    unit: 'kg', 
-    farmer: 'Pak Joko', 
-    category: 'Sayur', 
-    image: 'https://images.unsplash.com/photo-1599488615731-7e5c2823ff28?q=80&w=600', 
-    harvestDate: '12 Mei 2024',
-    rating: 4.9,
-    reviewCount: 85,
-    stock: 30,
-    description: 'Cabai merah premium kualitas ekspor.',
-    isPreOrder: false
-  },
-  { 
-    id: '3', 
-    name: 'Jagung Manis', 
-    price: 9500, 
-    unit: 'kg', 
-    farmer: 'Pak Joko', 
-    category: 'Sayur', 
-    image: 'https://images.unsplash.com/photo-1551754655-cd27e38d2076?q=80&w=600', 
-    harvestDate: '15 Mei 2024',
-    rating: 4.7,
-    reviewCount: 42,
-    stock: 100,
-    description: 'Jagung manis organik, segar dari ladang.',
-    isPreOrder: true
-  },
-];
+import { parseHarvestSchedules } from '../../utils/harvestHelper';
+
+const cleanHarvestDate = (dateStr?: string) => {
+  if (!dateStr) return '';
+  const schedules = parseHarvestSchedules(dateStr, 0, 0, true);
+  return schedules
+    .filter(s => s.status === 'READY' && s.isPreOrder)
+    .map(s => {
+      const parts = s.date.split('-');
+      if (parts.length === 3) {
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+      }
+      return s.date;
+    })
+    .join(', ');
+};
 
 export default function ProductManagement() {
   const [products, setProducts] = React.useState<Product[]>([]);
@@ -74,6 +45,8 @@ export default function ProductManagement() {
   const [searchQuery, setSearchQuery] = React.useState('');
   const [productToDelete, setProductToDelete] = React.useState<Product | null>(null);
   const [isDeleting, setIsDeleting] = React.useState(false);
+  const [viewMode, setViewMode] = React.useState<'grid' | 'list'>('grid');
+  const [filterPreOrder, setFilterPreOrder] = React.useState<'ALL' | 'PRE_ORDER' | 'READY'>('ALL');
 
   React.useEffect(() => {
     ProductService.getAllProducts().then((data) => {
@@ -118,9 +91,14 @@ export default function ProductManagement() {
     setEditingProduct(null);
   };
 
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredProducts = products.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesPreOrder = 
+      filterPreOrder === 'ALL' ? true : 
+      filterPreOrder === 'PRE_ORDER' ? p.isPreOrder : 
+      !p.isPreOrder;
+    return matchesSearch && matchesPreOrder;
+  });
 
   if (isAddingMode || editingProduct) {
     return (
@@ -196,7 +174,7 @@ export default function ProductManagement() {
                  </div>
                  <div className="flex justify-between items-center">
                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Estimasi Panen</span>
-                    <span className="text-sm font-black text-slate-800">{selectedProductForDetail.harvestDate}</span>
+                    <span className="text-sm font-black text-slate-800">{cleanHarvestDate(selectedProductForDetail.harvestDate)}</span>
                  </div>
               </div>
 
@@ -287,96 +265,210 @@ export default function ProductManagement() {
         </div>
 
         {/* Filters & Search */}
-        <div className="flex flex-col md:flex-row items-center gap-4">
-          <div className="flex-1 w-full relative group">
-            <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none text-slate-400 group-focus-within:text-brand-600 transition-colors">
-              <Search size={20} />
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-4 bg-white p-4 rounded-[28px] border border-slate-100 shadow-sm">
+          {/* Search Input */}
+          <div className="flex-1 relative group">
+            <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#1a4d2e] transition-colors">
+              <Search size={18} />
             </div>
             <input 
               type="text" 
               placeholder="Cari produk Anda..." 
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full bg-white border border-slate-100 rounded-[28px] py-4 pl-16 pr-6 text-sm font-medium focus:outline-none focus:ring-4 focus:ring-brand-500/5 focus:border-brand-200 transition-all shadow-sm"
+              className="w-full bg-slate-50 border border-slate-100 rounded-[20px] py-3 pl-14 pr-6 text-xs sm:text-sm font-semibold focus:outline-none focus:ring-4 focus:ring-brand-500/5 focus:border-brand-200 transition-all shadow-inner placeholder:text-slate-300 text-slate-800"
             />
           </div>
-          <button className="w-full md:w-auto bg-white border border-slate-100 rounded-[24px] px-8 py-4 flex items-center justify-center gap-2 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all shadow-sm">
-            <Filter size={18} /> Filter
-          </button>
+
+          {/* Pre-Order / Ready Filter */}
+          <div className="flex bg-slate-50 p-1 rounded-xl border border-slate-100 shrink-0 self-center lg:self-auto">
+             <button
+               onClick={() => setFilterPreOrder('ALL')}
+               className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${filterPreOrder === 'ALL' ? 'bg-[#1a4d2e] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+             >
+               Semua
+             </button>
+             <button
+               onClick={() => setFilterPreOrder('PRE_ORDER')}
+               className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-1 ${filterPreOrder === 'PRE_ORDER' ? 'bg-[#1a4d2e] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+             >
+               Pre-Order
+             </button>
+             <button
+               onClick={() => setFilterPreOrder('READY')}
+               className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${filterPreOrder === 'READY' ? 'bg-[#1a4d2e] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+             >
+               Stok Ready
+             </button>
+          </div>
+
+          {/* View mode toggle */}
+          <div className="flex bg-slate-50 p-1 rounded-xl border border-slate-100 shrink-0 self-center lg:self-auto">
+             <button
+               type="button"
+               onClick={() => setViewMode('grid')}
+               className={`p-2 rounded-lg transition-all border-0 bg-transparent cursor-pointer ${viewMode === 'grid' ? 'bg-[#1a4d2e] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+               title="Tampilan Grid"
+             >
+               <LayoutGrid size={14} />
+             </button>
+             <button
+               type="button"
+               onClick={() => setViewMode('list')}
+               className={`p-2 rounded-lg transition-all border-0 bg-transparent cursor-pointer ${viewMode === 'list' ? 'bg-[#1a4d2e] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+               title="Tampilan List"
+             >
+               <List size={14} />
+             </button>
+          </div>
         </div>
 
-        {/* Product Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {filteredProducts.map((product) => (
-            <motion.div 
-              layout
-              key={product.id}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              onClick={(e) => {
-                const target = e.target as HTMLElement;
-                if (target.closest('button')) return;
-                setSelectedProductForDetail(product);
-              }}
-              className="bg-white rounded-[24px] border border-slate-100 shadow-sm overflow-hidden group hover:border-brand-200 hover:shadow-md transition-all duration-300 cursor-pointer"
-            >
-              <div className="relative h-44 w-full overflow-hidden">
-                <img src={product.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={product.name} />
-                <div className="absolute top-4 left-4 flex gap-1.5">
-                   {product.isPreOrder && (
-                     <span className="bg-brand-600/90 backdrop-blur-md text-white px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-widest shadow-sm">Pre-Order</span>
-                   )}
-                   <span className="bg-white/90 backdrop-blur-md text-slate-800 px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-widest shadow-sm">{product.category}</span>
-                </div>
-                <div className="absolute top-4 right-4 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                   <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setEditingProduct(product);
-                    }}
-                    className="w-8 h-8 bg-white rounded-lg shadow-md flex items-center justify-center text-slate-600 hover:text-brand-600 hover:scale-110 transition-all cursor-pointer"
-                   >
-                     <Edit3 size={14} />
-                   </button>
-                   <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setProductToDelete(product);
-                    }}
-                    className="w-8 h-8 bg-white rounded-lg shadow-md flex items-center justify-center text-slate-600 hover:text-red-500 hover:scale-110 transition-all cursor-pointer"
-                   >
-                     <Trash2 size={14} />
-                   </button>
-                </div>
-              </div>
-              <div className="p-5">
-                <div className="flex items-center justify-between mb-1.5">
-                   <h3 className="text-sm font-black text-slate-800 leading-tight truncate pr-2">{product.name}</h3>
-                   <div className="flex items-center gap-1 shrink-0">
-                      <Star size={12} className="text-yellow-400 fill-yellow-400" />
-                      <span className="text-xs font-bold text-slate-700">{product.rating}</span>
+        {/* Product Grid / List */}
+        <div className={
+          viewMode === 'grid'
+            ? "grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5"
+            : "grid grid-cols-1 gap-4 sm:gap-6 max-w-4xl mx-auto"
+        }>
+          {filteredProducts.map((product) => {
+            if (viewMode === 'list') {
+              return (
+                <motion.div 
+                  layout
+                  key={product.id}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  onClick={(e) => {
+                    const target = e.target as HTMLElement;
+                    if (target.closest('button')) return;
+                    setSelectedProductForDetail(product);
+                  }}
+                  className="bg-white rounded-[24px] border border-slate-100 shadow-sm overflow-hidden group hover:border-brand-200 hover:shadow-md transition-all duration-300 cursor-pointer flex flex-row p-4 gap-6 items-center"
+                >
+                   <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-xl overflow-hidden shrink-0 relative bg-slate-50 border border-slate-100 flex items-center justify-center">
+                      <img src={product.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={product.name} />
+                      <div className="absolute top-2 left-2 flex gap-1">
+                         {product.isPreOrder && (
+                           <span className="bg-brand-600/90 text-white px-2 py-0.5 rounded-full text-[7px] font-black uppercase tracking-widest shadow-sm">Pre-Order</span>
+                         )}
+                      </div>
                    </div>
-                </div>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-4 leading-none">Stok: {product.stock} {product.unit}</p>
-                <div className="flex items-center justify-between pt-4 border-t border-slate-50">
-                   <div>
-                     <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">Harga per {product.unit}</p>
-                     <p className="text-base font-black text-slate-800">Rp {product.price.toLocaleString('id-ID')}</p>
+                   <div className="flex-1 flex flex-col justify-between min-w-0 h-full">
+                      <div className="space-y-1">
+                         <div className="flex items-center justify-between">
+                            <h3 className="text-sm sm:text-base font-black text-slate-800 leading-tight truncate pr-2 uppercase tracking-tight">{product.name}</h3>
+                            <div className="flex items-center gap-1 shrink-0">
+                               <Star size={12} className="text-yellow-400 fill-yellow-400" />
+                               <span className="text-xs font-bold text-slate-700">{product.rating}</span>
+                            </div>
+                         </div>
+                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Stok: {product.stock} {product.unit} • Kat: {product.category}</p>
+                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Estimasi Panen: {cleanHarvestDate(product.harvestDate)}</p>
+                      </div>
+                      <div className="flex items-center justify-between pt-3 border-t border-slate-50 mt-3">
+                         <div>
+                           <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">Harga per {product.unit}</p>
+                           <p className="text-sm sm:text-base font-black text-slate-800">Rp {product.price.toLocaleString('id-ID')}</p>
+                         </div>
+                         <div className="flex items-center gap-2">
+                            <button 
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingProduct(product);
+                              }}
+                              className="p-2.5 bg-slate-50 hover:bg-brand-50 text-slate-400 hover:text-brand-600 rounded-lg transition-all cursor-pointer border-0"
+                            >
+                              <Edit3 size={14} />
+                            </button>
+                            <button 
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setProductToDelete(product);
+                              }}
+                              className="p-2.5 bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-lg transition-all cursor-pointer border-0"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                         </div>
+                      </div>
                    </div>
-                   <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setEditingProduct(product);
-                    }}
-                    className="p-3 bg-slate-50 text-slate-400 rounded-xl hover:bg-brand-50 hover:text-brand-600 transition-all group/btn cursor-pointer"
-                   >
-                     <Package size={16} className="group-hover/btn:scale-110 transition-transform" />
-                   </button>
+                </motion.div>
+              );
+            }
+
+            return (
+              <motion.div 
+                layout
+                key={product.id}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                onClick={(e) => {
+                  const target = e.target as HTMLElement;
+                  if (target.closest('button')) return;
+                  setSelectedProductForDetail(product);
+                }}
+                className="bg-white rounded-[24px] border border-slate-100 shadow-sm overflow-hidden group hover:border-brand-200 hover:shadow-md transition-all duration-300 cursor-pointer"
+              >
+                <div className="relative h-28 sm:h-44 w-full overflow-hidden bg-slate-50">
+                  <img src={product.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={product.name} />
+                  <div className="absolute top-2 sm:top-4 left-2 sm:left-4 flex gap-1 sm:gap-1.5 flex-wrap">
+                     {product.isPreOrder && (
+                       <span className="bg-brand-600/90 backdrop-blur-md text-white px-2 py-0.5 sm:py-1 rounded-full text-[6px] sm:text-[8px] font-black uppercase tracking-widest shadow-sm">Pre-Order</span>
+                     )}
+                     <span className="bg-white/90 backdrop-blur-md text-slate-800 px-2 py-0.5 sm:py-1 rounded-full text-[6px] sm:text-[8px] font-black uppercase tracking-widest shadow-sm">{product.category}</span>
+                  </div>
+                  <div className="absolute top-2 sm:top-4 right-2 sm:right-4 flex flex-col gap-1 sm:gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                     <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingProduct(product);
+                      }}
+                      className="w-6 h-6 sm:w-8 sm:h-8 bg-white rounded-lg shadow-md flex items-center justify-center text-slate-600 hover:text-brand-600 hover:scale-110 transition-all cursor-pointer border-0"
+                     >
+                       <Edit3 size={11} className="sm:w-3.5 sm:h-3.5" />
+                     </button>
+                     <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setProductToDelete(product);
+                      }}
+                      className="w-6 h-6 sm:w-8 sm:h-8 bg-white rounded-lg shadow-md flex items-center justify-center text-slate-600 hover:text-red-500 hover:scale-110 transition-all cursor-pointer border-0"
+                     >
+                       <Trash2 size={11} className="sm:w-3.5 sm:h-3.5" />
+                     </button>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          ))}
- 
+                <div className="p-3 sm:p-5">
+                  <div className="flex items-center justify-between mb-1 sm:mb-1.5">
+                     <h3 className="text-xs sm:text-base font-black text-slate-800 leading-tight truncate pr-2 uppercase tracking-tight">{product.name}</h3>
+                     <div className="flex items-center gap-1 shrink-0">
+                        <Star size={11} className="text-yellow-400 fill-yellow-400" />
+                        <span className="text-[10px] sm:text-xs font-bold text-slate-700">{product.rating}</span>
+                     </div>
+                  </div>
+                  <p className="text-[8px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2 leading-none">Stok: {product.stock} {product.unit}</p>
+                  <p className="text-[7px] sm:text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-3 truncate leading-none">Panen: {cleanHarvestDate(product.harvestDate)}</p>
+                  <div className="flex items-center justify-between pt-2 sm:pt-4 border-t border-slate-50">
+                     <div>
+                       <p className="text-[7px] sm:text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">Harga / {product.unit}</p>
+                       <p className="text-xs sm:text-base font-black text-slate-800">Rp {product.price.toLocaleString('id-ID')}</p>
+                     </div>
+                     <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingProduct(product);
+                      }}
+                      className="p-1.5 sm:p-3 bg-slate-50 text-slate-400 rounded-lg hover:bg-brand-50 hover:text-brand-600 transition-all group/btn cursor-pointer border-0 shrink-0"
+                     >
+                       <Package size={12} className="sm:w-4 sm:h-4 group-hover/btn:scale-110 transition-transform" />
+                     </button>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+  
           {/* Empty State / Add New Card */}
           <div 
             onClick={() => setIsAddingMode(true)}

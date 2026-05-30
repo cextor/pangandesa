@@ -3,10 +3,19 @@ import {
   ChevronLeft, 
   ChevronDown, 
   Calendar, 
-  Image as ImageIcon
+  Image as ImageIcon,
+  X,
+  Plus,
+  Star
 } from 'lucide-react';
 import { APP_LOGO } from '../../constants';
-import { Product } from '../../types';
+import { Product, HarvestSchedule, ProductImage } from '../../types';
+import { 
+  parseHarvestSchedules, 
+  serializeHarvestSchedules, 
+  getTodayISODate, 
+  formatISOToFriendlyDate 
+} from '../../utils/harvestHelper';
 
 interface ProductFormProps {
   product?: Product;
@@ -14,72 +23,16 @@ interface ProductFormProps {
   onCancel: () => void;
 }
 
-const getTodayISODate = () => {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+const formatCurrencyInput = (value: number | string) => {
+  if (value === undefined || value === null || value === '') return '';
+  const cleanVal = String(value).replace(/\D/g, '');
+  if (!cleanVal) return '';
+  return new Intl.NumberFormat('id-ID').format(Number(cleanVal));
 };
 
-const convertToISODate = (dateStr?: string) => {
-  if (!dateStr) return getTodayISODate();
-  
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-    return dateStr;
-  }
-  
-  try {
-    const parts = dateStr.trim().split(/\s+/);
-    if (parts.length === 3) {
-      const day = parts[0].padStart(2, '0');
-      const monthStr = parts[1].toLowerCase();
-      const year = parts[2];
-      
-      const monthsMap: { [key: string]: string } = {
-        januari: '01', jan: '01',
-        februari: '02', pebruari: '02', feb: '02',
-        maret: '03', mar: '03',
-        april: '04', apr: '04',
-        mei: '05', may: '05',
-        juni: '06', jun: '06',
-        juli: '07', jul: '07',
-        agustus: '08', agt: '08', aug: '08',
-        september: '09', sep: '09',
-        oktober: '10', okt: '10', oct: '10',
-        november: '11', nov: '11',
-        desember: '12', des: '12', dec: '12'
-      };
-      
-      const month = monthsMap[monthStr] || '01';
-      return `${year}-${month}-${day}`;
-    }
-  } catch (e) {
-    console.error('Failed to parse date string:', dateStr, e);
-  }
-  
-  return getTodayISODate();
-};
-
-const formatISOToFriendlyDate = (isoStr: string) => {
-  if (!isoStr) return '';
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(isoStr)) return isoStr;
-  
-  try {
-    const parts = isoStr.split('-');
-    const year = parts[0];
-    const monthIndex = parseInt(parts[1], 10) - 1;
-    const day = parseInt(parts[2], 10);
-    
-    const months = [
-      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-    ];
-    
-    return `${day} ${months[monthIndex]} ${year}`;
-  } catch (e) {
-    return isoStr;
-  }
+const parseCurrencyInput = (formattedStr: string): number => {
+  const cleanVal = formattedStr.replace(/\D/g, '');
+  return cleanVal ? Number(cleanVal) : 0;
 };
 
 export default function ProductForm({ product, onSave, onCancel }: ProductFormProps) {
@@ -89,7 +42,6 @@ export default function ProductForm({ product, onSave, onCancel }: ProductFormPr
     if (product) {
       return {
         ...product,
-        harvestDate: convertToISODate(product.harvestDate),
       };
     }
     return {
@@ -99,29 +51,108 @@ export default function ProductForm({ product, onSave, onCancel }: ProductFormPr
       price: 0,
       stock: 0,
       description: '',
-      harvestDate: getTodayISODate(),
       isPreOrder: true,
       image: '',
     };
   });
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
+  const [harvestDateList, setHarvestDateList] = React.useState<HarvestSchedule[]>(() => {
+    return parseHarvestSchedules(
+      product?.harvestDate,
+      product?.stock || 0,
+      product?.price || 0,
+      product?.isPreOrder || false
+    );
+  });
+
+  const [productImages, setProductImages] = React.useState<ProductImage[]>(() => {
+    if (product?.images && product.images.length > 0) {
+      return product.images;
+    }
+    if (product?.image) {
+      return [{ imagePath: product.image, isMain: true }];
+    }
+    return [];
+  });
+
+  const handleMultipleFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    
+    if (productImages.length + files.length > 5) {
+      alert("Maksimal gambar produk yang diperbolehkan adalah 5 foto.");
+      return;
+    }
+    
+    for (const file of files) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert(`File "${file.name}" melebihi batas ukuran 2MB. Silakan pilih foto dengan ukuran yang lebih kecil.`);
+        return;
+      }
+    }
+    
+    files.forEach((file) => {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, image: reader.result as string }));
+        const base64 = reader.result as string;
+        setProductImages((prev) => {
+          const hasMain = prev.some(img => img.isMain);
+          return [
+            ...prev,
+            {
+              imagePath: base64,
+              isMain: prev.length === 0 || !hasMain
+            }
+          ];
+        });
       };
       reader.readAsDataURL(file);
-    }
+    });
+  };
+
+  const handleDeleteImage = (indexToDelete: number) => {
+    setProductImages((prev) => {
+      const updated = prev.filter((_, i) => i !== indexToDelete);
+      if (prev[indexToDelete]?.isMain && updated.length > 0) {
+        updated[0].isMain = true;
+      }
+      return updated;
+    });
+  };
+
+  const handleSetMainImage = (indexToMain: number) => {
+    setProductImages((prev) =>
+      prev.map((img, i) => ({
+        ...img,
+        isMain: i === indexToMain,
+      }))
+    );
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const friendlyHarvestDate = formatISOToFriendlyDate(formData.harvestDate || '');
+    
+    // Auto-calculate base fields from schedules
+    const activeSchedules = harvestDateList.filter(s => s.status === 'READY');
+    const isPreOrder = harvestDateList.some(s => s.isPreOrder && s.status === 'READY');
+    const totalStock = activeSchedules.reduce((sum, s) => sum + s.stock, 0);
+    
+    const preOrderSchedules = harvestDateList.filter(s => s.isPreOrder && s.status === 'READY');
+    const calculatedPrice = preOrderSchedules.length > 0 
+      ? Math.min(...preOrderSchedules.map(s => s.price)) 
+      : (harvestDateList.length > 0 ? harvestDateList[0].price : formData.price || 0);
+
+    const friendlyHarvestDates = serializeHarvestSchedules(harvestDateList);
+    const mainImg = productImages.find(img => img.isMain)?.imagePath || (productImages.length > 0 ? productImages[0].imagePath : '');
+
     onSave({
       ...formData,
-      harvestDate: friendlyHarvestDate,
+      isPreOrder,
+      stock: totalStock,
+      price: calculatedPrice,
+      harvestDate: friendlyHarvestDates,
+      image: mainImg,
+      images: productImages,
     });
   };
 
@@ -144,33 +175,81 @@ export default function ProductForm({ product, onSave, onCancel }: ProductFormPr
       </div>
 
       <form onSubmit={handleSubmit} className="flex-1 p-6 md:p-10 space-y-8 md:space-y-10 overflow-y-auto custom-scrollbar">
-        {/* Simple Image Selector - More compact */}
-        <div className="bg-slate-50 border border-slate-100 rounded-[24px] md:rounded-[32px] p-5 md:p-6 flex flex-col sm:flex-row items-center gap-4 md:gap-6">
-           <div className="w-20 h-20 md:w-24 md:h-24 shrink-0 rounded-xl md:rounded-2xl border-2 border-white shadow-sm overflow-hidden bg-white flex items-center justify-center">
-              {formData.image ? (
-                <img src={formData.image} className="w-full h-full object-cover" alt="Selected" />
-              ) : (
-                <ImageIcon size={28} className="text-slate-200" />
-              )}
-           </div>
-           <div className="flex-1 text-center sm:text-left">
-              <h4 className="text-xs md:text-sm font-black text-slate-800 uppercase tracking-tight mb-1">Foto Produk Utama</h4>
-              <p className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 md:mb-4">Gunakan foto berkualitas tinggi</p>
+        {/* Multi Image Upload Grid */}
+        <div className="bg-slate-50 border border-slate-100 rounded-[24px] md:rounded-[32px] p-5 md:p-6 space-y-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+            <div>
+              <h4 className="text-xs md:text-sm font-black text-slate-800 uppercase tracking-tight">Foto Produk ({productImages.length}/5)</h4>
+              <p className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-1">Maksimal 5 foto, ukuran berkas maks 2MB per foto</p>
+            </div>
+            {productImages.length < 5 && (
               <button 
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="bg-white border border-slate-200 px-5 md:px-6 py-2 md:py-2.5 rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-600 hover:border-brand-500 hover:text-brand-600 transition-all shadow-sm cursor-pointer"
+                className="bg-white border border-slate-200 px-4 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest text-brand-600 hover:border-brand-500 hover:text-brand-650 transition-all shadow-sm cursor-pointer flex items-center gap-1.5"
               >
-                Ganti Foto
+                <Plus size={12} /> Tambah Foto
               </button>
-              <input 
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                accept="image/*"
-                className="hidden"
-              />
-           </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 md:gap-4">
+            {productImages.map((img, index) => (
+              <div 
+                key={index} 
+                className={`relative aspect-square rounded-2xl border-2 overflow-hidden bg-white shadow-xs group transition-all ${
+                  img.isMain ? 'border-brand-500 ring-4 ring-brand-100' : 'border-slate-150 hover:border-brand-200'
+                }`}
+              >
+                <img src={img.imagePath} className="w-full h-full object-cover" alt={`Preview ${index + 1}`} />
+                
+                {/* Delete button */}
+                <button
+                  type="button"
+                  onClick={() => handleDeleteImage(index)}
+                  className="absolute top-2 right-2 p-1.5 bg-red-50 hover:bg-red-550 text-red-550 hover:text-white rounded-lg transition-all shadow-sm opacity-90 hover:opacity-100 border-0 cursor-pointer flex items-center justify-center"
+                  title="Hapus Foto"
+                >
+                  <X size={12} />
+                </button>
+                
+                {/* Main image label/toggle */}
+                <button
+                  type="button"
+                  onClick={() => handleSetMainImage(index)}
+                  className={`absolute bottom-2 left-2 right-2 py-1 px-1.5 rounded-lg text-[8px] font-black uppercase tracking-wider text-center transition-all border-0 cursor-pointer flex items-center justify-center gap-1 ${
+                    img.isMain 
+                      ? 'bg-brand-600 text-white shadow-sm' 
+                      : 'bg-white/85 backdrop-blur-xs text-slate-700 hover:bg-white hover:text-slate-800'
+                  }`}
+                >
+                  <Star size={8} className={img.isMain ? 'fill-white text-white' : 'text-slate-400'} />
+                  {img.isMain ? 'Utama' : 'Set Utama'}
+                </button>
+              </div>
+            ))}
+            
+            {/* Dashed placeholder for additional uploads */}
+            {productImages.length < 5 && (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="aspect-square rounded-2xl border-2 border-dashed border-slate-200 hover:border-brand-400 bg-white flex flex-col items-center justify-center p-3 text-slate-400 hover:text-brand-600 transition-all cursor-pointer shadow-xs gap-1.5"
+              >
+                <ImageIcon size={22} className="text-slate-350" />
+                <span className="text-[8px] font-black uppercase tracking-widest text-center">Tambah Foto</span>
+              </button>
+            )}
+          </div>
+          
+          <input 
+            type="file"
+            ref={fileInputRef}
+            onChange={handleMultipleFilesChange}
+            accept="image/*"
+            multiple
+            className="hidden"
+          />
         </div>
 
         {/* Input Fields */}
@@ -229,9 +308,9 @@ export default function ProductForm({ product, onSave, onCancel }: ProductFormPr
               <div className="relative">
                 <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 font-black text-[10px] uppercase tracking-widest">Rp</div>
                 <input 
-                  type="number"
-                  value={formData.price || ''}
-                  onChange={e => setFormData({ ...formData, price: Number(e.target.value) })}
+                  type="text"
+                  value={formatCurrencyInput(formData.price || '')}
+                  onChange={e => setFormData({ ...formData, price: parseCurrencyInput(e.target.value) })}
                   className="w-full bg-slate-50 border border-slate-100 rounded-xl md:rounded-2xl py-4 md:py-5 pl-14 pr-5 text-sm font-black focus:ring-4 focus:ring-brand-500/5 focus:border-brand-300 outline-none transition-all shadow-inner"
                   placeholder="0"
                   required
@@ -265,55 +344,160 @@ export default function ProductForm({ product, onSave, onCancel }: ProductFormPr
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
-            <div className="space-y-1.5 md:space-y-2">
-              <label className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Estimasi Panen</label>
-              <div className="relative">
-                <input 
-                  type="date"
-                  value={formData.harvestDate}
-                  onChange={e => setFormData({ ...formData, harvestDate: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-100 rounded-xl md:rounded-2xl p-4 md:p-5 text-sm font-bold focus:ring-4 focus:ring-brand-500/5 focus:border-brand-300 outline-none transition-all shadow-inner text-slate-700"
-                />
-                <Calendar size={18} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-              </div>
-            </div>
-            <div className="space-y-1.5 md:space-y-2">
-              <label className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Metode Penanaman</label>
-              <div className="relative">
-                <select 
-                  className="w-full bg-slate-50 border border-slate-100 rounded-xl md:rounded-2xl p-4 md:p-5 text-sm font-bold focus:ring-4 focus:ring-brand-500/5 focus:border-brand-300 outline-none transition-all shadow-inner appearance-none pr-12 text-slate-700"
-                >
-                  <option>Organik Berertifikat</option>
-                  <option>Konvensional Aman</option>
-                  <option>Hidroponik Modern</option>
-                </select>
-                <ChevronDown size={18} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-              </div>
+          {/* Metode Penanaman */}
+          <div className="space-y-1.5 md:space-y-2">
+            <label className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Metode Penanaman</label>
+            <div className="relative">
+              <select 
+                className="w-full bg-slate-50 border border-slate-100 rounded-xl md:rounded-2xl p-4 md:p-5 text-sm font-bold focus:ring-4 focus:ring-brand-500/5 focus:border-brand-300 outline-none transition-all shadow-inner appearance-none pr-12 text-slate-700"
+              >
+                <option>Organik Bersertifikat</option>
+                <option>Konvensional Aman</option>
+                <option>Hidroponik Modern</option>
+              </select>
+              <ChevronDown size={18} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             </div>
           </div>
 
+          {/* Jadwal Tanggal Panen - Wide structured layout */}
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 ml-1">
+              <label className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-relaxed">
+                Jadwal Tanggal Panen & Informasi Ketersediaan
+              </label>
+              <span className="text-[8px] md:text-[9px] font-bold text-slate-450 uppercase tracking-wider italic leading-normal">
+                *Harga & stok utama otomatis terhitung dari jadwal panen aktif
+              </span>
+            </div>
+            
+            <div className="space-y-4">
+              {harvestDateList.map((item, idx) => (
+                <div key={idx} className="bg-slate-50 p-4 md:p-6 rounded-[24px] md:rounded-[32px] border border-slate-100 space-y-4 shadow-sm relative group">
+                  <div className="flex items-center justify-between border-b border-slate-200/50 pb-2">
+                    <span className="text-[10px] font-black text-[#1a4d2e] uppercase tracking-widest">Jadwal Siklus #{idx + 1}</span>
+                    {harvestDateList.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => setHarvestDateList(harvestDateList.filter((_, i) => i !== idx))}
+                        className="p-1.5 bg-red-50 text-red-500 hover:bg-red-550 hover:text-white rounded-lg transition-all border-0 cursor-pointer flex items-center justify-center"
+                        title="Hapus Tanggal"
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Date Input */}
+                    <div className="space-y-1.5">
+                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Estimasi Tanggal Panen</span>
+                      <div className="relative">
+                        <input 
+                          type="date"
+                          value={item.date}
+                          onChange={e => {
+                            const newList = [...harvestDateList];
+                            newList[idx].date = e.target.value;
+                            setHarvestDateList(newList);
+                          }}
+                          className="w-full bg-white border border-slate-250 rounded-xl p-3.5 text-xs font-bold focus:ring-4 focus:ring-brand-500/5 focus:border-brand-300 outline-none text-slate-700"
+                          required
+                        />
+                        <Calendar size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                      </div>
+                    </div>
+                    
+                    {/* Pre-Order Toggle */}
+                    <div className="space-y-1.5">
+                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Status Pre-Order Jadwal</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newList = [...harvestDateList];
+                          newList[idx].isPreOrder = !newList[idx].isPreOrder;
+                          setHarvestDateList(newList);
+                        }}
+                        className={`w-full py-3.5 px-4 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all border flex items-center justify-center gap-1.5 cursor-pointer h-[46px] ${
+                          item.isPreOrder 
+                            ? 'bg-brand-50 text-brand-600 border-brand-200 shadow-sm shadow-brand-500/5' 
+                            : 'bg-white text-slate-400 border-slate-250'
+                        }`}
+                      >
+                        {item.isPreOrder ? 'Pre-Order Aktif ✓' : 'Pre-Order Nonaktif'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Stock Input */}
+                    <div className="space-y-1.5">
+                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Stok Panen ({formData.unit || 'kg'})</span>
+                      <input 
+                        type="number"
+                        value={item.stock}
+                        onChange={e => {
+                          const newList = [...harvestDateList];
+                          newList[idx].stock = Number(e.target.value);
+                          setHarvestDateList(newList);
+                        }}
+                        className="w-full bg-white border border-slate-250 rounded-xl p-3.5 text-xs font-black text-slate-700 outline-none shadow-sm focus:border-brand-200"
+                        placeholder="0"
+                        min="0"
+                        required
+                      />
+                    </div>
+
+                    {/* Price Input */}
+                    <div className="space-y-1.5">
+                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Harga per Satuan (Rp)</span>
+                      <input 
+                        type="text"
+                        value={formatCurrencyInput(item.price)}
+                        onChange={e => {
+                          const newList = [...harvestDateList];
+                          newList[idx].price = parseCurrencyInput(e.target.value);
+                          setHarvestDateList(newList);
+                        }}
+                        className="w-full bg-white border border-slate-250 rounded-xl p-3.5 text-xs font-black text-slate-700 outline-none shadow-sm focus:border-brand-200"
+                        placeholder="Rp"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <button
+              type="button"
+              onClick={() => setHarvestDateList([...harvestDateList, { date: getTodayISODate(), status: 'READY', stock: formData.stock || 0, price: formData.price || 0, isPreOrder: true }])}
+              className="mt-1 text-[10px] font-black text-[#1a4d2e] hover:text-black uppercase tracking-widest flex items-center gap-1.5 bg-transparent border-0 cursor-pointer"
+            >
+              + Tambah Jadwal Baru
+            </button>
+          </div>
+
+          {/* Read-only Aggregate Pre-Order Status box */}
           <div 
-            className={`p-5 md:p-6 rounded-[24px] md:rounded-[32px] border-2 transition-all cursor-pointer flex items-center justify-between ${
-               formData.isPreOrder 
+            className={`p-5 md:p-6 rounded-[24px] md:rounded-[32px] border-2 transition-all flex items-center justify-between ${
+               harvestDateList.some(s => s.isPreOrder && s.status === 'READY') 
                 ? 'bg-brand-50 border-brand-200' 
                 : 'bg-slate-50 border-slate-100'
             }`}
-            onClick={() => setFormData({ ...formData, isPreOrder: !formData.isPreOrder })}
           >
             <div className="flex items-center gap-3 md:gap-4">
               <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center transition-all ${
-                 formData.isPreOrder ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/20' : 'bg-slate-200 text-slate-400'
+                 harvestDateList.some(s => s.isPreOrder && s.status === 'READY') ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/20' : 'bg-slate-200 text-slate-400'
               }`}>
                 <Calendar size={20} className="md:w-6 md:h-6" />
               </div>
               <div>
-                <p className="text-xs md:text-sm font-black text-slate-800 uppercase tracking-tight">Aktifkan Pre-Order</p>
-                <p className="text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-tight">Pembeli dapat memesan awal</p>
+                <p className="text-xs md:text-sm font-black text-slate-800 uppercase tracking-tight">Status Pre-Order Utama</p>
+                <p className="text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-tight">Otomatis aktif dari ketersediaan jadwal Pre-Order</p>
               </div>
             </div>
-            <div className={`w-12 h-7 md:w-14 md:h-8 rounded-full relative transition-colors ${formData.isPreOrder ? 'bg-brand-600' : 'bg-slate-300'}`}>
-               <div className={`absolute top-0.5 md:top-1 w-6 h-6 bg-white rounded-full shadow-sm transition-all ${formData.isPreOrder ? 'left-5.5 md:left-7' : 'left-0.5 md:left-1'}`} />
+            <div className={`w-12 h-7 md:w-14 md:h-8 rounded-full relative transition-colors ${harvestDateList.some(s => s.isPreOrder && s.status === 'READY') ? 'bg-brand-600' : 'bg-slate-300'}`}>
+               <div className={`absolute top-0.5 md:top-1 w-6 h-6 bg-white rounded-full shadow-sm transition-all ${harvestDateList.some(s => s.isPreOrder && s.status === 'READY') ? 'left-5.5 md:left-7' : 'left-0.5 md:left-1'}`} />
             </div>
           </div>
         </div>

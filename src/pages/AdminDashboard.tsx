@@ -10,8 +10,10 @@ import {
   Clock,
   ChevronRight,
   Eye,
-  AlertCircle
+  AlertCircle,
+  MessageSquare
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Order } from '../types';
 
 interface AdminDashboardProps {
@@ -20,6 +22,7 @@ interface AdminDashboardProps {
 }
 
 export default function AdminDashboard({ orders, onConfirmPayment }: AdminDashboardProps) {
+  const navigate = useNavigate();
   const [filter, setFilter] = React.useState<'ALL' | 'PENDING' | 'DOCS'>('PENDING');
 
   const paymentPendingOrders = orders.filter(o => 
@@ -183,6 +186,13 @@ export default function AdminDashboard({ orders, onConfirmPayment }: AdminDashbo
                                 className="bg-emerald-500 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 active:scale-95 transition-all hover:bg-emerald-600 flex items-center gap-2"
                               >
                                 <CheckCircle2 size={14} /> Verifikasi
+                              </button>
+                              <button 
+                                onClick={() => navigate('/admin/transaksi-panen')}
+                                className="p-2.5 bg-slate-50 text-slate-400 rounded-xl hover:bg-brand-50 hover:text-brand-600 transition-all flex items-center justify-center cursor-pointer"
+                                title="Diskusi Forum"
+                              >
+                                <MessageSquare size={16} />
                               </button>
                               <button className="p-2.5 bg-slate-50 text-slate-400 rounded-xl hover:bg-red-50 hover:text-red-500 transition-all">
                                 <XCircle size={18} />

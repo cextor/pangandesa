@@ -12,6 +12,7 @@ import {
   FileText
 } from 'lucide-react';
 import { Order, ChatMessage } from '../../types';
+import { useOrder } from '../../contexts/OrderContext';
 
 interface OrderForumProps {
   order: Order;
@@ -30,8 +31,15 @@ export default function OrderForum({
   onConfirmHarvest,
   onConfirmPurchase
 }: OrderForumProps) {
+  const { loadChatMessages } = useOrder();
   const [inputText, setInputText] = React.useState('');
   const scrollRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (order?.id) {
+      loadChatMessages(order.id);
+    }
+  }, [order?.id]);
 
   React.useEffect(() => {
     if (scrollRef.current) {

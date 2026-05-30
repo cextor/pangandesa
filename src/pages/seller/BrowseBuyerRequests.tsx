@@ -9,7 +9,9 @@ import {
   ArrowUpRight,
   TrendingUp,
   User,
-  ShieldCheck
+  ShieldCheck,
+  Zap,
+  Play
 } from 'lucide-react';
 import { BuyerRequest } from '../../types';
 import { MOCK_BUYER_REQUESTS } from '../../constants';
@@ -22,7 +24,7 @@ export default function BrowseBuyerRequests() {
   const [isCekDetail, setIsCekDetail] = useState<BuyerRequest | null>(null);
   const { user } = useAuth();
 
-  useEffect(() => {
+  const loadRequests = () => {
     apiClient.get('/buyer-requests')
       .then((res) => {
         const live = (res.data.data || []).map((req: any) => ({
@@ -45,7 +47,46 @@ export default function BrowseBuyerRequests() {
         setRequests([]);
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    loadRequests();
   }, []);
+
+  const handleSimulatePO = async () => {
+    try {
+      const requestPayload = {
+        buyer_id: 1, // Andi Wijaya
+        pangan_type: 'Cabai Rawit Merah',
+        quantity: 1200,
+        unit: 'kg',
+        budget: 32000,
+        delivery_period: '2 Minggu Lagi',
+        status: 'OPEN'
+      };
+      
+      // 1. Post to buyer-requests
+      await apiClient.post('/buyer-requests', requestPayload);
+      
+      // 2. Post to notifications for the active seller
+      if (user?.id) {
+        await apiClient.post('/notifications', {
+          user_id: user.id,
+          title: 'Request PO Baru!',
+          message: 'Andi Wijaya meminta pasokan 1.200 kg Cabai Rawit Merah dengan target Rp 32.000/kg.',
+          type: 'pre_order'
+        });
+      }
+      
+      // 3. Reload list
+      loadRequests();
+      
+      alert('Simulasi sukses! Request PO baru tersimpan di database & notifikasi masuk ke lonceng Anda.');
+    } catch (err) {
+      console.error('Failed to simulate PO', err);
+      alert('Gagal mensimulasikan request PO.');
+    }
+  };
 
   const handleTakeRequest = async (requestId: string) => {
     try {
@@ -73,6 +114,25 @@ export default function BrowseBuyerRequests() {
           </div>
           <h1 className="text-3xl sm:text-5xl font-black text-slate-800 font-display uppercase tracking-tight italic">Ambil PO Buyer</h1>
           <p className="text-slate-500 font-medium max-w-lg mt-2">Dapatkan kepastian pembeli sebelum Anda menanam. Lihat permintaan dari mitra buyer kami.</p>
+        </div>
+
+        {/* Simulator Panel */}
+        <div className="bg-[#fffdf7] border-2 border-dashed border-[#d8d3c2] rounded-[32px] p-6 mb-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
+          <div className="space-y-1">
+             <div className="flex items-center gap-2 text-orange-600 font-black uppercase tracking-widest text-[10px]">
+                <Zap size={14} className="animate-bounce" /> Tool Simulator Pengujian
+             </div>
+             <h4 className="text-sm font-black text-slate-800 uppercase tracking-tight">Simulasikan Buyer Membuat PO Baru</h4>
+             <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+               Klik tombol untuk menyimulasikan data riil buyer mengirim PO dan memasukkan alert baru ke lonceng notifikasi seller.
+             </p>
+          </div>
+          <button 
+             onClick={handleSimulatePO}
+             className="bg-[#1a4d2e] hover:bg-black text-white px-6 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-emerald-950/20 active:scale-95 transition-all flex items-center gap-2 cursor-pointer shrink-0"
+          >
+             <Play size={12} strokeWidth={3} /> Kirim Request PO (Simulasi)
+          </button>
         </div>
 
         {/* Stats & Search */}

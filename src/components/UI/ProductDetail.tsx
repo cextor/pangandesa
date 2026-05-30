@@ -2,16 +2,36 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Star, MapPin, Calendar, User, Sprout, ChevronLeft, Minus, Plus, Heart, Share2, ShoppingCart } from 'lucide-react';
 import { Product } from '../../types';
+import { parseHarvestSchedules, ensureDayMonthYear } from '../../utils/harvestHelper';
+
+const cleanHarvestDate = (dateStr?: string) => {
+  if (!dateStr) return '';
+  const schedules = parseHarvestSchedules(dateStr, 0, 0, true);
+  return schedules
+    .filter(s => s.status === 'READY' && s.isPreOrder)
+    .map(s => {
+      const parts = s.date.split('-');
+      if (parts.length === 3) {
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+      }
+      return s.date;
+    })
+    .join(', ');
+};
 
 interface ProductDetailProps {
   product: Product;
   onBack: () => void;
-  onPreOrder: (product: Product, quantity: number) => void;
+  onPreOrder: (product: Product, quantity: number, selectedHarvestDate?: string) => void;
 }
 
 export default function ProductDetail({ product, onBack, onPreOrder }: ProductDetailProps) {
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(product.image);
+
+  React.useEffect(() => {
+    setActiveImage(product.image);
+  }, [product.image]);
 
   const formatter = new Intl.NumberFormat('id-ID', {
     style: 'currency',
@@ -19,11 +39,18 @@ export default function ProductDetail({ product, onBack, onPreOrder }: ProductDe
     minimumFractionDigits: 0,
   });
 
-  const thumbnails = [
-    product.image,
-    "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?q=80&w=200&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1601004890684-d8cbf643f5f2?q=80&w=200&auto=format&fit=crop"
-  ];
+  const thumbnails = product.images && product.images.length > 0
+    ? product.images.map(img => img.imagePath)
+    : [product.image].filter(Boolean);
+
+  // Parse active pre-order schedules
+  const allSchedules = parseHarvestSchedules(product.harvestDate, product.stock, product.price, product.isPreOrder);
+  const schedules = allSchedules.filter(s => s.status === 'READY' && s.isPreOrder);
+
+  const [selectedSchedule, setSelectedSchedule] = useState<any>(schedules[0] || null);
+
+  const activePrice = selectedSchedule ? selectedSchedule.price : product.price;
+  const activeStock = selectedSchedule ? selectedSchedule.stock : product.stock;
 
   return (
     <div className="flex-1 overflow-y-auto custom-scrollbar bg-white">
@@ -102,17 +129,44 @@ export default function ProductDetail({ product, onBack, onPreOrder }: ProductDe
 
             <div className="bg-slate-50/50 rounded-[28px] sm:rounded-[32px] p-5 sm:p-10 border border-slate-200/60 mb-6 sm:mb-10">
                <div className="flex items-baseline gap-2 mb-4 sm:mb-8 border-b border-slate-200/50 pb-4 sm:pb-6">
-                  <span className="text-2xl sm:text-4xl font-black text-brand-600">{formatter.format(product.price)}</span>
+                  <span className="text-2xl sm:text-4xl font-black text-brand-600">{formatter.format(activePrice)}</span>
                   <span className="text-xs sm:text-lg font-bold text-slate-400">/{product.unit}</span>
                </div>
                
-               <p className="text-slate-500 text-xs sm:text-sm lg:text-base leading-relaxed font-medium mb-6 sm:mb-10">
-                 Tomat segar berkualitas tinggi, dipanen saat matang sempurna langsung dari kebun petani mitra.
+               <p className="text-slate-500 text-xs sm:text-sm lg:text-base leading-relaxed font-medium mb-6 sm:mb-8">
+                  Dapatkan komoditas segar berkualitas premium langsung dari kelompok tani lokal PanganDesa. Dijamin dipanen segar sesuai jadwal panen pilihan Anda.
                </p>
 
+               {/* Harvest Date Picker Selector */}
+               {schedules.length > 0 && (
+                 <div className="mb-6 sm:mb-8 space-y-3">
+                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 block">Pilih Jadwal Panen</span>
+                   <div className="flex flex-wrap gap-2.5">
+                     {schedules.map((sch, i) => (
+                       <button
+                         key={i}
+                         type="button"
+                         onClick={() => setSelectedSchedule(sch)}
+                         className={`py-2 px-3 rounded-xl font-bold text-xs transition-all border text-left cursor-pointer flex flex-col ${
+                           selectedSchedule?.date === sch.date
+                             ? 'bg-brand-50 text-brand-700 border-brand-300 ring-2 ring-brand-100 shadow-sm'
+                             : 'bg-white text-slate-600 border-slate-200 hover:border-brand-200'
+                         }`}
+                       >
+                         <span className="text-[8px] font-black uppercase tracking-wider text-slate-400 leading-none">Siklus Panen:</span>
+                         <span className="font-extrabold text-xs mt-0.5">{ensureDayMonthYear(sch.date)}</span>
+                         <span className="text-[9px] font-bold text-slate-500 mt-1">
+                           Stok: {sch.stock} {product.unit} • {formatter.format(sch.price)}
+                         </span>
+                       </button>
+                     ))}
+                   </div>
+                 </div>
+               )}
+ 
                <div className="grid grid-cols-2 gap-2.5 sm:gap-5 mb-6 sm:mb-10">
                  {[
-                   { label: 'Panen', val: product.harvestDate, icon: <Calendar size={13} /> },
+                   { label: 'Panen Pilihan', val: selectedSchedule ? ensureDayMonthYear(selectedSchedule.date) : cleanHarvestDate(product.harvestDate), icon: <Calendar size={13} /> },
                    { label: 'Petani', val: product.farmer, icon: <User size={13} /> },
                    { label: 'Metode', val: 'Organik', icon: <Sprout size={13} /> }
                  ].map((item, i) => (
@@ -127,7 +181,7 @@ export default function ProductDetail({ product, onBack, onPreOrder }: ProductDe
                     </div>
                  ))}
                </div>
-
+ 
                <div className="flex flex-col sm:flex-row gap-3 sm:gap-5">
                   <div className="flex items-center justify-between bg-white border border-slate-200 rounded-xl sm:rounded-2xl p-1 shadow-xs shrink-0">
                     <button 
@@ -148,24 +202,37 @@ export default function ProductDetail({ product, onBack, onPreOrder }: ProductDe
                     </button>
                   </div>
                   <button 
-                    onClick={() => onPreOrder(product, quantity)}
-                    className="flex-1 bg-brand-600 hover:bg-brand-700 text-white py-3.5 sm:py-5 rounded-xl sm:rounded-2xl font-black text-xs sm:text-base lg:text-lg shadow-xl shadow-brand-600/20 transition-all flex items-center justify-center gap-2 sm:gap-3 uppercase tracking-tight"
+                    onClick={() => onPreOrder(
+                      {
+                        ...product,
+                        price: activePrice,
+                        stock: activeStock
+                      },
+                      quantity,
+                      selectedSchedule?.date
+                    )}
+                    disabled={activeStock <= 0}
+                    className={`flex-1 py-3.5 sm:py-5 rounded-xl sm:rounded-2xl font-black text-xs sm:text-base lg:text-lg shadow-xl transition-all flex items-center justify-center gap-2 sm:gap-3 uppercase tracking-tight border-0 ${
+                      activeStock <= 0
+                        ? 'bg-slate-300 text-slate-500 cursor-not-allowed shadow-none'
+                        : 'bg-brand-600 hover:bg-brand-700 text-white shadow-brand-600/20'
+                    }`}
                   >
                     <ShoppingCart size={18} className="sm:w-5 sm:h-5" />
-                    Pre-Order Sekarang
+                    {activeStock <= 0 ? 'Stok Panen Habis' : 'Pre-Order Sekarang'}
                   </button>
                </div>
             </div>
-
+ 
             <div className="flex items-center gap-4 text-slate-400 font-bold text-[10px] sm:text-sm">
-               <button className="flex items-center gap-1.5 hover:text-brand-600 transition-colors">
+               <button className="flex items-center gap-1.5 hover:text-brand-600 transition-colors bg-transparent border-0 cursor-pointer">
                   <Share2 size={16} className="sm:w-[18px] sm:h-[18px]" />
                   Bagikan
                </button>
                <span className="border-l border-slate-200 h-3 sm:h-4" />
                <div className="flex items-center gap-1.5">
-                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full animate-pulse" />
-                  <span className="truncate">Stok: {product.stock} {product.unit}</span>
+                  <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${activeStock > 0 ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+                  <span className="truncate">Stok Panen: {activeStock} {product.unit}</span>
                </div>
             </div>
           </div>
@@ -185,6 +252,49 @@ export default function ProductDetail({ product, onBack, onPreOrder }: ProductDe
                 </p>
               </div>
             </div>
+
+            {/* Daftar Estimasi Siklus Panen */}
+            {allSchedules.length > 0 && (
+              <div className="bg-slate-50 rounded-[28px] border border-slate-100 p-6 md:p-8 space-y-5 shadow-xs">
+                <div className="flex items-center gap-2">
+                  <Sprout size={18} className="text-[#1a4d2e]" />
+                  <h4 className="text-sm font-black text-slate-800 uppercase tracking-tight">Daftar Estimasi Siklus Panen</h4>
+                </div>
+                
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs font-semibold text-slate-650 border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-200 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                        <th className="pb-3 pl-1">Siklus</th>
+                        <th className="pb-3">Tanggal Panen</th>
+                        <th className="pb-3 text-right">Stok Estimasi</th>
+                        <th className="pb-3 text-right">Harga Unit</th>
+                        <th className="pb-3 text-center">Status PO</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {allSchedules.map((sch, i) => (
+                        <tr key={i} className="border-b border-slate-100 last:border-0 hover:bg-slate-100/50 transition-colors">
+                          <td className="py-3.5 pl-1 font-black text-slate-700">#{i + 1}</td>
+                          <td className="py-3.5 font-extrabold text-slate-800">{ensureDayMonthYear(sch.date)}</td>
+                          <td className="py-3.5 text-right font-bold text-slate-700">{sch.stock} {product.unit}</td>
+                          <td className="py-3.5 text-right font-extrabold text-brand-600">{formatter.format(sch.price)}</td>
+                          <td className="py-3.5 text-center">
+                            <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${
+                              sch.isPreOrder && sch.status === 'READY'
+                                ? 'bg-emerald-100 text-emerald-700' 
+                                : 'bg-slate-100 text-slate-400'
+                            }`}>
+                              {sch.isPreOrder && sch.status === 'READY' ? 'PO Aktif' : 'PO Nonaktif'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
 
             <div>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 sm:mb-10">
