@@ -22,7 +22,7 @@ import Cart from './components/UI/Cart';
 import Tracking from './components/UI/Tracking';
 import AIChatPage from './pages/AIChatPage';
 import { Product, Order } from './types';
-import { Settings, Clock } from 'lucide-react';
+import { Settings, Clock, CheckCircle2 } from 'lucide-react';
 import { ensureDayMonthYear } from './utils/harvestHelper';
 
 import AdminDashboard from './pages/AdminDashboard';
@@ -59,6 +59,7 @@ export default function App() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; show: boolean }>({ message: '', show: false });
 
   const handleAdminConfirmPayment = (orderId: string, type: 'DP' | 'FINAL') => {
     if (type === 'DP') {
@@ -80,6 +81,7 @@ export default function App() {
   }
 
   return (
+    <>
     <Routes>
       <Route path="/" element={<Navigate to={`/${activeRole}`} replace />} />
 
@@ -111,7 +113,10 @@ export default function App() {
               onPreOrder={(p, q, date) => {
                 setSelectedProduct(null);
                 addToCart(p, q, date);
-                alert(`Berhasil menambahkan ${p.name} ke keranjang!`);
+                setToast({ message: `Berhasil menambahkan ${p.name} ke keranjang!`, show: true });
+                setTimeout(() => {
+                  setToast(prev => ({ ...prev, show: false }));
+                }, 3000);
               }}
             />
           ) : (
@@ -291,5 +296,18 @@ export default function App() {
       {/* Fallback Catch-all Route */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+
+    {toast.show && (
+      <div className="fixed bottom-8 right-8 z-50 flex items-center gap-3 px-6 py-4 bg-[#1a4d2e] text-white rounded-2xl shadow-xl shadow-brand-950/20 border border-emerald-800 transition-all duration-300 transform translate-y-0 animate-fade-in">
+        <div className="w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center">
+          <CheckCircle2 size={18} className="text-emerald-400" />
+        </div>
+        <div>
+          <p className="text-xs font-black uppercase tracking-wider">Berhasil</p>
+          <p className="text-[11px] text-emerald-100 font-medium">{toast.message}</p>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

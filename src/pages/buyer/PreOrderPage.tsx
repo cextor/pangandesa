@@ -14,6 +14,7 @@ interface PreOrderPageProps {
 export default function PreOrderPage({ onProductSelect }: PreOrderPageProps) {
   const [products, setProducts] = React.useState<Product[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [toast, setToast] = React.useState<{ message: string; show: boolean }>({ message: '', show: false });
   const { addToCart } = useCart();
   const navigate = useNavigate();
 
@@ -68,15 +69,18 @@ export default function PreOrderPage({ onProductSelect }: PreOrderPageProps) {
                  ))
               ) : products.length > 0 ? (
                  products.map((product: any) => (
-                   <ProductCard 
-                     key={product.scheduleId} 
-                     product={product} 
-                     onPreview={onProductSelect} 
-                     onAddToCart={(p) => {
-                       addToCart(p, 1, p.selectedHarvestDate);
-                       alert(`Berhasil menambahkan ${p.name} ke keranjang!`);
-                     }}
-                   />
+                    <ProductCard 
+                      key={product.scheduleId} 
+                      product={product} 
+                      onPreview={onProductSelect} 
+                      onAddToCart={(p) => {
+                        addToCart(p, 1, p.selectedHarvestDate);
+                        setToast({ message: `Berhasil menambahkan ${p.name} ke keranjang!`, show: true });
+                        setTimeout(() => {
+                          setToast(prev => ({ ...prev, show: false }));
+                        }, 3000);
+                      }}
+                    />
                  ))
               ) : (
                  <div className="col-span-full bg-white rounded-3xl p-10 text-center border border-slate-100">
@@ -126,6 +130,18 @@ export default function PreOrderPage({ onProductSelect }: PreOrderPageProps) {
            </div>
         </div>
       </div>
+
+      {toast.show && (
+        <div className="fixed bottom-8 right-8 z-50 flex items-center gap-3 px-6 py-4 bg-[#1a4d2e] text-white rounded-2xl shadow-xl shadow-brand-950/20 border border-emerald-800 transition-all duration-300 transform translate-y-0">
+          <div className="w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center">
+            <CheckCircle2 size={18} className="text-emerald-400" />
+          </div>
+          <div>
+            <p className="text-xs font-black uppercase tracking-wider">Berhasil</p>
+            <p className="text-[11px] text-emerald-100 font-medium">{toast.message}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
