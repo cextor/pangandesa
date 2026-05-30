@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
+import { useNavigate } from 'react-router-dom';
 import { Sprout, Mail, Lock, ArrowRight, ShieldCheck, Leaf, Users, Heart } from 'lucide-react';
 import { AppRole } from '../types';
 import { APP_LOGO } from '../constants';
@@ -9,6 +10,7 @@ interface LoginPageProps {
 }
 
 export default function LoginPage({ onLogin }: LoginPageProps) {
+  const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -46,7 +48,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
           setError(`Error server (${err.response.status}): ${err.response.data?.message || 'Gagal masuk.'}`);
         }
       } else if (err.request) {
-        setError('Jaringan terputus: Gagal menghubungi API backend (http://localhost:8080). Pastikan server backend berjalan.');
+        setError('Jaringan terputus: Gagal menghubungi API backend (http://localhost:8081). Pastikan server backend berjalan.');
       } else {
         setError(`Kesalahan sistem: ${err.message}`);
       }
@@ -76,11 +78,11 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
           <div className="relative z-10 p-10 lg:p-12 xl:p-16 flex flex-col justify-between h-full text-white w-full">
             {/* Header: Logo & Brand Name */}
             <div className="flex items-center gap-4">
-              <div className="bg-white p-2 rounded-2xl shadow-xl w-14 h-14 xl:w-16 xl:h-16 flex items-center justify-center overflow-hidden">
+              <div className="bg-white p-1 rounded-2xl shadow-xl w-14 h-14 xl:w-16 xl:h-16 flex items-center justify-center overflow-hidden">
                 <img 
                   src={APP_LOGO} 
                   alt="PanganDesa Logo" 
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-cover rounded-xl"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.style.display = 'none';
@@ -180,8 +182,33 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
           animate={{ opacity: 1, x: 0 }}
           className="w-full max-w-md my-auto"
         >
+          {/* Logo */}
+          <div className="flex items-center gap-3 mb-6">
+            <div className="bg-white p-1 rounded-xl shadow-md w-11 h-11 flex items-center justify-center overflow-hidden border border-slate-100">
+              <img 
+                src={APP_LOGO} 
+                alt="PanganDesa Logo" 
+                className="w-full h-full object-cover rounded-lg"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const parent = target.parentElement;
+                  if (parent) {
+                    const icon = document.createElement('div');
+                    icon.className = "text-brand-600 flex items-center justify-center w-full h-full";
+                    icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sprout"><path d="M7 20h10"/><path d="M10 20c5.5 0 5.5-10 10-10"/><path d="M14 20c-5.5 0-5.5-10-10-10"/></svg>';
+                    parent.appendChild(icon);
+                  }
+                }}
+              />
+            </div>
+            <div className="flex flex-col">
+              <h1 className="text-lg font-black tracking-tight leading-none uppercase text-brand-900">PanganDesa</h1>
+              <span className="text-[7px] font-black text-brand-600 uppercase tracking-[0.3em] mt-0.5">Dari Desa, Untuk Indonesia</span>
+            </div>
+          </div>
+
           <div className="mb-6 xl:mb-8">
-            <h3 className="text-2xl xl:text-3xl font-black text-slate-800 mb-2 uppercase tracking-tight">Selamat Datang 👋</h3>
             <p className="text-xs xl:text-sm text-slate-500 font-medium">Silakan masuk untuk melanjutkan ke dashboard Anda.</p>
           </div>
 
@@ -250,7 +277,16 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
           </form>
 
           <div className="mt-4 xl:mt-6 text-center">
-            <p className="text-xs sm:text-sm text-slate-400 font-medium">Belum punya akun? <button className="text-brand-600 font-black uppercase tracking-tight hover:underline">Daftar Jadi Petani</button></p>
+            <p className="text-xs sm:text-sm text-slate-400 font-medium">
+              Belum punya akun?{' '}
+              <button 
+                type="button"
+                onClick={() => navigate('/register')}
+                className="text-brand-600 font-black uppercase tracking-tight hover:underline cursor-pointer"
+              >
+                Daftar Jadi Mitra
+              </button>
+            </p>
           </div>
         </motion.div>
       </div>

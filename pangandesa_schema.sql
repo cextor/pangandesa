@@ -125,7 +125,8 @@ INSERT INTO `users` (`name`, `email`, `password`, `role`, `village`) VALUES
 INSERT INTO `categories` (`name`, `slug`, `icon`) VALUES
 ('Beras', 'beras', 'wheat'),
 ('Sayur', 'sayur', 'leaf'),
-('Buah', 'buah', 'apple');
+('Buah', 'buah', 'apple'),
+('Lainnya', 'lainnya', 'tag');
 
 -- Insert Dummy Products
 INSERT INTO `products` (`seller_id`, `category_id`, `name`, `description`, `price`, `unit`, `stock`, `is_preorder`, `harvest_date`, `image`, `rating`, `review_count`) VALUES

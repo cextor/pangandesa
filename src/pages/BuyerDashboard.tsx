@@ -51,7 +51,7 @@ export default function BuyerDashboard({ onProductSelect, onCategorySelect, onTr
     { name: 'Rempah', icon: '🌶️' },
     { name: 'Olahan Desa', icon: '🍯' },
     { name: 'Produk Organik', icon: '🌿' },
-    { name: 'Minuman', icon: '🧃' },
+    { name: 'Lainnya', icon: '🏷️' },
   ];
 
   const formatter = new Intl.NumberFormat('id-ID', {

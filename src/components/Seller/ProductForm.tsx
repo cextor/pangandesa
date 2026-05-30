@@ -14,24 +14,115 @@ interface ProductFormProps {
   onCancel: () => void;
 }
 
+const getTodayISODate = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const convertToISODate = (dateStr?: string) => {
+  if (!dateStr) return getTodayISODate();
+  
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return dateStr;
+  }
+  
+  try {
+    const parts = dateStr.trim().split(/\s+/);
+    if (parts.length === 3) {
+      const day = parts[0].padStart(2, '0');
+      const monthStr = parts[1].toLowerCase();
+      const year = parts[2];
+      
+      const monthsMap: { [key: string]: string } = {
+        januari: '01', jan: '01',
+        februari: '02', pebruari: '02', feb: '02',
+        maret: '03', mar: '03',
+        april: '04', apr: '04',
+        mei: '05', may: '05',
+        juni: '06', jun: '06',
+        juli: '07', jul: '07',
+        agustus: '08', agt: '08', aug: '08',
+        september: '09', sep: '09',
+        oktober: '10', okt: '10', oct: '10',
+        november: '11', nov: '11',
+        desember: '12', des: '12', dec: '12'
+      };
+      
+      const month = monthsMap[monthStr] || '01';
+      return `${year}-${month}-${day}`;
+    }
+  } catch (e) {
+    console.error('Failed to parse date string:', dateStr, e);
+  }
+  
+  return getTodayISODate();
+};
+
+const formatISOToFriendlyDate = (isoStr: string) => {
+  if (!isoStr) return '';
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(isoStr)) return isoStr;
+  
+  try {
+    const parts = isoStr.split('-');
+    const year = parts[0];
+    const monthIndex = parseInt(parts[1], 10) - 1;
+    const day = parseInt(parts[2], 10);
+    
+    const months = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    
+    return `${day} ${months[monthIndex]} ${year}`;
+  } catch (e) {
+    return isoStr;
+  }
+};
+
 export default function ProductForm({ product, onSave, onCancel }: ProductFormProps) {
-  const [formData, setFormData] = React.useState<Partial<Product>>(
-    product || {
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const [formData, setFormData] = React.useState<Partial<Product>>(() => {
+    if (product) {
+      return {
+        ...product,
+        harvestDate: convertToISODate(product.harvestDate),
+      };
+    }
+    return {
       name: '',
       category: 'Sayur',
       unit: 'kg',
       price: 0,
       stock: 0,
       description: '',
-      harvestDate: '2024-05-10',
+      harvestDate: getTodayISODate(),
       isPreOrder: true,
-      image: 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?q=80&w=600',
+      image: '',
+    };
+  });
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, image: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
     }
-  );
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    const friendlyHarvestDate = formatISOToFriendlyDate(formData.harvestDate || '');
+    onSave({
+      ...formData,
+      harvestDate: friendlyHarvestDate,
+    });
   };
 
   return (
@@ -67,10 +158,18 @@ export default function ProductForm({ product, onSave, onCancel }: ProductFormPr
               <p className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 md:mb-4">Gunakan foto berkualitas tinggi</p>
               <button 
                 type="button"
-                className="bg-white border border-slate-200 px-5 md:px-6 py-2 md:py-2.5 rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-600 hover:border-brand-500 hover:text-brand-600 transition-all shadow-sm"
+                onClick={() => fileInputRef.current?.click()}
+                className="bg-white border border-slate-200 px-5 md:px-6 py-2 md:py-2.5 rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-600 hover:border-brand-500 hover:text-brand-600 transition-all shadow-sm cursor-pointer"
               >
                 Ganti Foto
               </button>
+              <input 
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept="image/*"
+                className="hidden"
+              />
            </div>
         </div>
 
@@ -101,6 +200,7 @@ export default function ProductForm({ product, onSave, onCancel }: ProductFormPr
                   <option>Sayur</option>
                   <option>Beras & Biji</option>
                   <option>Rempah</option>
+                  <option>Lainnya</option>
                 </select>
                 <ChevronDown size={18} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               </div>
@@ -170,11 +270,10 @@ export default function ProductForm({ product, onSave, onCancel }: ProductFormPr
               <label className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Estimasi Panen</label>
               <div className="relative">
                 <input 
-                  type="text"
+                  type="date"
                   value={formData.harvestDate}
                   onChange={e => setFormData({ ...formData, harvestDate: e.target.value })}
                   className="w-full bg-slate-50 border border-slate-100 rounded-xl md:rounded-2xl p-4 md:p-5 text-sm font-bold focus:ring-4 focus:ring-brand-500/5 focus:border-brand-300 outline-none transition-all shadow-inner text-slate-700"
-                  placeholder="Contoh: 10 Mei 2024"
                 />
                 <Calendar size={18} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               </div>

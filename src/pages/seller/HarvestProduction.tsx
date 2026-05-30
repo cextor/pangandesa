@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Sprout, 
   Leaf, 
@@ -12,11 +12,12 @@ import {
   Box,
   Zap, 
   Info,
-  Clock
+  Clock,
+  X
 } from 'lucide-react';
 
 export default function HarvestProduction() {
-  const readyProducts = [
+  const [products, setProducts] = React.useState([
     { 
       id: 1, 
       name: 'Cabai Merah Keriting', 
@@ -33,7 +34,31 @@ export default function HarvestProduction() {
       quality: 'Standard',
       image: 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?q=80&w=600'
     },
-  ];
+  ]);
+
+  const [isSuccessOpen, setIsSuccessOpen] = React.useState(false);
+  const [confirmedProduct, setConfirmedProduct] = React.useState('');
+  
+  // Safety confirmation states
+  const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
+  const [selectedHarvestProduct, setSelectedHarvestProduct] = React.useState<any>(null);
+
+  const triggerConfirmHarvest = (product: any) => {
+    setSelectedHarvestProduct(product);
+    setIsConfirmOpen(true);
+  };
+
+  const handleConfirmHarvest = () => {
+    if (!selectedHarvestProduct) return;
+
+    const productId = selectedHarvestProduct.id;
+    setProducts(prev => 
+      prev.map(p => p.id === productId ? { ...p, status: 'HARVESTED' } : p)
+    );
+    setConfirmedProduct(selectedHarvestProduct.name);
+    setIsConfirmOpen(false);
+    setIsSuccessOpen(true);
+  };
 
   return (
     <div className="flex-1 bg-slate-50 overflow-y-auto p-10 custom-scrollbar">
@@ -65,7 +90,7 @@ export default function HarvestProduction() {
 
         {/* Focus Products */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-           {readyProducts.map((p) => (
+           {products.map((p) => (
              <div key={p.id} className="bg-white rounded-[40px] border border-slate-100 overflow-hidden shadow-sm hover:shadow-xl transition-all group flex flex-col md:flex-row">
                 <div className="md:w-48 h-48 md:h-auto shrink-0 relative overflow-hidden">
                    <img src={p.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={p.name} />
@@ -96,9 +121,21 @@ export default function HarvestProduction() {
                       </div>
                    </div>
                    
-                   <button className="w-full mt-6 bg-brand-900 text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 shadow-xl shadow-brand-900/10 hover:bg-black transition-all">
-                      Konfirmasi Panen Selesai <ArrowRight size={16} />
-                   </button>
+                   {p.status === 'READY' ? (
+                     <button 
+                       onClick={() => triggerConfirmHarvest(p)}
+                       className="w-full mt-6 bg-[#1a4d2e] text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 shadow-xl shadow-emerald-900/10 hover:bg-black active:scale-95 transition-all cursor-pointer"
+                     >
+                        Konfirmasi Panen Selesai <ArrowRight size={16} />
+                     </button>
+                   ) : (
+                     <button 
+                       disabled
+                       className="w-full mt-6 bg-[#f0f9f4] text-[#1a4d2e] border border-[#1a4d2e]/20 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 cursor-not-allowed"
+                     >
+                        Panen Telah Selesai ✓
+                     </button>
+                   )}
                 </div>
              </div>
            ))}
@@ -153,6 +190,97 @@ export default function HarvestProduction() {
            </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {/* Safety Confirmation Modal */}
+        {isConfirmOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsConfirmOpen(false)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" 
+            />
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative bg-[#fffdf7] border-2 border-[#d8d3c2] rounded-[32px] w-full max-w-md overflow-hidden shadow-2xl p-8 text-center"
+            >
+              <div className="absolute top-4 right-4">
+                <button onClick={() => setIsConfirmOpen(false)} className="p-2 hover:bg-[#e6e2d6] rounded-xl transition-colors">
+                  <X size={20} className="text-slate-600" />
+                </button>
+              </div>
+
+              <div className="w-20 h-20 bg-orange-50 text-orange-600 rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-orange-100 shadow-md">
+                <Info size={40} />
+              </div>
+
+              <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tight mb-3 font-display">Konfirmasi Panen</h3>
+              <p className="text-sm text-slate-600 leading-relaxed mb-6 font-medium">
+                Apakah Anda yakin ingin mengonfirmasi panen selesai untuk komoditas <span className="font-extrabold text-brand-900">{selectedHarvestProduct?.name}</span>? Tindakan ini akan mengubah status komoditas menjadi Sudah Panen.
+              </p>
+
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setIsConfirmOpen(false)}
+                  className="flex-1 bg-white text-slate-600 border border-[#d8d3c2] py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-[#f3efe4] transition-all cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleConfirmHarvest}
+                  className="flex-1 bg-[#1a4d2e] text-white py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-emerald-950/20 active:scale-95 hover:bg-black transition-all cursor-pointer"
+                >
+                  Ya, Konfirmasi
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {isSuccessOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsSuccessOpen(false)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" 
+            />
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative bg-[#fffdf7] border-2 border-[#d8d3c2] rounded-[32px] w-full max-w-md overflow-hidden shadow-2xl p-8 text-center"
+            >
+              <div className="absolute top-4 right-4">
+                <button onClick={() => setIsSuccessOpen(false)} className="p-2 hover:bg-[#e6e2d6] rounded-xl transition-colors">
+                  <X size={20} className="text-slate-600" />
+                </button>
+              </div>
+
+              <div className="w-20 h-20 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-emerald-100 shadow-md">
+                <CheckCircle2 size={40} />
+              </div>
+
+              <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tight mb-3 font-display">Panen Selesai!</h3>
+              <p className="text-sm text-slate-600 leading-relaxed mb-6 font-medium">
+                Berhasil mengonfirmasi panen untuk produk <span className="font-extrabold text-brand-900">{confirmedProduct}</span>. Hasil panen kini telah tercatat siap didistribusikan ke logistik pengiriman.
+              </p>
+
+              <button
+                onClick={() => setIsSuccessOpen(false)}
+                className="w-full bg-[#1a4d2e] text-white py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-emerald-950/20 active:scale-95 transition-all cursor-pointer"
+              >
+                Kembali ke Panel
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

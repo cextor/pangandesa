@@ -13,7 +13,18 @@ class OrderModel extends Model
     
     public function getOrdersByUserId($userId, $role)
     {
-        $column = ($role === 'seller') ? 'seller_id' : 'buyer_id';
-        return $this->where($column, $userId)->orderBy('created_at', 'DESC')->findAll();
+        if ($role === 'seller') {
+            return $this->select('orders.*, users.name as buyer_name, users.village as buyer_village, users.address as buyer_address')
+                        ->join('users', 'orders.buyer_id = users.id', 'left')
+                        ->where('orders.seller_id', $userId)
+                        ->orderBy('orders.created_at', 'DESC')
+                        ->findAll();
+        } else {
+            return $this->select('orders.*, users.name as seller_name, users.village as seller_village, users.address as seller_address')
+                        ->join('users', 'orders.seller_id = users.id', 'left')
+                        ->where('orders.buyer_id', $userId)
+                        ->orderBy('orders.created_at', 'DESC')
+                        ->findAll();
+        }
     }
 }

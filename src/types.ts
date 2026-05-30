@@ -26,6 +26,13 @@ export interface Order {
   remainingAmount: number;
   status: OrderStatus;
   createdAt: string;
+  createdAtRaw?: string;
+  buyerName?: string;
+  buyerVillage?: string;
+  buyerAddress?: string;
+  sellerName?: string;
+  sellerVillage?: string;
+  sellerAddress?: string;
   harvestConfirmedBySeller: boolean;
   purchaseConfirmedByBuyer: boolean;
   paymentMethod?: string;

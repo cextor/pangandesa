@@ -15,6 +15,7 @@ export default function CategoriesPage({ onCategorySelect }: CategoriesPageProps
     { id: 'rempah', name: 'Rempah', icon: '🌶️', desc: 'Kaya akan Rasa', color: 'bg-rose-50' },
     { id: 'olahan', name: 'Olahan Desa', icon: '🍯', desc: 'Produk Turunan Desa', color: 'bg-yellow-50' },
     { id: 'organik', name: 'Produk Organik', icon: '🌿', desc: 'Tanpa Bahan Kimia', color: 'bg-emerald-50' },
+    { id: 'lainnya', name: 'Lainnya', icon: '🏷️', desc: 'Produk Pangan Lainnya', color: 'bg-slate-50' },
   ];
 
   return (

@@ -20,6 +20,15 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
 
     // Auth Routes
     $routes->post('auth/login', 'AuthController::login');
+    $routes->post('auth/register', 'AuthController::register');
+    $routes->post('auth/check-email', 'AuthController::checkEmail');
+    $routes->put('auth/profile/(:segment)', 'AuthController::updateProfile/$1');
+    
+    // Notification Routes
+    $routes->get('notifications', 'NotificationController::index');
+    $routes->post('notifications', 'NotificationController::create');
+    $routes->put('notifications/(:segment)/read', 'NotificationController::markAsRead/$1');
+    $routes->put('notifications/read-all', 'NotificationController::markAllAsRead');
     
     // Resource Routes
     $routes->resource('products', ['controller' => 'ProductController']);

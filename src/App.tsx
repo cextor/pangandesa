@@ -10,6 +10,10 @@ import SellerDashboard from './pages/SellerDashboard';
 import ProductManagement from './pages/seller/ProductManagement';
 import SalesAnalytics from './pages/seller/SalesAnalytics';
 import PreOrderManagement from './pages/seller/PreOrderManagement';
+import Orders from './pages/seller/Orders';
+import Financials from './pages/seller/Financials';
+import Reviews from './pages/seller/Reviews';
+import SellerHelp from './pages/seller/SellerHelp';
 import HarvestProduction from './pages/seller/HarvestProduction';
 import Customers from './pages/seller/Customers';
 import SellerProfilePage from './pages/seller/SellerProfilePage';
@@ -42,6 +46,7 @@ import ActiveOrders from './pages/buyer/ActiveOrders';
 import BuyerRequestPO from './pages/buyer/BuyerRequestPO';
 import BrowseBuyerRequests from './pages/seller/BrowseBuyerRequests';
 import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 
 export default function App() {
   const navigate = useNavigate();
@@ -67,6 +72,7 @@ export default function App() {
     return (
       <Routes>
         <Route path="/login" element={<LoginPage onLogin={async (username, password) => { await login(username, password); navigate(`/${localStorage.getItem('role') || 'buyer'}`); }} />} />
+        <Route path="/register" element={<RegisterPage />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );
@@ -202,7 +208,13 @@ export default function App() {
         <Route path="panen-produksi" element={<HarvestProduction />} />
         <Route path="pelanggan" element={<Customers />} />
         <Route path="sales-analytics" element={<SalesAnalytics onBack={() => navigate('/seller')} />} />
+        <Route path="analitik" element={<SalesAnalytics onBack={() => navigate('/seller')} />} />
         <Route path="preorder-masuk" element={<PreOrderManagement />} />
+        <Route path="pesanan" element={<Orders />} />
+        <Route path="keuangan" element={<Financials />} />
+        <Route path="ulasan" element={<Reviews />} />
+        <Route path="pengaturan-penjual" element={<SellerProfilePage onBack={() => navigate('/seller')} />} />
+        <Route path="bantuan-penjual" element={<SellerHelp />} />
         <Route path="transaksi-panen" element={
           orders.find(o => o.status === 'WAITING_HARVEST' || o.status === 'HARVEST_CONFIRMED_SELLER' || o.status === 'WAITING_FINAL_PAYMENT') ? (
             <OrderForum 

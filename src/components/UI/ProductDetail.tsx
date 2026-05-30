@@ -43,31 +43,40 @@ export default function ProductDetail({ product, onBack, onPreOrder }: ProductDe
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
           {/* Left Column: Images */}
           <div className="space-y-4 sm:space-y-6">
-            <div className="aspect-square rounded-[24px] sm:rounded-[40px] overflow-hidden border border-slate-100 shadow-sm relative group">
-              <motion.img 
-                key={activeImage}
-                initial={{ opacity: 0, scale: 1.1 }}
-                animate={{ opacity: 1, scale: 1 }}
-                src={activeImage} 
-                alt={product.name}
-                className="w-full h-full object-cover"
-              />
+            <div className="aspect-square rounded-[24px] sm:rounded-[40px] overflow-hidden border border-slate-100 shadow-sm relative group bg-slate-50 flex items-center justify-center">
+              {activeImage ? (
+                <motion.img 
+                  key={activeImage}
+                  initial={{ opacity: 0, scale: 1.1 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  src={activeImage} 
+                  alt={product.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-slate-50 flex flex-col items-center justify-center p-6">
+                   <div className="w-16 h-16 rounded-3xl bg-slate-100/60 flex items-center justify-center text-slate-300 mb-2 text-2xl">🌾</div>
+                   <span className="text-xs sm:text-sm font-black text-slate-300 uppercase tracking-widest text-center">Belum Ada Foto Produk</span>
+                </div>
+              )}
               <button className="absolute top-4 right-4 sm:top-6 sm:right-6 p-3 sm:p-4 bg-white/90 backdrop-blur-md rounded-2xl text-slate-400 hover:text-red-500 shadow-xl transition-all active:scale-90">
                 <Heart size={18} className="sm:w-6 sm:h-6" />
               </button>
             </div>
             
-            <div className="flex gap-2 sm:gap-4 overflow-x-auto pb-2 scrollbar-hide">
-              {thumbnails.map((img, i) => (
-                <button 
-                  key={i}
-                  onClick={() => setActiveImage(img)}
-                  className={`shrink-0 w-16 h-16 sm:w-auto sm:flex-1 aspect-square rounded-xl sm:rounded-2xl overflow-hidden border-2 transition-all ${activeImage === img ? 'border-brand-500 ring-2 sm:ring-4 ring-brand-100' : 'border-slate-100 hover:border-brand-200'}`}
-                >
-                  <img src={img} className="w-full h-full object-cover" alt={`Thumb ${i}`} />
-                </button>
-              ))}
-            </div>
+            {product.image && (
+              <div className="flex gap-2 sm:gap-4 overflow-x-auto pb-2 scrollbar-hide">
+                {thumbnails.filter(Boolean).map((img, i) => (
+                  <button 
+                    key={i}
+                    onClick={() => setActiveImage(img)}
+                    className={`shrink-0 w-16 h-16 sm:w-auto sm:flex-1 aspect-square rounded-xl sm:rounded-2xl overflow-hidden border-2 transition-all ${activeImage === img ? 'border-brand-500 ring-2 sm:ring-4 ring-brand-100' : 'border-slate-100 hover:border-brand-200'}`}
+                  >
+                    <img src={img} className="w-full h-full object-cover" alt={`Thumb ${i}`} />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Right Column: Info */}

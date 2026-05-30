@@ -11,6 +11,7 @@ export const CATEGORIES = [
   { id: '5', name: 'Rempah', icon: 'Sprout' },
   { id: '6', name: 'Olahan Desa', icon: 'Coffee' },
   { id: '7', name: 'Produk Organik', icon: 'Flower' },
+  { id: '8', name: 'Lainnya', icon: 'Tag' },
 ];
 
 export const MOCK_PRODUCTS: Product[] = [

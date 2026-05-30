@@ -36,7 +36,14 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ activeRole, onRoleChange, activeItem, onItemChange, isOpen, onClose }: SidebarProps) {
-  const buyerItems = [
+  interface SidebarItem {
+    id: string;
+    label: string;
+    icon: React.ComponentType<any>;
+    badge?: string;
+  }
+
+  const buyerItems: SidebarItem[] = [
     { id: 'beranda', label: 'Beranda', icon: Home },
     { id: 'kategori', label: 'Kategori', icon: Grid },
     { id: 'preorder', label: 'Pre-Order', icon: Calendar },
@@ -51,7 +58,7 @@ export default function Sidebar({ activeRole, onRoleChange, activeItem, onItemCh
     { id: 'bantuan', label: 'Bantuan', icon: HelpCircle },
   ];
 
-  const sellerItems = [
+  const sellerItems: SidebarItem[] = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'produk-saya', label: 'Produk Saya', icon: Package },
     { id: 'ambil-po', label: 'Ambil PO Buyer', icon: Sprout, badge: 'NEW' },
@@ -66,7 +73,7 @@ export default function Sidebar({ activeRole, onRoleChange, activeItem, onItemCh
     { id: 'bantuan-penjual', label: 'Bantuan & Panduan', icon: HelpCircle },
   ];
 
-  const adminItems = [
+  const adminItems: SidebarItem[] = [
     { id: 'dashboard', label: 'Monitor Transaksi', icon: ShieldCheck },
     { id: 'verifikasi', label: 'Verifikasi Pembayaran', icon: CreditCard, badge: '!' },
     { id: 'pengguna', label: 'Kelola Pengguna', icon: Users },

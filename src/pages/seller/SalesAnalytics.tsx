@@ -235,6 +235,64 @@ export default function SalesAnalytics({ onBack }: SalesAnalyticsProps) {
               ))}
            </div>
         </div>
+
+        {/* Tren Demand & Prioritas Pasar Tani */}
+        <div className="bg-[#f0f9f3] p-10 rounded-[48px] border border-emerald-100 shadow-sm space-y-8">
+           <div>
+              <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Analisis Tren Demand & Prioritas Pasar 📈</h3>
+              <p className="text-xs text-slate-600 font-medium leading-relaxed uppercase tracking-wide mt-1">
+                 Komoditas yang sedang paling banyak dicari oleh pembeli di platform PanganDesa minggu ini. Gunakan data ini untuk memprioritaskan masa tanam atau pre-order Anda.
+              </p>
+           </div>
+
+           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white p-6 rounded-[24px] border border-emerald-500/10 space-y-4">
+                 <div className="flex justify-between items-start">
+                    <span className="text-[7px] font-black text-rose-600 bg-rose-50 px-2.5 py-1 rounded border border-rose-100 uppercase tracking-widest">Sangat Tinggi</span>
+                    <span className="text-xs font-black text-emerald-500">+45%</span>
+                 </div>
+                 <div>
+                    <h4 className="text-sm font-black text-slate-800 uppercase tracking-tight">Cabai Rawit Merah</h4>
+                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-1">Estimasi Harga: Rp 45.000 / kg</p>
+                 </div>
+                 <div className="border-t border-slate-50 pt-3">
+                    <p className="text-[8px] font-black text-brand-700 uppercase tracking-widest">Rekomendasi Petani:</p>
+                    <p className="text-[10px] text-slate-600 font-medium leading-normal mt-1">Buka pre-order batch baru sekarang untuk menyerap tingginya pencarian pembeli.</p>
+                 </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-[24px] border border-emerald-500/10 space-y-4">
+                 <div className="flex justify-between items-start">
+                    <span className="text-[7px] font-black text-amber-600 bg-amber-50 px-2.5 py-1 rounded border border-amber-100 uppercase tracking-widest">Tinggi</span>
+                    <span className="text-xs font-black text-emerald-500">+32%</span>
+                 </div>
+                 <div>
+                    <h4 className="text-sm font-black text-slate-800 uppercase tracking-tight">Bawang Merah</h4>
+                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-1">Estimasi Harga: Rp 35.000 / kg</p>
+                 </div>
+                 <div className="border-t border-slate-50 pt-3">
+                    <p className="text-[8px] font-black text-brand-700 uppercase tracking-widest">Rekomendasi Petani:</p>
+                    <p className="text-[10px] text-slate-600 font-medium leading-normal mt-1">Prioritaskan perluasan luas tanam komoditas ini pada rotasi tanam berikutnya.</p>
+                 </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-[24px] border border-emerald-500/10 space-y-4">
+                 <div className="flex justify-between items-start">
+                    <span className="text-[7px] font-black text-slate-500 bg-slate-50 px-2.5 py-1 rounded border border-slate-100 uppercase tracking-widest">Sedang</span>
+                    <span className="text-xs font-black text-emerald-500">+18%</span>
+                 </div>
+                 <div>
+                    <h4 className="text-sm font-black text-slate-800 uppercase tracking-tight">Kentang Dieng</h4>
+                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-1">Estimasi Harga: Rp 18.000 / kg</p>
+                 </div>
+                 <div className="border-t border-slate-50 pt-3">
+                    <p className="text-[8px] font-black text-brand-700 uppercase tracking-widest">Rekomendasi Petani:</p>
+                    <p className="text-[10px] text-slate-600 font-medium leading-normal mt-1">Permintaan stabil. Pertahankan volume produksi reguler Anda.</p>
+                 </div>
+              </div>
+           </div>
+        </div>
+
       </div>
     </div>
   );

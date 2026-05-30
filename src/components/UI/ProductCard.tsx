@@ -21,12 +21,19 @@ export default function ProductCard({ product, onAddToCart, onPreview }: Product
       onClick={() => onPreview?.(product)}
       className="bg-white rounded-3xl border border-slate-100 overflow-hidden group hover:shadow-2xl hover:shadow-brand-500/10 transition-all duration-500 flex flex-col cursor-pointer"
     >
-      <div className="relative aspect-[4/3] overflow-hidden">
-        <img 
-          src={product.image} 
-          alt={product.name}
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-        />
+      <div className="relative aspect-[4/3] overflow-hidden bg-slate-50 flex items-center justify-center">
+        {product.image ? (
+          <img 
+            src={product.image} 
+            alt={product.name}
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+          />
+        ) : (
+          <div className="w-full h-full bg-slate-50 flex flex-col items-center justify-center p-4">
+             <div className="w-10 h-10 rounded-xl bg-slate-100/50 flex items-center justify-center text-slate-300 mb-1">🌾</div>
+             <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest text-center">Belum Ada Foto</span>
+          </div>
+        )}
         
         <div className="absolute top-3 left-3 flex flex-col gap-2">
           {product.isPreOrder && (

@@ -16,5 +16,35 @@ export const AuthService = {
 
   logout: async (): Promise<void> => {
     localStorage.removeItem('token');
+  },
+
+  register: async (payload: any): Promise<{ token: string; user: any }> => {
+    try {
+      const response = await apiClient.post('/auth/register', payload);
+      return response.data;
+    } catch (error) {
+      console.error('Registration failed:', error);
+      throw error;
+    }
+  },
+
+  checkEmail: async (email: string): Promise<{ exists: boolean; message: string }> => {
+    try {
+      const response = await apiClient.post('/auth/check-email', { email });
+      return response.data;
+    } catch (error) {
+      console.error('Check email failed:', error);
+      throw error;
+    }
+  },
+
+  updateProfile: async (userId: string | number, profileData: any): Promise<any> => {
+    try {
+      const response = await apiClient.put(`/auth/profile/${userId}`, profileData);
+      return response.data;
+    } catch (error) {
+      console.error('Update profile failed:', error);
+      throw error;
+    }
   }
 };

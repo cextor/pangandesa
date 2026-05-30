@@ -8,7 +8,10 @@ class UserModel extends Model
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
     protected $returnType       = 'array';
-    protected $allowedFields    = ['name', 'email', 'password', 'role', 'phone', 'address', 'village', 'rating'];
+    protected $allowedFields    = [
+        'name', 'email', 'password', 'role', 'phone', 'address', 'village', 'rating',
+        'company_name', 'pic_name', 'nib', 'npwp', 'bank_account', 'avatar'
+    ];
     protected $useTimestamps    = true;
     
     // Custom method to get users with specific role

@@ -23,6 +23,7 @@ import {
   Sprout
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { useAuth } from '../contexts/AuthContext';
 
 const SALES_DATA = [
   { name: 'Tomat Segar', value: 40, color: '#f97316' },
@@ -68,15 +69,328 @@ function ActionModal({ isOpen, onClose, title, children }: DashboardModalProps) 
 }
 
 export default function SellerDashboard({ orders = [], onNavigate }: { orders?: any[], onNavigate: (item: string) => void }) {
+  const { user } = useAuth();
   const [modalContent, setModalContent] = React.useState<{ title: string, content: React.ReactNode } | null>(null);
 
-  const activeOrders = (orders || []).filter(o => 
-    o.status === 'WAITING_HARVEST' || 
-    o.status === 'HARVEST_CONFIRMED_SELLER' || 
-    o.status === 'WAITING_FINAL_PAYMENT' || 
-    o.status === 'WAITING_PAYMENT_DP' || 
-    o.status === 'WAITING_ADMIN_DP'
-  );
+  // Filter States
+  const [timeframe, setTimeframe] = React.useState<'TODAY' | 'WEEK' | 'MONTH' | 'ALL' | 'CUSTOM'>('ALL');
+  const [customRange, setCustomRange] = React.useState<{ start: string, end: string }>({
+    start: new Date().toISOString().split('T')[0],
+    end: new Date().toISOString().split('T')[0]
+  });
+  const [isFilterOpen, setIsFilterOpen] = React.useState(false);
+
+  // Helper: robust date parsing
+  const getOrderDate = React.useCallback((o: any) => {
+    if (o.createdAtRaw) {
+      return new Date(o.createdAtRaw);
+    }
+    if (o.createdAt) {
+      // parse locale date string "D/M/YYYY" or "D-M-YYYY"
+      const parts = o.createdAt.split(/[/\-]/);
+      if (parts.length === 3) {
+        const day = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1;
+        const year = parseInt(parts[2], 10);
+        return new Date(year, month, day);
+      }
+      
+      // if it's "1 Mei 2024" or similar (Indonesian long date string format)
+      const months: { [key: string]: number } = {
+        'januari': 0, 'februari': 1, 'maret': 2, 'april': 3, 'mei': 4, 'juni': 5,
+        'juli': 6, 'agustus': 7, 'september': 8, 'oktober': 9, 'november': 10, 'desember': 11,
+        'jan': 0, 'feb': 1, 'mar': 2, 'apr': 3, 'jun': 5, 'jul': 6, 'agu': 7, 'sep': 8,
+        'okt': 9, 'nov': 10, 'des': 11
+      };
+      const cleanStr = o.createdAt.toLowerCase().trim();
+      const match = cleanStr.match(/^(\d+)\s+([a-z]+)\s+(\d+)$/);
+      if (match) {
+        const day = parseInt(match[1], 10);
+        const monthName = match[2];
+        const year = parseInt(match[3], 10);
+        if (months[monthName] !== undefined) {
+          return new Date(year, months[monthName], day);
+        }
+      }
+    }
+    return new Date();
+  }, []);
+
+  const formatFriendlyDate = React.useCallback((date: Date) => {
+    return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  }, []);
+
+  const formatFriendlyDateShort = React.useCallback((date: Date) => {
+    return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+  }, []);
+
+  const getDateRangeLabel = React.useCallback(() => {
+    const today = new Date();
+    
+    if (timeframe === 'ALL') {
+      if (!orders || orders.length === 0) return 'Tidak ada data transaksi';
+      const dates = orders.map(o => getOrderDate(o).getTime());
+      const minDate = new Date(Math.min(...dates));
+      const maxDate = new Date(Math.max(...dates));
+      if (minDate.toDateString() === maxDate.toDateString()) {
+        return formatFriendlyDate(minDate);
+      }
+      return `${formatFriendlyDateShort(minDate)} - ${formatFriendlyDate(maxDate)}`;
+    }
+    
+    if (timeframe === 'TODAY') {
+      return formatFriendlyDate(today);
+    }
+    
+    if (timeframe === 'WEEK') {
+      const dayOfWeek = today.getDay();
+      const distanceToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - distanceToMonday);
+      
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      
+      return `${formatFriendlyDateShort(startOfWeek)} - ${formatFriendlyDate(endOfWeek)}`;
+    }
+    
+    if (timeframe === 'MONTH') {
+      return today.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+    }
+    
+    if (timeframe === 'CUSTOM') {
+      const start = new Date(customRange.start);
+      const end = new Date(customRange.end);
+      return `${formatFriendlyDateShort(start)} - ${formatFriendlyDate(end)}`;
+    }
+    
+    return '';
+  }, [timeframe, customRange, orders, getOrderDate, formatFriendlyDate, formatFriendlyDateShort]);
+
+  // Filtering Logic
+  const filteredOrders = React.useMemo(() => {
+    return (orders || []).filter(o => {
+      const orderDate = getOrderDate(o);
+      
+      if (timeframe === 'ALL') return true;
+      
+      if (timeframe === 'TODAY') {
+        const today = new Date();
+        return orderDate.getDate() === today.getDate() &&
+               orderDate.getMonth() === today.getMonth() &&
+               orderDate.getFullYear() === today.getFullYear();
+      }
+      
+      if (timeframe === 'WEEK') {
+        const today = new Date();
+        const dayOfWeek = today.getDay();
+        const distanceToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - distanceToMonday);
+        startOfWeek.setHours(0, 0, 0, 0);
+        
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        endOfWeek.setHours(23, 59, 59, 999);
+        
+        return orderDate >= startOfWeek && orderDate <= endOfWeek;
+      }
+      
+      if (timeframe === 'MONTH') {
+        const today = new Date();
+        return orderDate.getMonth() === today.getMonth() &&
+               orderDate.getFullYear() === today.getFullYear();
+      }
+      
+      if (timeframe === 'CUSTOM') {
+        const start = new Date(customRange.start);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(customRange.end);
+        end.setHours(23, 59, 59, 999);
+        return orderDate >= start && orderDate <= end;
+      }
+      
+      return true;
+    });
+  }, [orders, timeframe, customRange, getOrderDate]);
+
+  // Dynamic calculations from filteredOrders
+  const activeOrders = React.useMemo(() => {
+    return filteredOrders.filter(o => 
+      o.status === 'WAITING_HARVEST' || 
+      o.status === 'HARVEST_CONFIRMED_SELLER' || 
+      o.status === 'WAITING_FINAL_PAYMENT' || 
+      o.status === 'WAITING_PAYMENT_DP' || 
+      o.status === 'WAITING_ADMIN_DP'
+    );
+  }, [filteredOrders]);
+
+  const completedOrActiveOrders = React.useMemo(() => {
+    return filteredOrders.filter(o => o.status !== 'WAITING_PAYMENT_DP' && o.status !== 'WAITING_ADMIN_DP');
+  }, [filteredOrders]);
+
+  const totalRevenue = React.useMemo(() => {
+    return completedOrActiveOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+  }, [completedOrActiveOrders]);
+
+  const totalOrdersCount = React.useMemo(() => {
+    return filteredOrders.length;
+  }, [filteredOrders]);
+
+  const preOrderCount = React.useMemo(() => {
+    return filteredOrders.filter(o => o.status === 'WAITING_HARVEST').length;
+  }, [filteredOrders]);
+
+  const ratingValue = user?.rating ? `${Number(user.rating).toFixed(1)}/5` : '5.0/5';
+  
+  // Saldo (unaffected by timeframe filter to represent withdrawable funds)
+  const currentBalance = React.useMemo(() => {
+    return (orders || [])
+      .filter(o => o.status === 'COMPLETED' || o.status === 'SHIPPING' || o.status === 'DELIVERED')
+      .reduce((sum, o) => sum + o.totalAmount, 0);
+  }, [orders]);
+
+  // Dynamic SALES_DATA calculation from filteredOrders
+  const dynamicSalesData = React.useMemo(() => {
+    const productSales: { [name: string]: number } = {};
+    
+    filteredOrders.forEach(o => {
+      if (o.status !== 'WAITING_PAYMENT_DP' && o.status !== 'WAITING_ADMIN_DP') {
+        o.items.forEach(item => {
+          productSales[item.name] = (productSales[item.name] || 0) + (item.quantity * item.price);
+        });
+      }
+    });
+
+    const salesList = Object.entries(productSales).map(([name, value]) => ({
+      name,
+      value
+    }));
+
+    // Sort by revenue descending
+    salesList.sort((a, b) => b.value - a.value);
+
+    // Sum total value to compute percentages
+    const totalSalesVal = salesList.reduce((sum, item) => sum + item.value, 0);
+
+    if (totalSalesVal === 0) {
+      // Fallback to mock data if there are no sales in this timeframe
+      return [
+        { name: 'Tomat Segar', value: 40, color: '#f97316' },
+        { name: 'Cabai Merah', value: 25, color: '#10b981' },
+        { name: 'Jagung Manis', value: 15, color: '#f59e0b' },
+        { name: 'Bayam', value: 10, color: '#ef4444' },
+        { name: 'Beras Merah', value: 10, color: '#0ea5e9' },
+      ];
+    }
+
+    const COLORS = ['#f97316', '#10b981', '#f59e0b', '#ef4444', '#0ea5e9', '#8b5cf6', '#ec4899', '#3b82f6'];
+
+    // Map to percentage and assign colors
+    return salesList.slice(0, 5).map((item, idx) => ({
+      name: item.name,
+      value: Math.max(1, Math.round((item.value / totalSalesVal) * 100)),
+      color: COLORS[idx % COLORS.length]
+    }));
+  }, [filteredOrders]);
+
+  // Dynamic Total Weight calculation
+  const totalWeightStr = React.useMemo(() => {
+    let totalKg = 0;
+    filteredOrders.forEach(o => {
+      if (o.status !== 'WAITING_PAYMENT_DP' && o.status !== 'WAITING_ADMIN_DP') {
+        o.items.forEach(item => {
+          let quantity = item.quantity;
+          const unit = (item.unit || 'kg').toLowerCase();
+          if (unit.includes('kuintal') || unit.includes('kw')) {
+            quantity *= 100;
+          } else if (unit.includes('ton')) {
+            quantity *= 1000;
+          }
+          totalKg += quantity;
+        });
+      }
+    });
+    if (totalKg === 0) return '245 kg'; // Mock fallback
+    return `${totalKg} kg`;
+  }, [filteredOrders]);
+
+  // Dynamic Best Sellers from filteredOrders
+  const dynamicBestSellers = React.useMemo(() => {
+    const productStats: { [name: string]: { quantity: number, revenue: number, unit: string, image: string } } = {};
+
+    filteredOrders.forEach(o => {
+      if (o.status !== 'WAITING_PAYMENT_DP' && o.status !== 'WAITING_ADMIN_DP') {
+        o.items.forEach(item => {
+          const stats = productStats[item.name] || { quantity: 0, revenue: 0, unit: item.unit || 'kg', image: item.image };
+          stats.quantity += item.quantity;
+          stats.revenue += item.quantity * item.price;
+          productStats[item.name] = stats;
+        });
+      }
+    });
+
+    const sellerList = Object.entries(productStats).map(([name, stats]) => ({
+      name,
+      amount: `${stats.quantity} ${stats.unit}`,
+      revenue: `Rp ${stats.revenue.toLocaleString('id-ID')}`,
+      img: stats.image,
+      revenueNum: stats.revenue
+    }));
+
+    // Sort by revenue descending
+    sellerList.sort((a, b) => b.revenueNum - a.revenueNum);
+
+    if (sellerList.length === 0) {
+      // Fallback
+      return [
+        {
+          img: "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?q=80&w=200",
+          name: "Tomat Segar",
+          amount: "120 kg",
+          revenue: "Rp 1.920.000"
+        },
+        {
+          img: "https://images.unsplash.com/photo-1618161546200-5047b11933c0?q=80&w=400",
+          name: "Cabai Merah Keriting",
+          amount: "65 kg",
+          revenue: "Rp 1.820.000"
+        },
+        {
+          img: "https://images.unsplash.com/photo-1551754655-cd27e38d2076?q=80&w=200",
+          name: "Jagung Manis",
+          amount: "40 kg",
+          revenue: "Rp 380.000"
+        }
+      ];
+    }
+
+    return sellerList.slice(0, 3);
+  }, [filteredOrders]);
+
+  // Dynamic Timeline (Harvest Schedule)
+  const dynamicTimeline = React.useMemo(() => {
+    const harvestOrders = filteredOrders.filter(o => o.status === 'WAITING_HARVEST');
+    if (harvestOrders.length === 0) {
+      return [
+        { date: "10 Mei 2024", name: "Tomat Segar", type: "Panen" },
+        { date: "11 Mei 2024", name: "Jagung Manis", type: "Panen" },
+        { date: "12 Mei 2024", name: "Cabai Merah Keriting", type: "Panen" }
+      ];
+    }
+    
+    return harvestOrders.map(o => {
+      const orderDate = getOrderDate(o);
+      const estHarvestDate = new Date(orderDate);
+      estHarvestDate.setDate(orderDate.getDate() + 14); // estimate +14 days
+      
+      return {
+        date: formatFriendlyDate(estHarvestDate),
+        name: o.items[0]?.name || "Produk Pangan",
+        type: "Panen PO"
+      };
+    });
+  }, [filteredOrders, getOrderDate, formatFriendlyDate]);
 
   const handleAction = (title: string, content: React.ReactNode) => {
     setModalContent({ title, content });
@@ -90,24 +404,30 @@ export default function SellerDashboard({ orders = [], onNavigate }: { orders?: 
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-xl sm:text-3xl font-black text-slate-800 font-display">Selamat pagi, Pak Joko! 🌿</h1>
+              <h1 className="text-xl sm:text-3xl font-black text-slate-800 font-display">Selamat pagi, {user?.name || 'Mitra Penjual'}! 🌿</h1>
             </div>
-            <p className="text-sm sm:text-base text-slate-500 font-medium">Desa Sukamaju, Lembang</p>
+            <p className="text-sm sm:text-base text-slate-500 font-medium">{user?.village ? `Desa ${user.village}` : 'Wilayah Tani'}</p>
           </div>
           
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
              <div 
-                className="flex items-center justify-between sm:justify-start gap-2 bg-white border border-slate-100 rounded-xl sm:rounded-2xl px-4 py-2.5 shadow-xs cursor-pointer hover:bg-slate-50 transition-colors"
-                onClick={() => handleAction('Pilih Filter', <p className="font-medium text-slate-600">Silakan pilih rentang waktu analisis data Anda.</p>)}
+                className="flex items-center justify-between sm:justify-start gap-2 bg-white border border-slate-[#e2e8f0] rounded-xl sm:rounded-2xl px-4 py-2.5 shadow-xs cursor-pointer hover:bg-slate-50 transition-colors"
+                onClick={() => setIsFilterOpen(true)}
              >
-                <span className="text-xs font-bold text-slate-600">Minggu Ini</span>
+                <span className="text-xs font-bold text-slate-600">
+                  {timeframe === 'ALL' && 'Semua Waktu'}
+                  {timeframe === 'TODAY' && 'Hari Ini'}
+                  {timeframe === 'WEEK' && 'Minggu Ini'}
+                  {timeframe === 'MONTH' && 'Bulan Ini'}
+                  {timeframe === 'CUSTOM' && 'Rentang Kustom'}
+                </span>
                 <ChevronDown size={14} className="text-slate-400 sm:w-4 sm:h-4" />
              </div>
              <div 
-                className="flex items-center justify-between sm:justify-start gap-4 bg-white border border-slate-100 rounded-xl sm:rounded-2xl px-4 sm:px-6 py-2.5 shadow-xs cursor-pointer hover:bg-slate-50 transition-colors"
-                onClick={() => handleAction('Kalender Laporan', <p className="font-medium text-slate-600">Tampilan kalender untuk laporan penjualan akan muncul di sini.</p>)}
+                className="flex items-center justify-between sm:justify-start gap-4 bg-white border border-[#e2e8f0] rounded-xl sm:rounded-2xl px-4 sm:px-6 py-2.5 shadow-xs cursor-pointer hover:bg-slate-50 transition-colors"
+                onClick={() => setIsFilterOpen(true)}
              >
-                <span className="text-xs font-bold text-slate-600">6 Mei - 12 Mei 2024</span>
+                <span className="text-xs font-bold text-slate-600">{getDateRangeLabel()}</span>
                 <ChevronRight size={14} className="text-slate-400 sm:w-4 sm:h-4" />
              </div>
           </div>
@@ -117,30 +437,30 @@ export default function SellerDashboard({ orders = [], onNavigate }: { orders?: 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           <StatCard 
             label="Total Pendapatan" 
-            value="Rp 4.2jt" 
-            subValue="32% ↑" 
+            value={`Rp ${totalRevenue.toLocaleString('id-ID')}`} 
+            subValue="Real-time" 
             type="up" 
-            onClick={() => handleAction('Detail Pendapatan', <p className="font-medium text-slate-600">Rincian pendapatan bulan Mei 2024 mencapai Rp 4.250.000, naik signifikan dari bulan lalu.</p>)}
+            onClick={() => handleAction('Detail Pendapatan', <p className="font-medium text-slate-600">Rincian pendapatan bersih dari transaksi yang aktif/selesai sebesar Rp {totalRevenue.toLocaleString('id-ID')}.</p>)}
           />
           <StatCard 
             label="Total Pesanan" 
-            value="82" 
-            subValue="18% ↑" 
+            value={String(totalOrdersCount)} 
+            subValue="Terdaftar" 
             type="up" 
-            onClick={() => handleAction('Daftar Pesanan', <p className="font-medium text-slate-600">Total 82 pesanan telah diterima minggu ini. 12 di antaranya sedang dalam pengiriman.</p>)}
+            onClick={() => handleAction('Daftar Pesanan', <p className="font-medium text-slate-600">Total {totalOrdersCount} pesanan telah tercatat di database.</p>)}
           />
           <StatCard 
             label="Pre-Order" 
-            value="27" 
+            value={String(preOrderCount)} 
             subValue="Aktif" 
             type="neutral" 
-            onClick={() => handleAction('Status Pre-Order', <p className="font-medium text-slate-600">Terdapat 27 slot pre-order aktif untuk batch panen minggu depan.</p>)}
+            onClick={() => handleAction('Status Pre-Order', <p className="font-medium text-slate-600">Terdapat {preOrderCount} pesanan dalam tahap proses panen (pre-order).</p>)}
           />
           <StatStatCard 
             label="Rating" 
-            value="4.8/5" 
-            subValue="132 Ulasan" 
-            onClick={() => handleAction('Ulasan Pelanggan', <p className="font-medium text-slate-600">Rating rata-rata Anda adalah 4.8. Pelanggan sangat menyukai kualitas kesegaran tomat Anda.</p>)}
+            value={ratingValue} 
+            subValue="Ulasan Mitra" 
+            onClick={() => handleAction('Ulasan Pelanggan', <p className="font-medium text-slate-600">Rating rata-rata Anda adalah {ratingValue} berdasarkan penilaian ulasan pembeli.</p>)}
           />
         </div>
 
@@ -194,8 +514,8 @@ export default function SellerDashboard({ orders = [], onNavigate }: { orders?: 
                         img={o.items[0]?.image || "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?q=80&w=200"} 
                         name={o.items[0]?.name || "Produk"}
                         weight={`${o.items[0]?.quantity || 1} ${o.items[0]?.unit || 'kg'}`}
-                        customer="Andi Wijaya"
-                        location="Sukamaju"
+                        customer={o.buyerName}
+                        location={o.buyerVillage}
                         date={o.createdAt}
                         price={`Rp ${o.totalAmount.toLocaleString('id-ID')}`}
                         status={o.status === 'WAITING_PAYMENT_DP' || o.status === 'WAITING_ADMIN_DP' ? 'Menunggu Bayar' : (o.status === 'WAITING_HARVEST' ? 'Proses Panen' : 'Panen Selesai')}
@@ -262,12 +582,12 @@ export default function SellerDashboard({ orders = [], onNavigate }: { orders?: 
                <div className="h-48 sm:h-64 relative flex items-center justify-center">
                   <div className="absolute text-center z-10">
                      <p className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5 sm:mb-1">Total</p>
-                     <p className="text-xl sm:text-2xl font-black text-slate-800">245 kg</p>
+                     <p className="text-xl sm:text-2xl font-black text-slate-800">{totalWeightStr}</p>
                   </div>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={SALES_DATA}
+                        data={dynamicSalesData}
                         cx="50%"
                         cy="50%"
                         innerRadius={55}
@@ -276,7 +596,7 @@ export default function SellerDashboard({ orders = [], onNavigate }: { orders?: 
                         dataKey="value"
                         cornerRadius={8}
                       >
-                        {SALES_DATA.map((entry, index) => (
+                        {dynamicSalesData.map((entry, index) => (
                           <Cell key={index} fill={entry.color} stroke="none" />
                         ))}
                       </Pie>
@@ -288,7 +608,7 @@ export default function SellerDashboard({ orders = [], onNavigate }: { orders?: 
                   </ResponsiveContainer>
                </div>
                <div className="mt-6 sm:mt-8 space-y-2 sm:space-y-3">
-                  {SALES_DATA.slice(0, 3).map((item, i) => (
+                  {dynamicSalesData.slice(0, 3).map((item, i) => (
                     <div key={i} className="flex items-center justify-between text-[10px] sm:text-xs">
                        <div className="flex items-center gap-2">
                           <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: item.color }} />
@@ -316,27 +636,16 @@ export default function SellerDashboard({ orders = [], onNavigate }: { orders?: 
               </button>
             </div>
             <div className="space-y-5 sm:space-y-6">
-              <BestSellerItem 
-                img="https://images.unsplash.com/photo-1592924357228-91a4daadcfea?q=80&w=200" 
-                name="Tomat Segar"
-                amount="120 kg"
-                revenue="Rp 1.920.000"
-                onClick={() => handleAction('Performa: Tomat Segar', <p className="font-medium text-slate-600">Tomat Segar menyumbang 40% dari total pendapatan minggu ini.</p>)}
-              />
-              <BestSellerItem 
-                img="https://images.unsplash.com/photo-1618161546200-5047b11933c0?q=80&w=400" 
-                name="Cabai Merah Keriting"
-                amount="65 kg"
-                revenue="Rp 1.820.000"
-                onClick={() => handleAction('Performa: Cabai Merah', <p className="font-medium text-slate-600">Cabai Merah meningkat penjualannya sebesar 15% setiap harinya.</p>)}
-              />
-              <BestSellerItem 
-                img="https://images.unsplash.com/photo-1551754655-cd27e38d2076?q=80&w=200" 
-                name="Jagung Manis"
-                amount="40 kg"
-                revenue="Rp 380.000"
-                onClick={() => handleAction('Performa: Jagung Manis', <p className="font-medium text-slate-600">Jagung Manis stabil di posisi produk terlaris ketiga.</p>)}
-              />
+              {dynamicBestSellers.map((item, idx) => (
+                <BestSellerItem 
+                  key={idx}
+                  img={item.img || "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?q=80&w=200"} 
+                  name={item.name}
+                  amount={item.amount}
+                  revenue={item.revenue}
+                  onClick={() => handleAction(`Performa: ${item.name}`, <p className="font-medium text-slate-600">{item.name} menyumbang volume penjualan sebesar {item.amount} dengan total omzet {item.revenue} pada periode ini.</p>)}
+                />
+              ))}
             </div>
           </div>
 
@@ -354,9 +663,9 @@ export default function SellerDashboard({ orders = [], onNavigate }: { orders?: 
                 </button>
               </div>
               <div className="relative pl-6 sm:pl-8 space-y-6 sm:space-y-8 before:content-[''] before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-100">
-                  <TimelineItem date="10 Mei 2024" name="Tomat Segar" type="Panen" />
-                  <TimelineItem date="11 Mei 2024" name="Jagung Manis" type="Panen" />
-                  <TimelineItem date="12 Mei 2024" name="Cabai Merah Keriting" type="Panen" />
+                {dynamicTimeline.map((item, idx) => (
+                  <TimelineItem key={idx} date={item.date} name={item.name} type={item.type} />
+                ))}
               </div>
             </div>
 
@@ -374,18 +683,18 @@ export default function SellerDashboard({ orders = [], onNavigate }: { orders?: 
               <div className="grid grid-cols-2 gap-4 mb-6 transition-all">
                 <div className="space-y-1">
                     <p className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">Saldo</p>
-                    <p className="text-base sm:text-xl font-black text-slate-800">Rp 2.3jt</p>
+                    <p className="text-base sm:text-xl font-black text-slate-800">Rp {currentBalance.toLocaleString('id-ID')}</p>
                 </div>
                 <div className="space-y-1">
                     <p className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">Pendapatan</p>
-                    <p className="text-base sm:text-xl font-black text-emerald-600">Rp 4.2jt</p>
+                    <p className="text-base sm:text-xl font-black text-emerald-600">Rp {totalRevenue.toLocaleString('id-ID')}</p>
                 </div>
               </div>
               <button 
                 onClick={() => handleAction('Tarik Dana', <div className="space-y-6">
                    <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
                       <p className="text-xs font-bold text-slate-400 uppercase mb-2">Saldo yang dapat ditarik</p>
-                      <p className="text-3xl font-black text-brand-600">Rp 2.350.000</p>
+                      <p className="text-3xl font-black text-brand-600">Rp {currentBalance.toLocaleString('id-ID')}</p>
                    </div>
                    <div className="space-y-4">
                       <p className="text-sm font-bold text-slate-700">Pilih Rekening Tujuan</p>
@@ -393,8 +702,8 @@ export default function SellerDashboard({ orders = [], onNavigate }: { orders?: 
                          <div className="flex items-center gap-3">
                             <div className="w-10 h-6 bg-slate-200 rounded flex items-center justify-center font-black text-[8px]">BANK</div>
                             <div>
-                               <p className="text-xs font-bold">Bank Mandiri</p>
-                               <p className="text-[10px] text-slate-400">123-****-456 a.n Pak Joko</p>
+                               <p className="text-xs font-bold">Rekening Terdaftar</p>
+                               <p className="text-[10px] text-slate-400">{user?.bank_account || 'Belum mendaftarkan rekening'} a.n {user?.name || 'Pak Joko'}</p>
                             </div>
                          </div>
                          <CheckCircle2 size={20} className="text-brand-500" />
@@ -420,6 +729,109 @@ export default function SellerDashboard({ orders = [], onNavigate }: { orders?: 
           >
             {modalContent.content}
           </ActionModal>
+        )}
+
+        {isFilterOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsFilterOpen(false)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" 
+            />
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative bg-[#fffdf7] border-2 border-[#d8d3c2] rounded-[32px] w-full max-w-md overflow-hidden shadow-2xl p-6 sm:p-8"
+            >
+              <div className="flex items-center justify-between mb-6 pb-4 border-b border-[#e6e2d6]">
+                <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight font-display">Filter Analitik</h3>
+                <button onClick={() => setIsFilterOpen(false)} className="p-2 hover:bg-[#e6e2d6] rounded-xl transition-colors">
+                  <X size={20} className="text-slate-600" />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <p className="text-xs font-black text-slate-400 uppercase tracking-widest leading-none">Pilih Rentang Waktu</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { id: 'ALL', label: 'Semua Waktu' },
+                    { id: 'TODAY', label: 'Hari Ini' },
+                    { id: 'WEEK', label: 'Minggu Ini' },
+                    { id: 'MONTH', label: 'Bulan Ini' }
+                  ].map(preset => (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => {
+                        setTimeframe(preset.id as any);
+                        setIsFilterOpen(false);
+                      }}
+                      className={`py-3 px-4 rounded-2xl font-bold text-xs uppercase tracking-wider transition-all border ${
+                        timeframe === preset.id 
+                          ? 'bg-[#1a4d2e] text-white border-[#1a4d2e] shadow-md shadow-emerald-900/10' 
+                          : 'bg-white text-slate-600 border-[#e6e2d6] hover:bg-[#f3efe4]'
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="pt-4 border-t border-[#e6e2d6] space-y-3">
+                  <button
+                    type="button"
+                    onClick={() => setTimeframe('CUSTOM')}
+                    className={`w-full py-3 px-4 rounded-2xl font-bold text-xs uppercase tracking-wider transition-all border ${
+                      timeframe === 'CUSTOM'
+                        ? 'bg-[#1a4d2e] text-white border-[#1a4d2e] shadow-md shadow-emerald-900/10'
+                        : 'bg-white text-slate-600 border-[#e6e2d6] hover:bg-[#f3efe4]'
+                    }`}
+                  >
+                    Rentang Tanggal Kustom
+                  </button>
+                  
+                  {timeframe === 'CUSTOM' && (
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="space-y-3 pt-2 overflow-hidden"
+                    >
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 leading-none">Tanggal Mulai</label>
+                          <input 
+                            type="date" 
+                            value={customRange.start}
+                            onChange={(e) => setCustomRange(prev => ({ ...prev, start: e.target.value }))}
+                            className="w-full bg-white border border-[#e6e2d6] rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none focus:border-[#1a4d2e]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 leading-none">Tanggal Selesai</label>
+                          <input 
+                            type="date" 
+                            value={customRange.end}
+                            onChange={(e) => setCustomRange(prev => ({ ...prev, end: e.target.value }))}
+                            className="w-full bg-white border border-[#e6e2d6] rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none focus:border-[#1a4d2e]"
+                          />
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsFilterOpen(false)}
+                        className="w-full mt-2 py-3.5 bg-[#1a4d2e] text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-emerald-950/20 active:scale-95 transition-all"
+                      >
+                        Terapkan Filter
+                      </button>
+                    </motion.div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>
