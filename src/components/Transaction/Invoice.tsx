@@ -17,13 +17,9 @@ interface InvoiceProps {
 }
 
 export default function Invoice({ order, onConfirm }: InvoiceProps) {
-  const [selectedMethod, setSelectedMethod] = React.useState('transfer');
-
-  const methods = [
-    { id: 'transfer', name: 'Transfer Bank (Manual)', icon: Building2, desc: 'BCA, Mandiri, BNI' },
-    { id: 'ewallet', name: 'E-Wallet', icon: Wallet, desc: 'GoPay, OVO, ShopeePay' },
-    { id: 'qris', name: 'QRIS', icon: CreditCard, desc: 'Scan & Bayar Instan' },
-  ];
+  const subtotal = order.items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+  const ongkir = 15000;
+  const biayaLayanan = Math.max(0, order.totalAmount - subtotal - ongkir);
 
   return (
     <div className="bg-white min-h-screen lg:min-h-0 lg:rounded-[40px] overflow-hidden flex flex-col">
@@ -61,8 +57,20 @@ export default function Invoice({ order, onConfirm }: InvoiceProps) {
 
           <div className="pt-4 sm:pt-6 border-t border-slate-200 space-y-3 sm:space-y-4">
             <div className="flex justify-between items-center opacity-60">
-              <span className="text-[10px] sm:text-sm font-bold text-slate-600">Total Belanja</span>
-              <span className="text-[10px] sm:text-sm font-bold text-slate-800">Rp {order.totalAmount.toLocaleString('id-ID')}</span>
+              <span className="text-[10px] sm:text-sm font-bold text-slate-600">Subtotal Produk</span>
+              <span className="text-[10px] sm:text-sm font-bold text-slate-800">Rp {subtotal.toLocaleString('id-ID')}</span>
+            </div>
+            <div className="flex justify-between items-center opacity-60">
+              <span className="text-[10px] sm:text-sm font-bold text-slate-600">Ongkir (Estimasi)</span>
+              <span className="text-[10px] sm:text-sm font-bold text-slate-800">Rp {ongkir.toLocaleString('id-ID')}</span>
+            </div>
+            <div className="flex justify-between items-center opacity-60">
+              <span className="text-[10px] sm:text-sm font-bold text-slate-600">Biaya Layanan</span>
+              <span className="text-[10px] sm:text-sm font-bold text-slate-800">Rp {biayaLayanan.toLocaleString('id-ID')}</span>
+            </div>
+            <div className="flex justify-between items-center border-t border-slate-100 pt-2 opacity-80">
+              <span className="text-[10px] sm:text-sm font-bold text-slate-700">Total Pembayaran</span>
+              <span className="text-[10px] sm:text-sm font-black text-slate-900">Rp {order.totalAmount.toLocaleString('id-ID')}</span>
             </div>
             <div className="flex justify-between items-center p-4 sm:p-6 bg-brand-50 rounded-xl sm:rounded-2xl border border-brand-100">
               <div>
@@ -83,43 +91,61 @@ export default function Invoice({ order, onConfirm }: InvoiceProps) {
           </div>
         </div>
 
-        {/* Payment Methods */}
-        <div className="space-y-3 sm:space-y-4">
-          <label className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Pilih Pembayaran</label>
-          <div className="grid grid-cols-1 gap-2 sm:gap-3">
-            {methods.map((m) => (
-              <div 
-                key={m.id}
-                onClick={() => setSelectedMethod(m.id)}
-                className={`p-3.5 sm:p-5 rounded-xl sm:rounded-3xl border-2 transition-all cursor-pointer flex items-center justify-between ${
-                  selectedMethod === m.id 
-                    ? 'border-brand-500 bg-brand-50/30' 
-                    : 'border-slate-100 hover:border-slate-200 bg-white'
-                }`}
-              >
-                <div className="flex items-center gap-3 sm:gap-4">
-                  <div className={`w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-2xl flex items-center justify-center transition-colors ${
-                    selectedMethod === m.id ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-400'
-                  }`}>
-                    <m.icon className="w-4 h-4 sm:w-6 sm:h-6" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[10px] sm:text-sm font-black text-slate-800 truncate">{m.name}</p>
-                    <p className="text-[8px] sm:text-xs text-slate-500 font-medium truncate">{m.desc}</p>
-                  </div>
+        {/* Payment Transfer Instructions */}
+        <div className="space-y-4">
+          <label className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Rekening Pembayaran Resmi BNI</label>
+          <div className="p-6 bg-slate-50 rounded-[24px] border border-slate-100 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-14 h-8 bg-brand-900 rounded-lg flex items-center justify-center text-white font-black text-[10px] font-display select-none">
+                  BNI
                 </div>
-                <div className={`w-4 h-4 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                   selectedMethod === m.id ? 'border-brand-600 bg-brand-600' : 'border-slate-200'
-                }`}>
-                  {selectedMethod === m.id && <div className="w-1.5 h-1.5 sm:w-2 bg-white rounded-full" />}
+                <div>
+                  <p className="text-xs font-black text-slate-800 uppercase tracking-tight">BNI Manual Transfer</p>
+                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Metode Pembayaran Eksklusif</p>
                 </div>
               </div>
-            ))}
+            </div>
+
+            <div className="p-4 bg-white rounded-2xl border border-slate-100 space-y-3">
+              <div>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Nama Pemilik Rekening</p>
+                <p className="text-xs sm:text-sm font-black text-slate-800 uppercase">SRIWIJAYA DIGITAL INDONESIA</p>
+              </div>
+              <div className="h-px bg-slate-100" />
+              <div>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Nomor Rekening</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm sm:text-base font-black text-brand-900 tracking-wider">1384354499</p>
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText('1384354499');
+                      alert('Nomor rekening berhasil disalin!');
+                    }}
+                    className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-[10px] font-black uppercase tracking-wider cursor-pointer transition-colors border-0"
+                  >
+                    Salin
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-slate-100 p-4">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-2">Petunjuk Pembayaran</p>
+              <ol className="list-decimal list-inside text-[10px] sm:text-xs text-slate-600 font-medium space-y-1.5 leading-relaxed pl-1">
+                <li>Buka aplikasi Mobile Banking BNI, ATM, atau SMS Banking.</li>
+                <li>Pilih menu <span className="font-bold">Transfer &gt; Ke Rekening BNI</span>.</li>
+                <li>Masukkan nomor rekening <span className="font-bold text-slate-800">1384354499</span>.</li>
+                <li>Pastikan nama penerima tertulis <span className="font-bold text-slate-800">SRIWIJAYA DIGITAL INDONESIA</span>.</li>
+                <li>Ketik nominal transfer sebesar <span className="font-bold text-[#1a4d2e]">Rp {(order.status === 'WAITING_PAYMENT_DP' ? order.dpAmount : order.remainingAmount).toLocaleString('id-ID')}</span>.</li>
+                <li>Simpan bukti transfer dan unggah pada halaman berikutnya untuk verifikasi admin.</li>
+              </ol>
+            </div>
           </div>
         </div>
 
         <button 
-          onClick={() => onConfirm(selectedMethod)}
+          onClick={() => onConfirm('transfer')}
           className="w-full bg-brand-600 text-white py-4 sm:py-6 rounded-xl sm:rounded-[32px] font-black uppercase text-[10px] sm:text-sm tracking-widest shadow-xl shadow-brand-600/20 active:scale-95 transition-all flex items-center justify-center gap-2 sm:gap-3 hover:bg-brand-700"
         >
           Konfirmasi & Bayar DP <ArrowRight className="w-3.5 h-3.5 sm:w-5 sm:h-5" />

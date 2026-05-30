@@ -160,7 +160,14 @@ export default function App() {
             onBack={() => navigate('/buyer')} 
             onCheckout={(selectedItems) => {
               if (selectedItems.length === 0) return;
-              const total = selectedItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+              const serviceFeePercent = Number(localStorage.getItem('service_fee') || '7');
+              const subtotal = selectedItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+              const ongkir = 15000;
+              const biayaLayanan = Math.round(subtotal * (serviceFeePercent / 100));
+              const totalAmount = subtotal + ongkir + biayaLayanan;
+              const dpAmount = Math.round(totalAmount * 0.3);
+              const remainingAmount = totalAmount - dpAmount;
+
               const activeSellerId = selectedItems[0]?.sellerId || '2';
               const newOrder: Order = {
                 id: Math.random().toString(36).substr(2, 9),
@@ -174,7 +181,9 @@ export default function App() {
                   image: item.image,
                   unit: item.unit
                 })),
-                totalAmount: total, dpAmount: total * 0.3, remainingAmount: total * 0.7,
+                totalAmount: totalAmount,
+                dpAmount: dpAmount,
+                remainingAmount: remainingAmount,
                 status: 'WAITING_PAYMENT_DP',
                 createdAt: new Date().toLocaleDateString('id-ID'),
                 harvestConfirmedBySeller: false, purchaseConfirmedByBuyer: false

@@ -10,7 +10,8 @@ import {
   Smartphone, 
   Trash2, 
   Clock, 
-  CheckCircle2 
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 import { useCart } from '../../contexts/CartContext';
 import { ensureDayMonthYear } from '../../utils/harvestHelper';
@@ -56,9 +57,11 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
     selectedKeys.includes(`${item.id}-${item.selectedHarvestDate || ''}`)
   );
 
+  const serviceFeePercent = Number(localStorage.getItem('service_fee') || '7');
   const totalProduk = selectedCartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   const ongkir = selectedCartItems.length > 0 ? 15000 : 0;
-  const totalPembayaran = totalProduk + ongkir;
+  const biayaLayanan = Math.round(totalProduk * (serviceFeePercent / 100));
+  const totalPembayaran = totalProduk + ongkir + biayaLayanan;
 
   const formatter = new Intl.NumberFormat('id-ID', {
     style: 'currency',
@@ -173,6 +176,10 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
                   <span>Ongkir (Estimasi)</span>
                   <span className="font-bold text-slate-800">{formatter.format(ongkir)}</span>
                 </div>
+                <div className="flex items-center justify-between text-slate-500 font-semibold text-xs sm:text-sm">
+                  <span>Biaya Layanan ({serviceFeePercent}%)</span>
+                  <span className="font-bold text-slate-800">{formatter.format(biayaLayanan)}</span>
+                </div>
                 <div className="pt-3 flex items-center justify-between border-t border-slate-50">
                   <span className="text-sm sm:text-base font-black text-slate-800 uppercase font-display">Total Pembayaran</span>
                   <span className="text-lg sm:text-xl font-black text-[#1a4d2e] font-display">{formatter.format(totalPembayaran)}</span>
@@ -224,37 +231,24 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
               <div className="space-y-3">
                 <div className="flex items-center justify-between p-4 bg-emerald-50/50 border-2 border-[#1a4d2e] rounded-2xl">
                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-[#1a4d2e] rounded-xl flex items-center justify-center text-white">
-                        <Wallet size={20} />
+                      <div className="w-10 h-10 bg-[#1a4d2e] rounded-xl flex items-center justify-center text-white font-black text-xs font-display">
+                        BNI
                       </div>
                       <div>
-                        <p className="text-xs font-bold text-emerald-900">Saldo PanganDesa</p>
-                        <p className="text-[10px] font-bold text-[#1a4d2e] uppercase">Rp 250.000</p>
+                        <p className="text-xs font-black text-emerald-900">Transfer Bank BNI (Manual)</p>
+                        <p className="text-[11px] font-black text-[#1a4d2e] tracking-wider">1384354499</p>
+                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-tight mt-0.5">a.n SRIWIJAYA DIGITAL INDONESIA</p>
                       </div>
                    </div>
                    <div className="w-5 h-5 bg-[#1a4d2e] rounded-full flex items-center justify-center text-white ring-4 ring-emerald-100">
                       <CheckCircle2 size={12} strokeWidth={3} />
                    </div>
                 </div>
-
-                <div className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl hover:border-brand-200 transition-all cursor-pointer group">
-                   <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-brand-50 group-hover:text-[#1a4d2e] transition-all">
-                        <Landmark size={20} />
-                      </div>
-                      <p className="text-xs font-bold text-slate-600">Transfer Bank</p>
-                   </div>
-                   <div className="w-5 h-5 border-2 border-slate-200 rounded-full" />
-                </div>
-
-                <div className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl hover:border-brand-200 transition-all cursor-pointer group">
-                   <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-brand-50 group-hover:text-[#1a4d2e] transition-all">
-                        <Smartphone size={20} />
-                      </div>
-                      <p className="text-xs font-bold text-slate-600">e-Wallet (OVO, DANA, GoPay)</p>
-                   </div>
-                   <div className="w-5 h-5 border-2 border-slate-200 rounded-full" />
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2">
+                  <AlertCircle size={14} className="text-amber-600 shrink-0 mt-0.5" />
+                  <p className="text-[9.5px] text-amber-800 font-medium leading-normal">
+                    Ini adalah satu-satunya metode pembayaran resmi yang tersedia saat ini untuk transaksi pre-order PanganDesa.
+                  </p>
                 </div>
               </div>
             </div>
