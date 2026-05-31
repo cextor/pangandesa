@@ -26,6 +26,7 @@ interface CartProps {
 
 export default function Cart({ onBack, onCheckout }: CartProps) {
   const { cartItems, removeFromCart, updateCartQuantity } = useCart();
+  const [tempQuantities, setTempQuantities] = React.useState<Record<string, string>>({});
 
   // Manage checkbox selection state. Default selected all on mount
   const [selectedKeys, setSelectedKeys] = React.useState<string[]>([]);
@@ -143,7 +144,11 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
                           {/* Interactive Quantity Selector in Cart */}
                           <div className="flex items-center bg-slate-50 border border-slate-100 rounded-lg p-0.5 shadow-xs shrink-0 scale-90 sm:scale-100 origin-left">
                             <button 
-                              onClick={() => updateCartQuantity(item.id, item.quantity - 1, item.selectedHarvestDate)}
+                              onClick={() => {
+                                const newQty = item.quantity - 1;
+                                updateCartQuantity(item.id, newQty, item.selectedHarvestDate);
+                                setTempQuantities(prev => ({ ...prev, [key]: String(newQty) }));
+                              }}
                               disabled={item.quantity <= 1}
                               className="p-1 text-slate-400 hover:text-[#1a4d2e] hover:bg-white rounded-md transition-all border-0 bg-transparent cursor-pointer disabled:opacity-40"
                             >
@@ -151,19 +156,25 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
                             </button>
                             <input 
                               type="text"
-                              value={item.quantity}
+                              value={tempQuantities[key] !== undefined ? tempQuantities[key] : String(item.quantity)}
                               onChange={(e) => {
                                 const valStr = e.target.value.replace(/[^0-9]/g, '');
-                                if (valStr === '') {
-                                  updateCartQuantity(item.id, 1, item.selectedHarvestDate);
-                                  return;
+                                setTempQuantities(prev => ({ ...prev, [key]: valStr }));
+                                if (valStr !== '') {
+                                  const val = parseInt(valStr, 10);
+                                  if (val > item.stock) {
+                                    alert(`Stok tidak mencukupi! Stok maksimal tersedia: ${item.stock} ${item.unit}`);
+                                    updateCartQuantity(item.id, item.stock, item.selectedHarvestDate);
+                                    setTempQuantities(prev => ({ ...prev, [key]: String(item.stock) }));
+                                  } else {
+                                    updateCartQuantity(item.id, Math.max(1, val), item.selectedHarvestDate);
+                                  }
                                 }
-                                const val = parseInt(valStr, 10);
-                                if (val > item.stock) {
-                                  alert(`Stok tidak mencukupi! Stok maksimal tersedia: ${item.stock} ${item.unit}`);
-                                  updateCartQuantity(item.id, item.stock, item.selectedHarvestDate);
-                                } else {
-                                  updateCartQuantity(item.id, Math.max(1, val), item.selectedHarvestDate);
+                              }}
+                              onBlur={() => {
+                                if (tempQuantities[key] === '' || tempQuantities[key] === '0') {
+                                  updateCartQuantity(item.id, 1, item.selectedHarvestDate);
+                                  setTempQuantities(prev => ({ ...prev, [key]: '1' }));
                                 }
                               }}
                               className="w-10 bg-white border border-slate-200 rounded-md py-0.5 text-xs font-black text-slate-800 text-center outline-none focus:ring-1 focus:ring-[#1a4d2e] focus:border-[#1a4d2e] transition-all"
@@ -173,7 +184,9 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
                                 if (item.quantity >= item.stock) {
                                   alert(`Stok tidak mencukupi! Stok maksimal tersedia: ${item.stock} ${item.unit}`);
                                 } else {
-                                  updateCartQuantity(item.id, item.quantity + 1, item.selectedHarvestDate);
+                                  const newQty = item.quantity + 1;
+                                  updateCartQuantity(item.id, newQty, item.selectedHarvestDate);
+                                  setTempQuantities(prev => ({ ...prev, [key]: String(newQty) }));
                                 }
                               }}
                               className="p-1 text-slate-400 hover:text-[#1a4d2e] hover:bg-white rounded-md transition-all border-0 bg-transparent cursor-pointer"
