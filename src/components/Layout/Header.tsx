@@ -18,6 +18,7 @@ import {
 import { AppRole } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { NotificationService, NotificationItem } from '../../services/NotificationService';
+import { useCart } from '../../contexts/CartContext';
 
 interface HeaderProps {
   onCartClick: () => void;
@@ -29,6 +30,7 @@ interface HeaderProps {
 
 export default function Header({ onCartClick, onMenuClick, onLogout, onNavigate, activeRole = 'buyer' }: HeaderProps) {
   const { user } = useAuth();
+  const { cartItems } = useCart();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -61,6 +63,41 @@ export default function Header({ onCartClick, onMenuClick, onLogout, onNavigate,
     const ok = await NotificationService.markAllAsRead(userId);
     if (ok) {
       setNotifications(prev => prev.map(n => ({ ...n, is_read: 1 })));
+    }
+  };
+
+  const handleNotificationClick = async (notif: NotificationItem) => {
+    // Mark as read first
+    if (!notif.is_read || String(notif.is_read) === '0') {
+      await handleMarkAsRead(notif.id);
+    }
+    
+    // Close notifications popup
+    setIsNotificationsOpen(false);
+
+    // Map to specific screen/route
+    if (!onNavigate) return;
+
+    if (activeRole === 'buyer') {
+      if (notif.type === 'pre_order' || notif.type === 'finance') {
+        onNavigate('pesanan');
+      } else if (notif.type === 'harvest_warning') {
+        onNavigate('preorder');
+      } else {
+        onNavigate('beranda');
+      }
+    } else if (activeRole === 'seller') {
+      if (notif.type === 'pre_order') {
+        onNavigate('preorder-masuk');
+      } else if (notif.type === 'harvest_warning') {
+        onNavigate('panen-produksi');
+      } else if (notif.type === 'finance') {
+        onNavigate('keuangan');
+      } else {
+        onNavigate('dashboard');
+      }
+    } else if (activeRole === 'admin') {
+      onNavigate('dashboard');
     }
   };
 
@@ -141,7 +178,11 @@ export default function Header({ onCartClick, onMenuClick, onLogout, onNavigate,
               className="p-2 sm:p-3 rounded-full text-slate-400 hover:bg-slate-50 hover:text-brand-500 transition-all relative border border-transparent group"
             >
               <ShoppingCart size={20} className="sm:w-[22px] sm:h-[22px] group-hover:scale-110 transition-transform" />
-              <span className="absolute top-1 sm:top-1 right-1 sm:right-1 w-4 h-4 sm:w-5 sm:h-5 bg-brand-600 text-white text-[8px] sm:text-[9px] font-black rounded-full border-2 border-white flex items-center justify-center">2</span>
+              {cartItems.length > 0 && (
+                <span className="absolute top-1 sm:top-1 right-1 sm:right-1 w-4 h-4 sm:w-5 sm:h-5 bg-brand-600 text-white text-[8px] sm:text-[9px] font-black rounded-full border-2 border-white flex items-center justify-center">
+                  {cartItems.length}
+                </span>
+              )}
             </button>
           )}
           <div className="relative" ref={notificationsRef}>
@@ -186,11 +227,12 @@ export default function Header({ onCartClick, onMenuClick, onLogout, onNavigate,
                       return (
                         <div 
                           key={notif.id}
+                          onClick={() => handleNotificationClick(notif)}
                           className={`p-3 rounded-2xl flex gap-3 transition-all border ${
                             isUnread 
                               ? 'bg-slate-50/50 border-slate-100/50 font-bold' 
                               : 'bg-white border-transparent'
-                          } hover:bg-slate-50 group/item relative`}
+                          } hover:bg-slate-50 hover:border-slate-200 group/item relative cursor-pointer`}
                         >
                           <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-lg ${meta.bg}`}>
                             {meta.icon}

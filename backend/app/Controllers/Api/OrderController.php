@@ -84,10 +84,62 @@ class OrderController extends ResourceController
             return $this->failValidationErrors('Status is required');
         }
 
-        if ($this->model->update($id, ['status' => $data['status']])) {
-            return $this->respond(['status' => 200, 'message' => 'Status updated successfully']);
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        $this->model->update($id, ['status' => $data['status']]);
+
+        // If status changed to WAITING_HARVEST, the buyer has paid the DP! We must reduce the product stock.
+        if ($data['status'] === 'WAITING_HARVEST') {
+            $orderItems = $db->table('order_items')->where('order_id', $id)->get()->getResultArray();
+            foreach ($orderItems as $item) {
+                $productId = $item['product_id'];
+                $qty = (int)$item['quantity'];
+                
+                // Fetch base product
+                $product = $db->table('products')->where('id', $productId)->get()->getRowArray();
+                if ($product) {
+                    // Update product base stock
+                    $newStock = max(0, (int)$product['stock'] - $qty);
+                    $db->table('products')->where('id', $productId)->update(['stock' => $newStock]);
+                    
+                    // Update specific harvest schedule stock if matches (extract harvest date formatted as DD-MM-YYYY)
+                    if (preg_match('/\(Panen:\s*([^\)]+)\)/i', $item['name'], $matches)) {
+                        $harvestDateFormatted = trim($matches[1]);
+                        $parts = explode('-', $harvestDateFormatted);
+                        if (count($parts) === 3) {
+                            $harvestDateDb = "{$parts[2]}-{$parts[1]}-{$parts[0]}";
+                            
+                            $schedule = $db->table('harvest_schedules')->where([
+                                'product_id' => $productId,
+                                'date' => $harvestDateDb
+                            ])->get()->getRowArray();
+                            
+                            if ($schedule) {
+                                $newSchedStock = max(0, (int)$schedule['stock'] - $qty);
+                                $db->table('harvest_schedules')->where([
+                                    'product_id' => $productId,
+                                    'date' => $harvestDateDb
+                                ])->update(['stock' => $newSchedStock]);
+                            }
+                        }
+                    }
+                    
+                    // Synchronize the product table's harvest_date JSON string
+                    $schedules = $db->table('harvest_schedules')->where('product_id', $productId)->get()->getResultArray();
+                    $db->table('products')->where('id', $productId)->update([
+                        'harvest_date' => json_encode($schedules)
+                    ]);
+                }
+            }
         }
-        
-        return $this->failServerError('Update failed');
+
+        $db->transComplete();
+
+        if ($db->transStatus() === FALSE) {
+            return $this->failServerError('Update failed');
+        }
+
+        return $this->respond(['status' => 200, 'message' => 'Status updated successfully']);
     }
 }

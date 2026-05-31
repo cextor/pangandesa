@@ -11,7 +11,9 @@ import {
   Trash2, 
   Clock, 
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Minus,
+  Plus
 } from 'lucide-react';
 import { useCart } from '../../contexts/CartContext';
 import { ensureDayMonthYear } from '../../utils/harvestHelper';
@@ -23,7 +25,7 @@ interface CartProps {
 }
 
 export default function Cart({ onBack, onCheckout }: CartProps) {
-  const { cartItems, removeFromCart } = useCart();
+  const { cartItems, removeFromCart, updateCartQuantity } = useCart();
 
   // Manage checkbox selection state. Default selected all on mount
   const [selectedKeys, setSelectedKeys] = React.useState<string[]>([]);
@@ -134,7 +136,35 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
                           <h3 className="font-bold text-slate-800 text-xs sm:text-sm truncate pr-4">{item.name}</h3>
                           <p className="font-black text-[#1a4d2e] text-xs sm:text-sm shrink-0">{formatter.format(item.price * item.quantity)}</p>
                         </div>
-                        <p className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">{item.quantity} {item.unit} x {formatter.format(item.price)}</p>
+                        
+                        <div className="flex flex-wrap items-center gap-4 mb-2">
+                          <p className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider">{item.quantity} {item.unit} x {formatter.format(item.price)}</p>
+                          
+                          {/* Interactive Quantity Selector in Cart */}
+                          <div className="flex items-center bg-slate-50 border border-slate-100 rounded-lg p-0.5 shadow-xs shrink-0 scale-90 sm:scale-100 origin-left">
+                            <button 
+                              onClick={() => updateCartQuantity(item.id, item.quantity - 1, item.selectedHarvestDate)}
+                              disabled={item.quantity <= 1}
+                              className="p-1 text-slate-400 hover:text-[#1a4d2e] hover:bg-white rounded-md transition-all border-0 bg-transparent cursor-pointer disabled:opacity-40"
+                            >
+                              <Minus size={12} />
+                            </button>
+                            <span className="px-2 text-xs font-black text-slate-800 min-w-[20px] text-center">{item.quantity}</span>
+                            <button 
+                              onClick={() => {
+                                if (item.quantity >= item.stock) {
+                                  alert(`Stok tidak mencukupi! Stok maksimal tersedia: ${item.stock} ${item.unit}`);
+                                } else {
+                                  updateCartQuantity(item.id, item.quantity + 1, item.selectedHarvestDate);
+                                }
+                              }}
+                              className="p-1 text-slate-400 hover:text-[#1a4d2e] hover:bg-white rounded-md transition-all border-0 bg-transparent cursor-pointer"
+                            >
+                              <Plus size={12} />
+                            </button>
+                          </div>
+                          <span className="text-[9px] text-slate-450 font-bold uppercase tracking-wider bg-slate-100 px-2 py-0.5 rounded">Maks: {item.stock}</span>
+                        </div>
                         
                         {item.selectedHarvestDate && (
                           <div className="flex items-center gap-1 text-orange-600 mb-1.5 mt-0.5">

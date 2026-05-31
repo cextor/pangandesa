@@ -21,10 +21,16 @@ export default function PreOrderPage({ onProductSelect }: PreOrderPageProps) {
   React.useEffect(() => {
     ProductService.getAllProducts().then((data) => {
       const flattened: any[] = [];
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      const todayStr = `${yyyy}-${mm}-${dd}`;
+
       (data || []).forEach(p => {
         const schedules = parseHarvestSchedules(p.harvestDate, p.stock, p.price, p.isPreOrder);
-        // Only include ready pre-order schedules
-        const readySchedules = schedules.filter(s => s.status === 'READY' && s.isPreOrder);
+        // Only include ready pre-order schedules that have stock and are not in the past!
+        const readySchedules = schedules.filter(s => s.status === 'READY' && s.isPreOrder && s.stock > 0 && s.date >= todayStr);
         if (readySchedules.length > 0) {
           readySchedules.forEach((sch, idx) => {
             flattened.push({

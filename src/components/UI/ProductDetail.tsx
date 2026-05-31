@@ -45,7 +45,12 @@ export default function ProductDetail({ product, onBack, onPreOrder }: ProductDe
 
   // Parse active pre-order schedules
   const allSchedules = parseHarvestSchedules(product.harvestDate, product.stock, product.price, product.isPreOrder);
-  const schedules = allSchedules.filter(s => s.status === 'READY' && s.isPreOrder);
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  const todayStr = `${yyyy}-${mm}-${dd}`;
+  const schedules = allSchedules.filter(s => s.status === 'READY' && s.isPreOrder && s.stock > 0 && s.date >= todayStr);
 
   // Auto-select schedule matching selectedHarvestDate if passed from the card
   const matchedSchedule = (product as any).selectedHarvestDate 
@@ -278,7 +283,7 @@ export default function ProductDetail({ product, onBack, onPreOrder }: ProductDe
                       </tr>
                     </thead>
                     <tbody>
-                      {allSchedules.map((sch, i) => (
+                      {allSchedules.filter(s => s.date >= todayStr).map((sch, i) => (
                         <tr key={i} className="border-b border-slate-100 last:border-0 hover:bg-slate-100/50 transition-colors">
                           <td className="py-3.5 pl-1 font-black text-slate-700">#{i + 1}</td>
                           <td className="py-3.5 font-extrabold text-slate-800">{ensureDayMonthYear(sch.date)}</td>

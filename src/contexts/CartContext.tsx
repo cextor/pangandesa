@@ -8,6 +8,7 @@ interface CartContextType {
   removeFromCart: (productId: string, selectedHarvestDate?: string) => void;
   clearCart: () => void;
   cartTotal: number;
+  updateCartQuantity: (productId: string, quantity: number, selectedHarvestDate?: string) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -54,8 +55,16 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const cartTotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
+  const updateCartQuantity = (productId: string, quantity: number, selectedHarvestDate?: string) => {
+    setCartItems(prev => prev.map(item => 
+      (item.id === productId && item.selectedHarvestDate === selectedHarvestDate)
+        ? { ...item, quantity: Math.max(1, quantity) }
+        : item
+    ));
+  };
+
   return (
-    <CartContext.Provider value={{ cartItems, addToCart, removeFromCart, clearCart, cartTotal }}>
+    <CartContext.Provider value={{ cartItems, addToCart, removeFromCart, clearCart, cartTotal, updateCartQuantity }}>
       {children}
     </CartContext.Provider>
   );
