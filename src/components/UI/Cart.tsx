@@ -149,7 +149,25 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
                             >
                               <Minus size={12} />
                             </button>
-                            <span className="px-2 text-xs font-black text-slate-800 min-w-[20px] text-center">{item.quantity}</span>
+                            <input 
+                              type="text"
+                              value={item.quantity}
+                              onChange={(e) => {
+                                const valStr = e.target.value.replace(/[^0-9]/g, '');
+                                if (valStr === '') {
+                                  updateCartQuantity(item.id, 1, item.selectedHarvestDate);
+                                  return;
+                                }
+                                const val = parseInt(valStr, 10);
+                                if (val > item.stock) {
+                                  alert(`Stok tidak mencukupi! Stok maksimal tersedia: ${item.stock} ${item.unit}`);
+                                  updateCartQuantity(item.id, item.stock, item.selectedHarvestDate);
+                                } else {
+                                  updateCartQuantity(item.id, Math.max(1, val), item.selectedHarvestDate);
+                                }
+                              }}
+                              className="w-10 bg-white border border-slate-200 rounded-md py-0.5 text-xs font-black text-slate-800 text-center outline-none focus:ring-1 focus:ring-[#1a4d2e] focus:border-[#1a4d2e] transition-all"
+                            />
                             <button 
                               onClick={() => {
                                 if (item.quantity >= item.stock) {
