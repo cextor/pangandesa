@@ -27,6 +27,14 @@ interface CartProps {
 export default function Cart({ onBack, onCheckout }: CartProps) {
   const { cartItems, removeFromCart, updateCartQuantity } = useCart();
   const [tempQuantities, setTempQuantities] = React.useState<Record<string, string>>({});
+  const [toast, setToast] = React.useState<{ message: string; type: 'success' | 'error'; show: boolean }>({ message: '', type: 'success', show: false });
+
+  const showToastMsg = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type, show: true });
+    setTimeout(() => {
+      setToast(prev => ({ ...prev, show: false }));
+    }, 3000);
+  };
 
   // Manage checkbox selection state. Default selected all on mount
   const [selectedKeys, setSelectedKeys] = React.useState<string[]>([]);
@@ -163,7 +171,7 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
                                 if (valStr !== '') {
                                   const val = parseInt(valStr, 10);
                                   if (val > item.stock) {
-                                    alert(`Stok tidak mencukupi! Stok maksimal tersedia: ${item.stock} ${item.unit}`);
+                                    showToastMsg(`Stok tidak mencukupi! Stok maksimal tersedia: ${item.stock} ${item.unit}`, 'error');
                                     updateCartQuantity(item.id, item.stock, item.selectedHarvestDate);
                                     setTempQuantities(prev => ({ ...prev, [key]: String(item.stock) }));
                                   } else {
@@ -182,7 +190,7 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
                             <button 
                               onClick={() => {
                                 if (item.quantity >= item.stock) {
-                                  alert(`Stok tidak mencukupi! Stok maksimal tersedia: ${item.stock} ${item.unit}`);
+                                  showToastMsg(`Stok tidak mencukupi! Stok maksimal tersedia: ${item.stock} ${item.unit}`, 'error');
                                 } else {
                                   const newQty = item.quantity + 1;
                                   updateCartQuantity(item.id, newQty, item.selectedHarvestDate);
@@ -341,6 +349,25 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
           </div>
         </div>
       </div>
+      {toast.show && (
+        <div className={`fixed bottom-8 right-8 z-50 flex items-center gap-3 px-6 py-4 rounded-2xl shadow-xl shadow-brand-950/20 border transition-all duration-300 transform translate-y-0 animate-fade-in ${
+          toast.type === 'success' 
+            ? 'bg-[#1a4d2e] text-white border-emerald-800' 
+            : 'bg-red-900 text-white border-red-800'
+        }`}>
+          <div className="w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center">
+            {toast.type === 'success' ? (
+              <CheckCircle2 size={18} className="text-emerald-400" />
+            ) : (
+              <AlertCircle size={18} className="text-red-400" />
+            )}
+          </div>
+          <div>
+            <p className="text-xs font-black uppercase tracking-wider">{toast.type === 'success' ? 'Berhasil' : 'Gagal'}</p>
+            <p className="text-[11px] text-slate-100 font-medium">{toast.message}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

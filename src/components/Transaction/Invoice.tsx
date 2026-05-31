@@ -7,7 +7,9 @@ import {
   Building2, 
   Wallet,
   ClipboardCheck,
-  ArrowRight
+  ArrowRight,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 import { Order } from '../../types';
 
@@ -20,6 +22,14 @@ export default function Invoice({ order, onConfirm }: InvoiceProps) {
   const subtotal = order.items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   const ongkir = 15000;
   const biayaLayanan = Math.max(0, order.totalAmount - subtotal - ongkir);
+  const [toast, setToast] = React.useState<{ message: string; type: 'success' | 'error'; show: boolean }>({ message: '', type: 'success', show: false });
+
+  const showToastMsg = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type, show: true });
+    setTimeout(() => {
+      setToast(prev => ({ ...prev, show: false }));
+    }, 3000);
+  };
 
   return (
     <div className="bg-white min-h-screen lg:min-h-0 lg:rounded-[40px] overflow-hidden flex flex-col">
@@ -120,7 +130,7 @@ export default function Invoice({ order, onConfirm }: InvoiceProps) {
                   <button 
                     onClick={() => {
                       navigator.clipboard.writeText('1384354499');
-                      alert('Nomor rekening berhasil disalin!');
+                      showToastMsg('Nomor rekening berhasil disalin!', 'success');
                     }}
                     className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-[10px] font-black uppercase tracking-wider cursor-pointer transition-colors border-0"
                   >
@@ -151,6 +161,25 @@ export default function Invoice({ order, onConfirm }: InvoiceProps) {
           Konfirmasi & Bayar DP <ArrowRight className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
         </button>
       </div>
+      {toast.show && (
+        <div className={`fixed bottom-8 right-8 z-50 flex items-center gap-3 px-6 py-4 rounded-2xl shadow-xl shadow-brand-950/20 border transition-all duration-300 transform translate-y-0 animate-fade-in ${
+          toast.type === 'success' 
+            ? 'bg-[#1a4d2e] text-white border-emerald-800' 
+            : 'bg-red-900 text-white border-red-800'
+        }`}>
+          <div className="w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center">
+            {toast.type === 'success' ? (
+              <CheckCircle2 size={18} className="text-emerald-400" />
+            ) : (
+              <AlertCircle size={18} className="text-red-400" />
+            )}
+          </div>
+          <div>
+            <p className="text-xs font-black uppercase tracking-wider">{toast.type === 'success' ? 'Berhasil' : 'Gagal'}</p>
+            <p className="text-[11px] text-slate-100 font-medium">{toast.message}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
