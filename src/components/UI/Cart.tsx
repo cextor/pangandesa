@@ -25,7 +25,7 @@ import { PromoService } from '../../services/PromoService';
 
 interface CartProps {
   onBack: () => void;
-  onCheckout: (selectedItems: CartItem[], appliedPromo?: Promo | null) => void;
+  onCheckout: (selectedItems: CartItem[], appliedPromo?: Promo | null, selectedBank?: string) => void;
 }
 
 export default function Cart({ onBack, onCheckout }: CartProps) {
@@ -150,6 +150,10 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
   const [promoError, setPromoError] = React.useState('');
   const [availablePromos, setAvailablePromos] = React.useState<Promo[]>([]);
 
+  // Dynamic Bank Accounts states
+  const [paymentAccounts, setPaymentAccounts] = React.useState<any[]>([]);
+  const [selectedPaymentAccount, setSelectedPaymentAccount] = React.useState<any>(null);
+
   const showToastMsg = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type, show: true });
     setTimeout(() => {
@@ -197,6 +201,24 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
     PromoService.getAllPromos().then(data => {
       setAvailablePromos(data);
     });
+
+    // Load active bank accounts
+    const rawBanks = localStorage.getItem('admin_bank_accounts');
+    let loadedBanks = [];
+    if (rawBanks) {
+      try {
+        loadedBanks = JSON.parse(rawBanks).filter((b: any) => b.isActive);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    if (loadedBanks.length === 0) {
+      loadedBanks = [
+        { id: '1', bankName: 'BNI', accountNumber: '1384354499', accountHolder: 'SRIWIJAYA DIGITAL INDONESIA', isActive: true }
+      ];
+    }
+    setPaymentAccounts(loadedBanks);
+    setSelectedPaymentAccount(loadedBanks[0]);
   }, []);
 
   const toggleSelectItem = (id: string, selectedHarvestDate?: string) => {
@@ -455,7 +477,12 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
                 </div>
                 
                 <button 
-                  onClick={() => onCheckout(selectedCartItems, appliedPromo)}
+                  onClick={() => {
+                    const bankStr = selectedPaymentAccount 
+                      ? `${selectedPaymentAccount.bankName} - ${selectedPaymentAccount.accountNumber} a.n ${selectedPaymentAccount.accountHolder}`
+                      : 'BNI - 1384354499 a.n SRIWIJAYA DIGITAL INDONESIA';
+                    onCheckout(selectedCartItems, appliedPromo, bankStr);
+                  }}
                   disabled={selectedCartItems.length === 0}
                   className={`w-full py-4 rounded-xl sm:rounded-[20px] font-black text-sm uppercase tracking-wider shadow-lg transition-all mt-4 border-0 cursor-pointer ${
                     selectedCartItems.length === 0 
@@ -555,24 +582,39 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
             <div className="bg-white rounded-[24px] sm:rounded-[32px] p-5 sm:p-8 border border-slate-100 shadow-sm">
               <div className="flex items-center gap-2 mb-4">
                 <CreditCard size={18} className="text-[#1a4d2e]" />
-                <h3 className="font-bold text-slate-800 text-sm sm:text-base">Metode Pembayaran</h3>
+                <h3 className="font-bold text-slate-800 text-sm sm:text-base">Pilih Rekening Transfer Escrow</h3>
               </div>
               <div className="space-y-3">
-                <div className="flex items-center justify-between p-4 bg-emerald-50/50 border-2 border-[#1a4d2e] rounded-2xl">
-                   <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-[#1a4d2e] rounded-xl flex items-center justify-center text-white font-black text-xs font-display">
-                        BNI
-                      </div>
-                      <div>
-                        <p className="text-xs font-black text-emerald-900">Transfer Bank BNI (Manual)</p>
-                        <p className="text-[11px] font-black text-[#1a4d2e] tracking-wider">1384354499</p>
-                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-tight mt-0.5">a.n SRIWIJAYA DIGITAL INDONESIA</p>
-                      </div>
-                   </div>
-                   <div className="w-5 h-5 bg-[#1a4d2e] rounded-full flex items-center justify-center text-white ring-4 ring-emerald-100">
-                      <CheckCircle2 size={12} strokeWidth={3} />
-                   </div>
-                </div>
+                {paymentAccounts.map((bank) => {
+                  const isSelected = selectedPaymentAccount && selectedPaymentAccount.id === bank.id;
+                  return (
+                    <div 
+                      key={bank.id}
+                      onClick={() => setSelectedPaymentAccount(bank)}
+                      className={`flex items-center justify-between p-4 rounded-2xl cursor-pointer border-2 transition-all ${
+                        isSelected 
+                          ? 'bg-emerald-50/50 border-[#1a4d2e]' 
+                          : 'bg-slate-50 border-transparent hover:border-slate-200'
+                      }`}
+                    >
+                       <div className="flex items-center gap-4 text-left">
+                          <div className="w-10 h-10 bg-[#1a4d2e] rounded-xl flex items-center justify-center text-white font-black text-xs font-display shrink-0">
+                            {bank.bankName}
+                          </div>
+                          <div>
+                            <p className="text-xs font-black text-emerald-900">Transfer Bank {bank.bankName} (Manual)</p>
+                            <p className="text-[11px] font-black text-[#1a4d2e] tracking-wider">{bank.accountNumber}</p>
+                            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-tight mt-0.5">a.n {bank.accountHolder}</p>
+                          </div>
+                       </div>
+                       <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white ${
+                         isSelected ? 'bg-[#1a4d2e] ring-4 ring-emerald-100' : 'bg-slate-200'
+                       }`}>
+                          {isSelected && <CheckCircle2 size={12} strokeWidth={3} />}
+                       </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 

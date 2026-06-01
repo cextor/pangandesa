@@ -69,11 +69,15 @@ export default function App() {
 
   const activeInvoiceOrder = checkoutOrder || orders.find(o => o.id === currentOrderId);
 
-  const handleAdminConfirmPayment = (orderId: string, type: 'DP' | 'FINAL') => {
+  const handleAdminConfirmPayment = (orderId: string, type: 'DP' | 'FINAL' | 'DP_REJECT' | 'FINAL_REJECT') => {
     if (type === 'DP') {
       updateOrderStatus(orderId, 'WAITING_HARVEST');
-    } else {
+    } else if (type === 'FINAL') {
       updateOrderStatus(orderId, 'SHIPPING');
+    } else if (type === 'DP_REJECT') {
+      updateOrderStatus(orderId, 'WAITING_PAYMENT_DP');
+    } else if (type === 'FINAL_REJECT') {
+      updateOrderStatus(orderId, 'WAITING_FINAL_PAYMENT');
     }
   };
 
@@ -177,7 +181,7 @@ export default function App() {
         <Route path="cart" element={
           <Cart 
             onBack={() => navigate('/buyer')} 
-            onCheckout={(selectedItems, appliedPromo) => {
+            onCheckout={(selectedItems, appliedPromo, selectedBank) => {
               if (selectedItems.length === 0) return;
               const serviceFeePercent = Number(localStorage.getItem('service_fee') || '7');
               const subtotal = selectedItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
@@ -192,7 +196,7 @@ export default function App() {
               const totalAmount = subtotal + ongkir + biayaLayanan - discountAmount;
               const dpAmount = Math.round(totalAmount * 0.3);
               const remainingAmount = totalAmount - dpAmount;
-
+ 
               const activeSellerId = selectedItems[0]?.sellerId || '2';
               const newOrder: Order = {
                 id: Math.random().toString(36).substr(2, 9),
@@ -211,7 +215,8 @@ export default function App() {
                 remainingAmount: remainingAmount,
                 status: 'WAITING_PAYMENT_DP',
                 createdAt: new Date().toLocaleDateString('id-ID'),
-                harvestConfirmedBySeller: false, purchaseConfirmedByBuyer: false
+                harvestConfirmedBySeller: false, purchaseConfirmedByBuyer: false,
+                paymentMethod: selectedBank || 'BNI - 1384354499 a.n SRIWIJAYA DIGITAL INDONESIA'
               };
               addOrder(newOrder);
               setCheckoutOrder(newOrder);
@@ -254,6 +259,16 @@ export default function App() {
             ? (latestWaitingOrder.status === 'WAITING_ADMIN_DP' ? 'Down Payment (30%)' : 'Pelunasan (70%)')
             : 'Pembayaran';
 
+          const bankParts = latestWaitingOrder?.paymentMethod 
+            ? latestWaitingOrder.paymentMethod.split(' - ')
+            : ['BNI', '1384354499 a.n SRIWIJAYA DIGITAL INDONESIA'];
+          
+          const bankName = bankParts[0] || 'BNI';
+          const bankRest = bankParts[1] || '1384354499 a.n SRIWIJAYA DIGITAL INDONESIA';
+          const bankSubParts = bankRest.split(' a.n ');
+          const bankNum = bankSubParts[0] || '1384354499';
+          const bankHolder = bankSubParts[1] || 'SRIWIJAYA DIGITAL INDONESIA';
+
           return (
             <div className="flex-1 flex items-center justify-center bg-slate-50/50 p-6 sm:p-12 text-center animate-in fade-in duration-300">
               <div className="max-w-md w-full space-y-6 bg-white rounded-[32px] p-8 sm:p-10 border border-slate-100 shadow-xl shadow-slate-100/50">
@@ -284,12 +299,12 @@ export default function App() {
                         <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mb-1">Rekening Bank Tujuan Transfer</p>
                         <div className="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-xl">
                           <div className="w-10 h-10 bg-[#1a4d2e] rounded-xl flex items-center justify-center text-white font-black text-xs font-display shrink-0">
-                            BNI
+                            {bankName}
                           </div>
                           <div>
-                            <p className="text-[11px] font-black text-emerald-950">Transfer Bank BNI (Manual)</p>
-                            <p className="text-xs font-black text-[#1a4d2e] tracking-wider">1384354499</p>
-                            <p className="text-[8px] font-bold text-slate-500 uppercase tracking-tight mt-0.5">a.n SRIWIJAYA DIGITAL INDONESIA</p>
+                            <p className="text-[11px] font-black text-emerald-950">Transfer Bank {bankName} (Manual)</p>
+                            <p className="text-xs font-black text-[#1a4d2e] tracking-wider">{bankNum}</p>
+                            <p className="text-[8px] font-bold text-slate-500 uppercase tracking-tight mt-0.5">a.n {bankHolder}</p>
                           </div>
                         </div>
                       </div>
