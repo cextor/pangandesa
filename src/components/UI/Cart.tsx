@@ -659,15 +659,13 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
                         >
                           <Edit2 size={13} />
                         </button>
-                        {!addr.isDefault && (
-                          <button 
-                            onClick={(e) => handleDeleteAddress(e, addr.id)}
-                            className="p-2 text-slate-350 hover:text-red-500 hover:bg-white rounded-lg transition-colors border-0 bg-transparent cursor-pointer"
-                            title="Hapus Alamat"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        )}
+                        <button 
+                          onClick={(e) => handleDeleteAddress(e, addr.id)}
+                          className="p-2 text-slate-350 hover:text-red-500 hover:bg-white rounded-lg transition-colors border-0 bg-transparent cursor-pointer"
+                          title="Hapus Alamat"
+                        >
+                          <Trash2 size={13} />
+                        </button>
                       </div>
                     </div>
                   ))}
