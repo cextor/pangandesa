@@ -241,21 +241,93 @@ export default function App() {
             />
            ) : <Navigate to="/buyer" />
         } />
-        <Route path="transaksi-waiting" element={
-          <div className="flex-1 flex items-center justify-center bg-slate-50/50 p-6 sm:p-12 text-center animate-in fade-in duration-300">
-            <div className="max-w-md space-y-6 bg-white rounded-[32px] p-8 sm:p-12 border border-slate-100 shadow-xl shadow-slate-100/50">
-              <div className="w-20 h-20 bg-emerald-50 rounded-[28px] flex items-center justify-center mx-auto text-emerald-600 animate-bounce-slow border-4 border-emerald-100">
-                <Clock size={36} />
-              </div>
-              <div>
-                <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tight font-display mb-2">Menunggu Verifikasi</h2>
-                <p className="text-xs sm:text-sm text-slate-500 font-medium leading-relaxed">
-                  Bukti transfer pembayaran Anda sedang diverifikasi secara manual oleh Admin PanganDesa. Status pesanan Anda akan diperbarui dalam beberapa saat. Silakan cek halaman pesanan Anda secara berkala.
-                </p>
+        <Route path="transaksi-waiting" element={(() => {
+          const latestWaitingOrder = [...orders]
+            .reverse()
+            .find(o => o.status === 'WAITING_ADMIN_DP' || o.status === 'WAITING_ADMIN_FINAL');
+          
+          const amountToPay = latestWaitingOrder 
+            ? (latestWaitingOrder.status === 'WAITING_ADMIN_DP' ? latestWaitingOrder.dpAmount : latestWaitingOrder.remainingAmount)
+            : 0;
+
+          const typeText = latestWaitingOrder
+            ? (latestWaitingOrder.status === 'WAITING_ADMIN_DP' ? 'Down Payment (30%)' : 'Pelunasan (70%)')
+            : 'Pembayaran';
+
+          return (
+            <div className="flex-1 flex items-center justify-center bg-slate-50/50 p-6 sm:p-12 text-center animate-in fade-in duration-300">
+              <div className="max-w-md w-full space-y-6 bg-white rounded-[32px] p-8 sm:p-10 border border-slate-100 shadow-xl shadow-slate-100/50">
+                <div className="w-16 h-16 bg-emerald-50 rounded-[24px] flex items-center justify-center mx-auto text-emerald-600 animate-bounce-slow border-4 border-emerald-100 shrink-0">
+                  <Clock size={28} />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight font-display mb-1.5">Menunggu Verifikasi</h2>
+                  <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
+                    Bukti transfer pembayaran Anda sedang diverifikasi secara manual oleh Admin PanganDesa.
+                  </p>
+                </div>
+
+                {latestWaitingOrder && (
+                  <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 text-left space-y-4">
+                    <div className="flex justify-between items-center pb-3 border-b border-slate-200/60">
+                      <div>
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider">ID Pesanan</p>
+                        <p className="text-xs font-black text-slate-800">#{latestWaitingOrder.id.toUpperCase()}</p>
+                      </div>
+                      <span className="bg-orange-50 text-orange-650 border border-orange-100 text-[8px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">
+                        Pending
+                      </span>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mb-1">Rekening Bank Tujuan Transfer</p>
+                        <div className="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-xl">
+                          <div className="w-10 h-10 bg-[#1a4d2e] rounded-xl flex items-center justify-center text-white font-black text-xs font-display shrink-0">
+                            BNI
+                          </div>
+                          <div>
+                            <p className="text-[11px] font-black text-emerald-950">Transfer Bank BNI (Manual)</p>
+                            <p className="text-xs font-black text-[#1a4d2e] tracking-wider">1384354499</p>
+                            <p className="text-[8px] font-bold text-slate-500 uppercase tracking-tight mt-0.5">a.n SRIWIJAYA DIGITAL INDONESIA</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4 pt-1">
+                        <div>
+                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider">Jenis Pembayaran</p>
+                          <p className="text-xs font-bold text-slate-700">{typeText}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider">Jumlah Ditransfer</p>
+                          <p className="text-xs font-black text-[#1a4d2e]">
+                            Rp {amountToPay.toLocaleString('id-ID')}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                  <button 
+                    onClick={() => navigate('/buyer/pesanan')}
+                    className="flex-1 py-3 bg-[#1a4d2e] hover:bg-black text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all border-0 cursor-pointer shadow-md shadow-emerald-950/10 active:scale-95"
+                  >
+                    Pantau Pesanan Saya
+                  </button>
+                  <button 
+                    onClick={() => navigate('/buyer')}
+                    className="flex-1 py-3 border border-slate-200 text-slate-500 hover:bg-slate-50 rounded-xl font-black text-xs uppercase tracking-wider transition-all cursor-pointer bg-white"
+                  >
+                    Kembali ke Beranda
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        } />
+          );
+        })()} />
         <Route path="transaksi-panen" element={
           orders.find(o => o.status === 'WAITING_HARVEST' || o.status === 'HARVEST_CONFIRMED_SELLER' || o.status === 'WAITING_FINAL_PAYMENT') ? (
             <OrderForum 
