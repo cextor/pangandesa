@@ -15,7 +15,8 @@ import {
   Minus,
   Plus,
   Ticket,
-  X
+  X,
+  Edit2
 } from 'lucide-react';
 import { useCart } from '../../contexts/CartContext';
 import { ensureDayMonthYear } from '../../utils/harvestHelper';
@@ -36,6 +37,112 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
   const [addresses, setAddresses] = React.useState<any[]>([]);
   const [selectedAddress, setSelectedAddress] = React.useState<any>(null);
   const [isAddressModalOpen, setIsAddressModalOpen] = React.useState(false);
+  const [addressModalView, setAddressModalView] = React.useState<'list' | 'form'>('list');
+  const [editingAddress, setEditingAddress] = React.useState<any | null>(null);
+
+  // Address Form fields
+  const [addrType, setAddrType] = React.useState('Rumah');
+  const [addrName, setAddrName] = React.useState('');
+  const [addrPhone, setAddrPhone] = React.useState('');
+  const [addrStreet, setAddrStreet] = React.useState('');
+  const [addrDistrict, setAddrDistrict] = React.useState('');
+  const [addrCity, setAddrCity] = React.useState('');
+
+  const saveAddresses = (newAddrs: any[]) => {
+    setAddresses(newAddrs);
+    localStorage.setItem('user_addresses', JSON.stringify(newAddrs));
+    // If the active selected address was deleted or updated, sync it!
+    if (selectedAddress) {
+      const stillExists = newAddrs.find((a: any) => a.id === selectedAddress.id);
+      if (stillExists) {
+        setSelectedAddress(stillExists);
+      } else if (newAddrs.length > 0) {
+        setSelectedAddress(newAddrs.find((a: any) => a.isDefault) || newAddrs[0]);
+      } else {
+        setSelectedAddress(null);
+      }
+    } else if (newAddrs.length > 0) {
+      setSelectedAddress(newAddrs.find((a: any) => a.isDefault) || newAddrs[0]);
+    }
+  };
+
+  const openAddAddressForm = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingAddress(null);
+    setAddrType('Rumah');
+    setAddrName('');
+    setAddrPhone('');
+    setAddrStreet('');
+    setAddrDistrict('');
+    setAddrCity('');
+    setAddressModalView('form');
+  };
+
+  const openEditAddressForm = (e: React.MouseEvent, addr: any) => {
+    e.stopPropagation();
+    setEditingAddress(addr);
+    setAddrType(addr.type || 'Rumah');
+    setAddrName(addr.name || '');
+    setAddrPhone(addr.phone || '');
+    setAddrStreet(addr.street || '');
+    setAddrDistrict(addr.district || '');
+    setAddrCity(addr.city || '');
+    setAddressModalView('form');
+  };
+
+  const handleDeleteAddress = (e: React.MouseEvent, id: string | number) => {
+    e.stopPropagation();
+    const updated = addresses.filter((a: any) => a.id !== id);
+    const deletedAddr = addresses.find((a: any) => a.id === id);
+    if (deletedAddr?.isDefault && updated.length > 0) {
+      updated[0].isDefault = true;
+    }
+    saveAddresses(updated);
+    showToastMsg('Alamat berhasil dihapus!');
+  };
+
+  const handleAddressSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addrName.trim() || !addrPhone.trim() || !addrStreet.trim() || !addrDistrict.trim() || !addrCity.trim()) {
+      showToastMsg('Harap lengkapi semua bidang!', 'error');
+      return;
+    }
+
+    if (editingAddress) {
+      // Edit
+      const updated = addresses.map((addr: any) => {
+        if (addr.id === editingAddress.id) {
+          return {
+            ...addr,
+            type: addrType,
+            name: addrName.trim(),
+            phone: addrPhone.trim(),
+            street: addrStreet.trim(),
+            district: addrDistrict.trim(),
+            city: addrCity.trim(),
+          };
+        }
+        return addr;
+      });
+      saveAddresses(updated);
+      showToastMsg('Alamat berhasil diperbarui!');
+    } else {
+      // Add
+      const newAddr = {
+        id: String(Date.now()),
+        type: addrType,
+        name: addrName.trim(),
+        phone: addrPhone.trim(),
+        street: addrStreet.trim(),
+        district: addrDistrict.trim(),
+        city: addrCity.trim(),
+        isDefault: addresses.length === 0
+      };
+      saveAddresses([...addresses, newAddr]);
+      showToastMsg('Alamat baru berhasil ditambahkan!');
+    }
+    setAddressModalView('list');
+  };
 
   // Promo states
   const [promoCode, setPromoCode] = React.useState('');
@@ -500,40 +607,174 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
       {/* Address Selection Modal */}
       {isAddressModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setIsAddressModalOpen(false)} />
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => { setIsAddressModalOpen(false); setAddressModalView('list'); }} />
           <div className="relative bg-white rounded-[32px] w-full max-w-[500px] overflow-hidden shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
             <div className="bg-slate-50 px-8 py-6 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-xl font-black text-slate-800 font-display">Pilih Alamat Pengiriman</h3>
+              <h3 className="text-xl font-black text-slate-800 font-display">
+                {addressModalView === 'list' ? 'Pilih Alamat Pengiriman' : editingAddress ? 'Edit Alamat Pengiriman' : 'Tambah Alamat Baru'}
+              </h3>
               <button 
-                onClick={() => setIsAddressModalOpen(false)}
+                onClick={() => {
+                  setIsAddressModalOpen(false);
+                  setAddressModalView('list');
+                }}
                 className="p-2 text-slate-400 hover:text-slate-700 hover:bg-white rounded-xl transition-all border-0 bg-transparent cursor-pointer"
               >
                 <X size={20} />
               </button>
             </div>
-            <div className="p-8 max-h-[400px] overflow-y-auto custom-scrollbar space-y-4">
-              {addresses.map((addr, index) => (
-                <div 
-                  key={addr.id || index}
-                  onClick={() => selectAddress(addr)}
-                  className={`p-5 rounded-2xl border transition-all cursor-pointer text-left hover:border-emerald-350 hover:bg-emerald-50/5 ${
-                    selectedAddress && (selectedAddress.id === addr.id || selectedAddress.street === addr.street)
-                      ? 'border-emerald-600 bg-emerald-50/10 ring-2 ring-emerald-50'
-                      : 'border-slate-100 bg-slate-50'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-black uppercase text-slate-700 bg-white border border-slate-100 px-2 py-0.5 rounded">{addr.type}</span>
-                    {addr.isDefault && (
-                      <span className="text-[8px] font-black uppercase text-emerald-600 tracking-wider bg-emerald-50 px-1.5 py-0.5 rounded">Utama</span>
-                    )}
-                  </div>
-                  <p className="text-xs font-bold text-slate-800">{addr.name}</p>
-                  <p className="text-[11px] text-slate-500 mt-1 leading-normal">{addr.street}, {addr.district}, {addr.city}</p>
-                  <p className="text-[10px] text-slate-400 mt-1">{addr.phone}</p>
+
+            {addressModalView === 'list' ? (
+              <div className="p-8 max-h-[450px] overflow-y-auto custom-scrollbar space-y-4">
+                <div className="space-y-3">
+                  {addresses.map((addr, index) => (
+                    <div 
+                      key={addr.id || index}
+                      className={`p-4 rounded-2xl border transition-all flex items-center justify-between hover:border-emerald-350 hover:bg-emerald-50/5 ${
+                        selectedAddress && (selectedAddress.id === addr.id || selectedAddress.street === addr.street)
+                          ? 'border-emerald-600 bg-emerald-50/10 ring-2 ring-emerald-50'
+                          : 'border-slate-100 bg-slate-50'
+                      }`}
+                    >
+                      <div 
+                        onClick={() => selectAddress(addr)}
+                        className="flex-1 cursor-pointer text-left mr-4"
+                      >
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="text-[9px] font-black uppercase text-slate-700 bg-white border border-slate-100 px-1.5 py-0.5 rounded">{addr.type}</span>
+                          {addr.isDefault && (
+                            <span className="text-[8px] font-black uppercase text-emerald-600 tracking-wider bg-emerald-50 px-1.5 py-0.5 rounded">Utama</span>
+                          )}
+                        </div>
+                        <p className="text-xs font-bold text-slate-800">{addr.name}</p>
+                        <p className="text-[11px] text-slate-500 mt-0.5 leading-normal">{addr.street}, {addr.district}, {addr.city}</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">{addr.phone}</p>
+                      </div>
+
+                      <div className="flex flex-col gap-2 shrink-0">
+                        <button 
+                          onClick={(e) => openEditAddressForm(e, addr)}
+                          className="p-2 text-slate-400 hover:text-emerald-700 hover:bg-white rounded-lg transition-colors border-0 bg-transparent cursor-pointer"
+                          title="Edit Alamat"
+                        >
+                          <Edit2 size={13} />
+                        </button>
+                        {!addr.isDefault && (
+                          <button 
+                            onClick={(e) => handleDeleteAddress(e, addr.id)}
+                            className="p-2 text-slate-350 hover:text-red-500 hover:bg-white rounded-lg transition-colors border-0 bg-transparent cursor-pointer"
+                            title="Hapus Alamat"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+
+                <button 
+                  onClick={openAddAddressForm}
+                  className="w-full py-3 bg-slate-50 border-2 border-dashed border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/10 hover:text-emerald-700 text-slate-500 rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer mt-4"
+                >
+                  <Plus size={14} /> Tambah Alamat Baru
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleAddressSubmit} className="p-8 space-y-5">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Tipe</label>
+                    <select 
+                      value={addrType} 
+                      onChange={(e) => setAddrType(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-650 text-xs font-bold text-slate-800 bg-white"
+                    >
+                      <option value="Rumah">Rumah</option>
+                      <option value="Kantor">Kantor</option>
+                      <option value="Apartemen">Apartemen</option>
+                      <option value="Lainnya">Lainnya</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Penerima</label>
+                    <input 
+                      type="text" 
+                      value={addrName} 
+                      onChange={(e) => setAddrName(e.target.value)}
+                      placeholder="Contoh: Andi Wijaya"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-650 text-xs font-semibold text-slate-800"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Nomor Telepon</label>
+                  <input 
+                    type="tel" 
+                    value={addrPhone} 
+                    onChange={(e) => setAddrPhone(e.target.value)}
+                    placeholder="Contoh: 0812-3456-7890"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-650 text-xs font-semibold text-slate-800"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Alamat Lengkap</label>
+                  <textarea 
+                    value={addrStreet} 
+                    onChange={(e) => setAddrStreet(e.target.value)}
+                    placeholder="Contoh: Jl. Melati No. 12, Perumahan Asri Blok C4"
+                    rows={2}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-650 text-xs font-semibold text-slate-800 resize-none"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Kecamatan</label>
+                    <input 
+                      type="text" 
+                      value={addrDistrict} 
+                      onChange={(e) => setAddrDistrict(e.target.value)}
+                      placeholder="Contoh: Cilandak"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-650 text-xs font-semibold text-slate-800"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Kota / Kabupaten</label>
+                    <input 
+                      type="text" 
+                      value={addrCity} 
+                      onChange={(e) => setAddrCity(e.target.value)}
+                      placeholder="Contoh: Jakarta Selatan"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-650 text-xs font-semibold text-slate-800"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+                  <button 
+                    type="button"
+                    onClick={() => setAddressModalView('list')}
+                    className="px-4 py-2.5 rounded-xl font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-55 transition-all text-xs border-0 bg-transparent cursor-pointer"
+                  >
+                    Kembali
+                  </button>
+                  <button 
+                    type="submit"
+                    className="bg-[#1a4d2e] hover:bg-black text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-emerald-950/10 transition-all text-xs border-0 cursor-pointer"
+                  >
+                    {editingAddress ? 'Simpan Perubahan' : 'Tambah Alamat'}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}
