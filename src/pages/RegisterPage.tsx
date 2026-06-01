@@ -51,6 +51,7 @@ export default function RegisterPage() {
   const [regSuccess, setRegSuccess] = useState(false);
   const [successText, setSuccessText] = useState('');
   const [jsonOutput, setJsonOutput] = useState('');
+  const [copySuccess, setCopySuccess] = useState(false);
 
   // Error markers for individual fields (for styling border red)
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: boolean }>({});
@@ -206,7 +207,7 @@ export default function RegisterPage() {
 
     // Terms agreement validation
     if (!agree) {
-      alert('Mohon setujui Syarat & Ketentuan untuk melanjutkan.');
+      setErrorMsg('Mohon setujui Syarat & Ketentuan untuk melanjutkan.');
       return;
     }
 
@@ -329,9 +330,10 @@ export default function RegisterPage() {
     if (!jsonOutput) return;
     try {
       await navigator.clipboard.writeText(jsonOutput);
-      alert('Berhasil menyalin data JSON!');
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
     } catch {
-      alert('Salin manual dari kotak data yang tersedia.');
+      setErrorMsg('Salin manual dari kotak data yang tersedia.');
     }
   };
 
@@ -629,7 +631,7 @@ export default function RegisterPage() {
               <pre id="output">{jsonOutput}</pre>
               <div className="mini">
                 <button type="button" className="solid" onClick={handleDownload}>⬇ Unduh data (.json)</button>
-                <button type="button" onClick={handleCopy}>Salin</button>
+                <button type="button" onClick={handleCopy}>{copySuccess ? '✓ Berhasil Disalin' : 'Salin'}</button>
               </div>
             </div>
           )}

@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
+import { useNavigate } from 'react-router-dom';
 import { 
   FileText, 
   ChevronRight, 
@@ -9,16 +10,19 @@ import {
   ClipboardCheck,
   ArrowRight,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  ArrowLeft,
+  Download
 } from 'lucide-react';
 import { Order } from '../../types';
 
 interface InvoiceProps {
   order: Order;
-  onConfirm: (paymentMethod: string) => void;
+  onConfirm?: (paymentMethod: string) => void;
 }
 
 export default function Invoice({ order, onConfirm }: InvoiceProps) {
+  const navigate = useNavigate();
   const subtotal = order.items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   const ongkir = 15000;
   const biayaLayanan = Math.max(0, order.totalAmount - subtotal - ongkir);
@@ -32,12 +36,60 @@ export default function Invoice({ order, onConfirm }: InvoiceProps) {
   };
 
   return (
-    <div className="bg-white min-h-screen lg:min-h-0 lg:rounded-[40px] overflow-hidden flex flex-col">
-      <div className="p-4 sm:p-8 border-b border-slate-50">
-        <h2 className="text-lg sm:text-2xl font-black text-slate-800 uppercase tracking-tight flex items-center gap-3">
-          <FileText className="text-brand-600 w-5 h-5 sm:w-6 sm:h-6" /> Invoice
-        </h2>
-        <p className="text-[10px] sm:text-sm text-slate-500 font-medium">Selesaikan DP untuk mengamankan pre-order.</p>
+    <div className="bg-white min-h-screen lg:min-h-0 lg:rounded-[40px] overflow-hidden flex flex-col relative">
+      <style>{`
+        @media print {
+          .no-print {
+            display: none !important;
+          }
+          body {
+            background: white !important;
+            color: black !important;
+          }
+          .custom-scrollbar {
+            overflow: visible !important;
+            height: auto !important;
+          }
+          .bg-slate-50 {
+            background-color: #f8fafc !important;
+            border: 1px solid #e2e8f0 !important;
+          }
+          .bg-brand-50 {
+            background-color: #f4fbf7 !important;
+            border: 1px solid #c2ebd9 !important;
+          }
+          .border-slate-100 {
+            border-color: #e2e8f0 !important;
+          }
+          .text-brand-900 {
+            color: #113821 !important;
+          }
+        }
+      `}</style>
+
+      <div className="p-4 sm:p-8 border-b border-slate-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 no-print">
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => navigate('/buyer/pesanan')} 
+            className="p-2.5 hover:bg-slate-100 rounded-xl text-slate-600 transition-all cursor-pointer border-0 active:scale-95 flex items-center justify-center shrink-0 bg-slate-50"
+            title="Kembali ke Pesanan Saya"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h2 className="text-lg sm:text-2xl font-black text-slate-800 uppercase tracking-tight flex items-center gap-3">
+              <FileText className="text-brand-600 w-5 h-5 sm:w-6 sm:h-6" /> Invoice
+            </h2>
+            <p className="text-[10px] sm:text-sm text-slate-500 font-medium">Selesaikan DP untuk mengamankan pre-order.</p>
+          </div>
+        </div>
+        
+        <button 
+          onClick={() => window.print()} 
+          className="self-start sm:self-center flex items-center gap-2 px-5 py-2.5 bg-[#1a4d2e] hover:bg-[#123520] text-white rounded-xl text-xs font-black uppercase tracking-widest cursor-pointer transition-all active:scale-95 border-0 shadow-md shadow-emerald-900/10"
+        >
+          <Download className="w-4 h-4" /> Cetak / Download PDF
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-6 sm:space-y-10 custom-scrollbar">
@@ -52,8 +104,8 @@ export default function Invoice({ order, onConfirm }: InvoiceProps) {
             {order.items.map((item, i) => (
               <div key={i} className="flex justify-between items-center gap-3">
                 <div className="flex gap-2 sm:gap-4 items-center min-w-0">
-                  <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl border border-white overflow-hidden shadow-sm shrink-0">
-                    <img src={item.image} className="w-full h-full object-cover" alt={item.name} />
+                  <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl border border-white overflow-hidden shadow-sm shrink-0 bg-slate-50 flex items-center justify-center">
+                    <img src={item.image || 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?q=80&w=200&auto=format&fit=crop'} className="w-full h-full object-cover" alt={item.name} />
                   </div>
                   <div className="min-w-0">
                     <p className="text-[10px] sm:text-sm font-bold text-slate-800 truncate">{item.name}</p>
@@ -154,15 +206,25 @@ export default function Invoice({ order, onConfirm }: InvoiceProps) {
           </div>
         </div>
 
-        <button 
-          onClick={() => onConfirm('transfer')}
-          className="w-full bg-brand-600 text-white py-4 sm:py-6 rounded-xl sm:rounded-[32px] font-black uppercase text-[10px] sm:text-sm tracking-widest shadow-xl shadow-brand-600/20 active:scale-95 transition-all flex items-center justify-center gap-2 sm:gap-3 hover:bg-brand-700"
-        >
-          Konfirmasi & Bayar DP <ArrowRight className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-        </button>
+        {order.status === 'WAITING_PAYMENT_DP' || order.status === 'WAITING_FINAL_PAYMENT' || order.status === 'HARVEST_CONFIRMED_SELLER' ? (
+          <button 
+            onClick={() => onConfirm && onConfirm('transfer')}
+            className="w-full bg-brand-600 text-white py-4 sm:py-6 rounded-xl sm:rounded-[32px] font-black uppercase text-[10px] sm:text-sm tracking-widest shadow-xl shadow-brand-600/20 active:scale-95 transition-all flex items-center justify-center gap-2 sm:gap-3 hover:bg-brand-700 no-print border-0 cursor-pointer"
+          >
+            {order.status === 'WAITING_PAYMENT_DP' ? 'Konfirmasi & Bayar DP (30%)' : 'Konfirmasi & Bayar Pelunasan (70%)'} <ArrowRight className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+          </button>
+        ) : (
+          <div className="p-6 bg-emerald-50 rounded-3xl border border-emerald-100 flex items-center gap-4 text-emerald-800 text-xs font-semibold no-print">
+            <CheckCircle2 className="text-emerald-600 shrink-0 animate-bounce-slow" size={20} />
+            <div className="text-left">
+              <p className="font-black uppercase tracking-wider text-[10px] leading-none mb-1">Transaksi Dilindungi Escrow</p>
+              <p className="text-emerald-700/80 leading-relaxed font-medium">Pembayaran Anda aman di rekening penampung PanganDesa. Dana hanya akan dicairkan ke petani setelah kualitas pangan optimal terverifikasi saat panen dan dikirim ke alamat Anda.</p>
+            </div>
+          </div>
+        )}
       </div>
       {toast.show && (
-        <div className={`fixed bottom-8 right-8 z-50 flex items-center gap-3 px-6 py-4 rounded-2xl shadow-xl shadow-brand-950/20 border transition-all duration-300 transform translate-y-0 animate-fade-in ${
+        <div className={`fixed bottom-8 right-8 z-50 flex items-center gap-3 px-6 py-4 rounded-2xl shadow-xl shadow-brand-950/20 border transition-all duration-300 transform translate-y-0 animate-fade-in no-print ${
           toast.type === 'success' 
             ? 'bg-[#1a4d2e] text-white border-emerald-800' 
             : 'bg-red-900 text-white border-red-800'

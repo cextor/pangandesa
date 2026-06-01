@@ -62,7 +62,8 @@ class OrderController extends ResourceController
                     'name' => $item['name'],
                     'price' => $item['price'],
                     'quantity' => $item['quantity'],
-                    'unit' => $item['unit'] ?? 'kg'
+                    'unit' => $item['unit'] ?? 'kg',
+                    'image' => $item['image'] ?? null
                 ];
                 $itemModel->insert($itemData);
             }

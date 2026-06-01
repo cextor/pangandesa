@@ -7,7 +7,8 @@ export type OrderStatus =
   | 'WAITING_ADMIN_FINAL'
   | 'SHIPPING'
   | 'DELIVERED'
-  | 'COMPLETED';
+  | 'COMPLETED'
+  | 'CANCELLED';
 
 export interface Order {
   id: string;
@@ -115,6 +116,16 @@ export interface Seller {
   totalSales: number;
   rating: number;
   products: Product[];
+}
+
+export interface Promo {
+  id: string;
+  code: string;
+  title: string;
+  description: string;
+  discountPercent: number;
+  minPurchase: number;
+  image: string;
 }
 
 export type AppRole = 'buyer' | 'seller' | 'admin';

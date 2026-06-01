@@ -23,6 +23,8 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
     $routes->post('auth/register', 'AuthController::register');
     $routes->post('auth/check-email', 'AuthController::checkEmail');
     $routes->put('auth/profile/(:segment)', 'AuthController::updateProfile/$1');
+    $routes->get('users', 'AuthController::getAllUsers');
+    $routes->delete('users/(:segment)', 'AuthController::deleteUser/$1');
     
     // Notification Routes
     $routes->get('notifications', 'NotificationController::index');
@@ -33,6 +35,7 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
     // Resource Routes
     $routes->resource('products', ['controller' => 'ProductController']);
     $routes->resource('categories', ['controller' => 'CategoryController', 'only' => ['index']]);
+    $routes->resource('promos', ['controller' => 'PromoController']);
     
     // Order Routes
     $routes->get('orders', 'OrderController::index');

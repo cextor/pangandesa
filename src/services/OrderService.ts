@@ -58,7 +58,8 @@ export const OrderService = {
         name: item.name,
         quantity: item.quantity,
         price: item.price,
-        unit: item.unit
+        unit: item.unit,
+        image: item.image
       }))
     };
     const response = await apiClient.post('/orders', payload);

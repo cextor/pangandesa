@@ -8,6 +8,6 @@ class OrderItemModel extends Model
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
     protected $returnType       = 'array';
-    protected $allowedFields    = ['order_id', 'product_id', 'name', 'price', 'quantity', 'unit'];
+    protected $allowedFields    = ['order_id', 'product_id', 'name', 'price', 'quantity', 'unit', 'image'];
     protected $useTimestamps    = false;
 }

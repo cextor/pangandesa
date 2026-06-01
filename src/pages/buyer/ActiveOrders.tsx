@@ -15,7 +15,8 @@ import {
   Calendar,
   CreditCard,
   MessageSquare,
-  Sprout
+  Sprout,
+  FileText
 } from 'lucide-react';
 import { Order } from '../../types';
 import { useNavigate } from 'react-router-dom';
@@ -32,6 +33,8 @@ interface ActiveOrdersProps {
 export default function ActiveOrders({ orders, onTrack, onPayPelunasan, onOpenForum }: ActiveOrdersProps) {
   const navigate = useNavigate();
   const { updateOrderStatus } = useOrder();
+  const [cancelOrderId, setCancelOrderId] = React.useState<string | null>(null);
+  const [isCancelling, setIsCancelling] = React.useState(false);
 
   // Filter for all active orders
   const activeStatuses = [
@@ -139,7 +142,7 @@ export default function ActiveOrders({ orders, onTrack, onPayPelunasan, onOpenFo
                           {order.items.map((item, idx) => (
                             <div key={idx} className="flex gap-4 sm:gap-6 items-center">
                                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden border border-slate-100 shadow-xs shrink-0 bg-slate-50 flex items-center justify-center">
-                                  <img src={item.image} className="w-full h-full object-cover" alt={item.name} />
+                                  <img src={item.image || 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?q=80&w=200&auto=format&fit=crop'} className="w-full h-full object-cover" alt={item.name} />
                                </div>
                                <div className="flex-1 min-w-0">
                                   <h4 className="text-xs sm:text-sm font-black text-slate-800 uppercase tracking-tight truncate">{item.name}</h4>
@@ -167,6 +170,16 @@ export default function ActiveOrders({ orders, onTrack, onPayPelunasan, onOpenFo
                        </div>
 
                        <div className="flex flex-wrap items-center gap-2 md:justify-end flex-1">
+                          {/* Lihat Invoice Button */}
+                          {onPayPelunasan && (
+                            <button 
+                              onClick={() => onPayPelunasan(order.id)}
+                              className="flex-1 sm:flex-none bg-white border border-slate-200 text-slate-600 px-4 py-2.5 rounded-xl font-black text-[9px] sm:text-[10px] uppercase tracking-widest hover:border-brand-500 hover:text-brand-600 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                            >
+                               <FileText size={13} /> Lihat Invoice
+                            </button>
+                          )}
+                          
                           {/* Discuss Forum Button for active pre-orders */}
                           {(order.status === 'WAITING_HARVEST' || order.status === 'HARVEST_CONFIRMED_SELLER' || order.status === 'WAITING_FINAL_PAYMENT') && (
                             <button 
@@ -181,11 +194,7 @@ export default function ActiveOrders({ orders, onTrack, onPayPelunasan, onOpenFo
                           {order.status === 'WAITING_PAYMENT_DP' && onPayPelunasan && (
                              <div className="flex gap-2 w-full sm:w-auto">
                                <button 
-                                 onClick={async () => {
-                                   if (window.confirm("Apakah Anda yakin ingin membatalkan pesanan pre-order ini?")) {
-                                     await updateOrderStatus(order.id, 'CANCELLED');
-                                   }
-                                 }}
+                                 onClick={() => setCancelOrderId(order.id)}
                                  className="flex-1 sm:flex-none bg-red-50 hover:bg-red-500 text-red-500 hover:text-white px-4 py-2.5 rounded-xl font-black text-[9px] sm:text-[10px] uppercase tracking-widest border border-red-100 active:scale-95 transition-all cursor-pointer flex items-center justify-center"
                                >
                                  Batalkan Pesanan
@@ -249,6 +258,50 @@ export default function ActiveOrders({ orders, onTrack, onPayPelunasan, onOpenFo
            </div>
         </div>
       </div>
+
+      {cancelOrderId && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fade-in no-print">
+          <motion.div 
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-[32px] max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl border border-slate-100 text-center"
+          >
+            <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto border-4 border-red-100">
+              <AlertCircle size={32} />
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-xl sm:text-2xl font-black text-slate-800 uppercase tracking-tight">Batalkan Pesanan?</h3>
+              <p className="text-xs sm:text-sm text-slate-400 font-medium leading-relaxed">
+                Apakah Anda yakin ingin membatalkan pesanan pre-order ini? Tindakan ini tidak dapat dibatalkan.
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button 
+                type="button"
+                onClick={() => setCancelOrderId(null)}
+                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 py-3.5 sm:py-4 rounded-xl sm:rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all cursor-pointer border-0 active:scale-95"
+              >
+                Kembali
+              </button>
+              <button 
+                type="button"
+                onClick={async () => {
+                  setIsCancelling(true);
+                  await updateOrderStatus(cancelOrderId, 'CANCELLED');
+                  setIsCancelling(false);
+                  setCancelOrderId(null);
+                }}
+                disabled={isCancelling}
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white py-3.5 sm:py-4 rounded-xl sm:rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all cursor-pointer border-0 disabled:opacity-50 active:scale-95"
+              >
+                {isCancelling ? 'Membatalkan...' : 'Ya, Batalkan'}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

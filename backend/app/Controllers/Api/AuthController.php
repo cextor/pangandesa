@@ -227,8 +227,41 @@ class AuthController extends ResourceController
                 'company_name' => $user['company_name'],
                 'pic_name' => $user['pic_name'],
                 'bank_account' => $user['bank_account'],
-                'avatar' => $user['avatar']
             ]
+        ]);
+    }
+
+    public function getAllUsers()
+    {
+        $userModel = new UserModel();
+        $users = $userModel->findAll();
+        
+        // Remove passwords before returning
+        foreach ($users as &$user) {
+            unset($user['password']);
+        }
+        
+        return $this->respond([
+            'status' => 200,
+            'message' => 'Users retrieved successfully',
+            'users' => $users
+        ]);
+    }
+
+    public function deleteUser($id)
+    {
+        $userModel = new UserModel();
+        $user = $userModel->find($id);
+
+        if (!$user) {
+            return $this->failNotFound('User not found');
+        }
+
+        $userModel->delete($id);
+
+        return $this->respond([
+            'status' => 200,
+            'message' => 'User deleted successfully'
         ]);
     }
 }

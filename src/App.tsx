@@ -25,7 +25,12 @@ import { Product, Order } from './types';
 import { Settings, Clock, CheckCircle2 } from 'lucide-react';
 import { ensureDayMonthYear } from './utils/harvestHelper';
 
-import AdminDashboard from './pages/AdminDashboard';
+import AdminDashboardOverview from './pages/admin/AdminDashboardOverview';
+import PaymentVerification from './pages/admin/PaymentVerification';
+import UserManagement from './pages/admin/UserManagement';
+import SystemReports from './pages/admin/SystemReports';
+import PromoManagement from './pages/admin/PromoManagement';
+import SystemConfiguration from './pages/admin/SystemConfiguration';
 import Invoice from './components/Transaction/Invoice';
 import OrderForum from './components/Transaction/OrderForum';
 import OrderShipping from './components/Transaction/OrderShipping';
@@ -58,8 +63,11 @@ export default function App() {
   // Local state for product browsing (can be moved to a SearchContext later)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
+  const [currentOrderId, setCurrentOrderId] = useState<string | null>(() => localStorage.getItem('current_order_id'));
+  const [checkoutOrder, setCheckoutOrder] = useState<Order | null>(null);
   const [toast, setToast] = useState<{ message: string; show: boolean }>({ message: '', show: false });
+
+  const activeInvoiceOrder = checkoutOrder || orders.find(o => o.id === currentOrderId);
 
   const handleAdminConfirmPayment = (orderId: string, type: 'DP' | 'FINAL') => {
     if (type === 'DP') {
@@ -87,7 +95,12 @@ export default function App() {
 
       {/* ADMIN ROUTES */}
       <Route path="/admin" element={<MainLayout />}>
-        <Route index element={<AdminDashboard orders={orders} onConfirmPayment={handleAdminConfirmPayment} />} />
+        <Route index element={<AdminDashboardOverview orders={orders} />} />
+        <Route path="verifikasi" element={<PaymentVerification orders={orders} onConfirmPayment={handleAdminConfirmPayment} />} />
+        <Route path="pengguna" element={<UserManagement />} />
+        <Route path="laporan" element={<SystemReports orders={orders} />} />
+        <Route path="promo" element={<PromoManagement />} />
+        <Route path="pengaturan-admin" element={<SystemConfiguration />} />
         <Route path="transaksi-panen" element={
           orders.find(o => o.status === 'WAITING_HARVEST' || o.status === 'HARVEST_CONFIRMED_SELLER' || o.status === 'WAITING_FINAL_PAYMENT') ? (
             <OrderForum 
@@ -140,6 +153,7 @@ export default function App() {
             onTrack={() => navigate('/buyer/lacak')} 
             onPayPelunasan={(orderId) => {
               setCurrentOrderId(orderId);
+              localStorage.setItem('current_order_id', orderId);
               navigate('/buyer/transaksi-invoice');
             }}
             onOpenForum={() => navigate('/buyer/transaksi-panen')}
@@ -163,13 +177,19 @@ export default function App() {
         <Route path="cart" element={
           <Cart 
             onBack={() => navigate('/buyer')} 
-            onCheckout={(selectedItems) => {
+            onCheckout={(selectedItems, appliedPromo) => {
               if (selectedItems.length === 0) return;
               const serviceFeePercent = Number(localStorage.getItem('service_fee') || '7');
               const subtotal = selectedItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
               const ongkir = 15000;
               const biayaLayanan = Math.round(subtotal * (serviceFeePercent / 100));
-              const totalAmount = subtotal + ongkir + biayaLayanan;
+              
+              let discountAmount = 0;
+              if (appliedPromo && subtotal >= appliedPromo.minPurchase) {
+                discountAmount = Math.round(subtotal * (appliedPromo.discountPercent / 100));
+              }
+              
+              const totalAmount = subtotal + ongkir + biayaLayanan - discountAmount;
               const dpAmount = Math.round(totalAmount * 0.3);
               const remainingAmount = totalAmount - dpAmount;
 
@@ -194,7 +214,9 @@ export default function App() {
                 harvestConfirmedBySeller: false, purchaseConfirmedByBuyer: false
               };
               addOrder(newOrder);
+              setCheckoutOrder(newOrder);
               setCurrentOrderId(newOrder.id);
+              localStorage.setItem('current_order_id', newOrder.id);
               // Remove only the checked items from the cart!
               selectedItems.forEach(item => removeFromCart(item.id, item.selectedHarvestDate));
               navigate('/buyer/transaksi-invoice');
@@ -202,26 +224,35 @@ export default function App() {
           />
         } />
         <Route path="transaksi-invoice" element={
-           orders.find(o => o.id === currentOrderId) ? (
+           activeInvoiceOrder ? (
              <Invoice 
-              order={orders.find(o => o.id === currentOrderId)!} 
+              order={activeInvoiceOrder} 
               onConfirm={() => {
-                const currentOrder = orders.find(o => o.id === currentOrderId)!;
-                const newStatus = currentOrder.status === 'WAITING_PAYMENT_DP' ? 'WAITING_ADMIN_DP' : 'WAITING_ADMIN_FINAL';
-                updateOrderStatus(currentOrder.id, newStatus);
+                const newStatus = activeInvoiceOrder.status === 'WAITING_PAYMENT_DP' ? 'WAITING_ADMIN_DP' : 'WAITING_ADMIN_FINAL';
+                updateOrderStatus(activeInvoiceOrder.id, newStatus);
                 navigate('/buyer/transaksi-waiting');
+                
+                // Clear the state in the next tick to allow navigation to complete smoothly
+                setTimeout(() => {
+                  setCheckoutOrder(null);
+                  localStorage.removeItem('current_order_id');
+                }, 100);
               }} 
             />
            ) : <Navigate to="/buyer" />
         } />
         <Route path="transaksi-waiting" element={
-          <div className="flex-1 flex items-center justify-center bg-white p-12 text-center">
-            <div className="max-w-md space-y-6">
-              <div className="w-24 h-24 bg-brand-50 rounded-full flex items-center justify-center mx-auto text-brand-600 animate-pulse border-4 border-brand-100">
-                <Clock size={40} />
+          <div className="flex-1 flex items-center justify-center bg-slate-50/50 p-6 sm:p-12 text-center animate-in fade-in duration-300">
+            <div className="max-w-md space-y-6 bg-white rounded-[32px] p-8 sm:p-12 border border-slate-100 shadow-xl shadow-slate-100/50">
+              <div className="w-20 h-20 bg-emerald-50 rounded-[28px] flex items-center justify-center mx-auto text-emerald-600 animate-bounce-slow border-4 border-emerald-100">
+                <Clock size={36} />
               </div>
-              <h2 className="text-3xl font-black text-slate-800 uppercase tracking-tight">Menunggu Verifikasi</h2>
-              <button onClick={() => { setActiveRole('admin'); navigate('/admin'); }} className="mt-4 bg-brand-900 text-white py-4 px-8 rounded-2xl font-bold text-xs uppercase">Demo: Buka Admin</button>
+              <div>
+                <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tight font-display mb-2">Menunggu Verifikasi</h2>
+                <p className="text-xs sm:text-sm text-slate-500 font-medium leading-relaxed">
+                  Bukti transfer pembayaran Anda sedang diverifikasi secara manual oleh Admin PanganDesa. Status pesanan Anda akan diperbarui dalam beberapa saat. Silakan cek halaman pesanan Anda secara berkala.
+                </p>
+              </div>
             </div>
           </div>
         } />

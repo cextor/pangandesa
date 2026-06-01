@@ -6,7 +6,8 @@ import {
   Image as ImageIcon,
   X,
   Plus,
-  Star
+  Star,
+  AlertCircle
 } from 'lucide-react';
 import { APP_LOGO } from '../../constants';
 import { Product, HarvestSchedule, ProductImage } from '../../types';
@@ -37,6 +38,7 @@ const parseCurrencyInput = (formattedStr: string): number => {
 
 export default function ProductForm({ product, onSave, onCancel }: ProductFormProps) {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
 
   const [formData, setFormData] = React.useState<Partial<Product>>(() => {
     if (product) {
@@ -80,13 +82,13 @@ export default function ProductForm({ product, onSave, onCancel }: ProductFormPr
     if (files.length === 0) return;
     
     if (productImages.length + files.length > 5) {
-      alert("Maksimal gambar produk yang diperbolehkan adalah 5 foto.");
+      setErrorMsg("Maksimal gambar produk yang diperbolehkan adalah 5 foto.");
       return;
     }
     
     for (const file of files) {
       if (file.size > 2 * 1024 * 1024) {
-        alert(`File "${file.name}" melebihi batas ukuran 2MB. Silakan pilih foto dengan ukuran yang lebih kecil.`);
+        setErrorMsg(`File "${file.name}" melebihi batas ukuran 2MB. Silakan pilih foto dengan ukuran yang lebih kecil.`);
         return;
       }
     }
@@ -175,6 +177,13 @@ export default function ProductForm({ product, onSave, onCancel }: ProductFormPr
       </div>
 
       <form onSubmit={handleSubmit} className="flex-1 p-6 md:p-10 space-y-8 md:space-y-10 overflow-y-auto custom-scrollbar">
+        {errorMsg && (
+          <div className="bg-red-50 border border-red-200 rounded-[20px] p-4 text-red-700 flex items-center gap-3 text-xs md:text-sm font-semibold animate-fade-in no-print">
+             <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
+             <div className="flex-1">{errorMsg}</div>
+             <button type="button" onClick={() => setErrorMsg(null)} className="text-red-400 hover:text-red-700 bg-transparent border-0 cursor-pointer text-base select-none">×</button>
+          </div>
+        )}
         {/* Multi Image Upload Grid */}
         <div className="bg-slate-50 border border-slate-100 rounded-[24px] md:rounded-[32px] p-5 md:p-6 space-y-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">

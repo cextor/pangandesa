@@ -53,7 +53,7 @@ export default function Sidebar({ activeRole, onRoleChange, activeItem, onItemCh
     { id: 'pesanan', label: 'Pesanan Saya', icon: ShoppingBag },
     { id: 'lacak', label: 'Lacak Pesanan', icon: Truck },
     { id: 'riwayat', label: 'Riwayat', icon: History },
-    { id: 'metode-pembayaran', label: 'Metode Pembayaran', icon: CreditCard },
+    // { id: 'metode-pembayaran', label: 'Metode Pembayaran', icon: CreditCard },
     { id: 'pengaturan', label: 'Pengaturan', icon: Settings },
     { id: 'bantuan', label: 'Bantuan', icon: HelpCircle },
   ];
@@ -74,10 +74,11 @@ export default function Sidebar({ activeRole, onRoleChange, activeItem, onItemCh
   ];
 
   const adminItems: SidebarItem[] = [
-    { id: 'dashboard', label: 'Monitor Transaksi', icon: ShieldCheck },
+    { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'verifikasi', label: 'Verifikasi Pembayaran', icon: CreditCard, badge: '!' },
-    { id: 'pengguna', label: 'Kelola Pengguna', icon: Users },
-    { id: 'laporan', label: 'Laporan Sistem', icon: BarChart3 },
+    { id: 'pengguna', label: 'Daftar User', icon: Users },
+    { id: 'laporan', label: 'Laporan Transaksi', icon: BarChart3 },
+    { id: 'promo', label: 'Kelola Promo', icon: Tag },
     { id: 'pengaturan-admin', label: 'Konfigurasi Sistem', icon: Settings },
   ];
 

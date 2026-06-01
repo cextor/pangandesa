@@ -13,21 +13,35 @@ import {
   CheckCircle2,
   AlertCircle,
   Minus,
-  Plus
+  Plus,
+  Ticket,
+  X
 } from 'lucide-react';
 import { useCart } from '../../contexts/CartContext';
 import { ensureDayMonthYear } from '../../utils/harvestHelper';
-import { CartItem } from '../../types';
+import { CartItem, Promo } from '../../types';
+import { PromoService } from '../../services/PromoService';
 
 interface CartProps {
   onBack: () => void;
-  onCheckout: (selectedItems: CartItem[]) => void;
+  onCheckout: (selectedItems: CartItem[], appliedPromo?: Promo | null) => void;
 }
 
 export default function Cart({ onBack, onCheckout }: CartProps) {
   const { cartItems, removeFromCart, updateCartQuantity } = useCart();
   const [tempQuantities, setTempQuantities] = React.useState<Record<string, string>>({});
   const [toast, setToast] = React.useState<{ message: string; type: 'success' | 'error'; show: boolean }>({ message: '', type: 'success', show: false });
+
+  // Address states
+  const [addresses, setAddresses] = React.useState<any[]>([]);
+  const [selectedAddress, setSelectedAddress] = React.useState<any>(null);
+  const [isAddressModalOpen, setIsAddressModalOpen] = React.useState(false);
+
+  // Promo states
+  const [promoCode, setPromoCode] = React.useState('');
+  const [appliedPromo, setAppliedPromo] = React.useState<Promo | null>(null);
+  const [promoError, setPromoError] = React.useState('');
+  const [availablePromos, setAvailablePromos] = React.useState<Promo[]>([]);
 
   const showToastMsg = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type, show: true });
@@ -44,6 +58,39 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
       setSelectedKeys(cartItems.map(item => `${item.id}-${item.selectedHarvestDate || ''}`));
     }
   }, [cartItems.length]);
+
+  // Load addresses & promos
+  React.useEffect(() => {
+    // Addresses
+    const rawAddr = localStorage.getItem('user_addresses');
+    if (rawAddr) {
+      try {
+        const parsed = JSON.parse(rawAddr);
+        setAddresses(parsed);
+        const def = parsed.find((a: any) => a.isDefault) || parsed[0];
+        setSelectedAddress(def);
+      } catch (e) {
+        console.error(e);
+      }
+    } else {
+      const fallback = {
+        type: 'Rumah',
+        name: 'Andi Wijaya',
+        phone: '0812-3456-7890',
+        street: 'Jl. Melati No. 12, Perumahan Asri',
+        district: 'Cilandak',
+        city: 'Jakarta Selatan',
+        isDefault: true
+      };
+      setSelectedAddress(fallback);
+      setAddresses([fallback]);
+    }
+
+    // Promos
+    PromoService.getAllPromos().then(data => {
+      setAvailablePromos(data);
+    });
+  }, []);
 
   const toggleSelectItem = (id: string, selectedHarvestDate?: string) => {
     const key = `${id}-${selectedHarvestDate || ''}`;
@@ -72,7 +119,42 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
   const totalProduk = selectedCartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   const ongkir = selectedCartItems.length > 0 ? 15000 : 0;
   const biayaLayanan = Math.round(totalProduk * (serviceFeePercent / 100));
-  const totalPembayaran = totalProduk + ongkir + biayaLayanan;
+
+  // Promo calculations
+  let discountAmount = 0;
+  const isPromoValid = appliedPromo && totalProduk >= appliedPromo.minPurchase;
+  if (isPromoValid) {
+    discountAmount = Math.round(totalProduk * (appliedPromo.discountPercent / 100));
+  }
+
+  const totalPembayaran = totalProduk + ongkir + biayaLayanan - discountAmount;
+
+  const handleApplyPromo = () => {
+    if (!promoCode.trim()) {
+      setPromoError('Masukkan kode promo terlebih dahulu.');
+      return;
+    }
+    const found = availablePromos.find(p => p.code.toUpperCase() === promoCode.toUpperCase().trim());
+    if (!found) {
+      setPromoError('Kode promo tidak valid.');
+      setAppliedPromo(null);
+      return;
+    }
+    if (totalProduk < found.minPurchase) {
+      setPromoError(`Batas minimum belanja tidak terpenuhi (Min. Belanja: ${formatter.format(found.minPurchase)}).`);
+      setAppliedPromo(null);
+      return;
+    }
+    setAppliedPromo(found);
+    setPromoError('');
+    showToastMsg(`Promo ${found.code} berhasil diterapkan!`);
+  };
+
+  const selectAddress = (addr: any) => {
+    setSelectedAddress(addr);
+    setIsAddressModalOpen(false);
+    showToastMsg(`Alamat pengiriman diubah ke ${addr.type}!`);
+  };
 
   const formatter = new Intl.NumberFormat('id-ID', {
     style: 'currency',
@@ -122,7 +204,7 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
                   return (
                     <div 
                       key={key} 
-                      className={`flex gap-4 sm:gap-6 p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl hover:bg-slate-50 transition-all border ${
+                      className={`flex gap-4 sm:gap-6 p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl hover:bg-slate-55 transition-all border ${
                         isChecked ? 'border-emerald-100 bg-emerald-50/5' : 'border-transparent'
                       } group relative items-center`}
                     >
@@ -135,7 +217,7 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
                       />
 
                       {/* Image */}
-                      <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-xl sm:rounded-2xl overflow-hidden border border-slate-100 shrink-0 bg-slate-50">
+                      <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-xl sm:rounded-2xl overflow-hidden border border-slate-100 shrink-0 bg-slate-55">
                         <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
                       </div>
 
@@ -249,13 +331,24 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
                   <span>Biaya Layanan ({serviceFeePercent}%)</span>
                   <span className="font-bold text-slate-800">{formatter.format(biayaLayanan)}</span>
                 </div>
+                {discountAmount > 0 && (
+                  <div className="flex items-center justify-between text-emerald-600 font-semibold text-xs sm:text-sm animate-in fade-in duration-200">
+                    <span>Diskon Promo ({appliedPromo?.code})</span>
+                    <span className="font-bold">-{formatter.format(discountAmount)}</span>
+                  </div>
+                )}
+                {appliedPromo && totalProduk < appliedPromo.minPurchase && (
+                  <div className="p-2 bg-amber-50 text-amber-800 text-[10px] font-bold rounded-lg border border-amber-200">
+                    Belum memenuhi batas minimum belanja untuk promo ini (Batas Min: {formatter.format(appliedPromo.minPurchase)})
+                  </div>
+                )}
                 <div className="pt-3 flex items-center justify-between border-t border-slate-50">
                   <span className="text-sm sm:text-base font-black text-slate-800 uppercase font-display">Total Pembayaran</span>
                   <span className="text-lg sm:text-xl font-black text-[#1a4d2e] font-display">{formatter.format(totalPembayaran)}</span>
                 </div>
                 
                 <button 
-                  onClick={() => onCheckout(selectedCartItems)}
+                  onClick={() => onCheckout(selectedCartItems, appliedPromo)}
                   disabled={selectedCartItems.length === 0}
                   className={`w-full py-4 rounded-xl sm:rounded-[20px] font-black text-sm uppercase tracking-wider shadow-lg transition-all mt-4 border-0 cursor-pointer ${
                     selectedCartItems.length === 0 
@@ -278,16 +371,76 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
                   <MapPin size={18} className="text-[#1a4d2e]" />
                   Alamat Pengiriman
                 </h3>
-                <button className="text-xs font-bold text-emerald-700 hover:underline bg-transparent border-0 cursor-pointer">Ubah</button>
+                {addresses.length > 0 && (
+                  <button 
+                    onClick={() => setIsAddressModalOpen(true)}
+                    className="text-xs font-bold text-emerald-700 hover:underline bg-transparent border-0 cursor-pointer"
+                  >
+                    Ubah
+                  </button>
+                )}
               </div>
-              <div className="bg-slate-50 p-4 sm:p-6 rounded-2xl border border-slate-100">
-                <div className="flex items-center justify-between mb-2">
-                   <p className="text-[10px] sm:text-xs font-black text-slate-800 uppercase">Rumah</p>
-                   <span className="px-2 py-0.5 bg-emerald-50 text-[#1a4d2e] border border-emerald-100 text-[8px] font-bold rounded uppercase">Utama</span>
+              {selectedAddress ? (
+                <div className="bg-slate-50 p-4 sm:p-6 rounded-2xl border border-slate-100">
+                  <div className="flex items-center justify-between mb-2">
+                     <p className="text-[10px] sm:text-xs font-black text-slate-800 uppercase">{selectedAddress.type}</p>
+                     {selectedAddress.isDefault && (
+                       <span className="px-2 py-0.5 bg-emerald-50 text-[#1a4d2e] border border-emerald-100 text-[8px] font-bold rounded uppercase">Utama</span>
+                     )}
+                  </div>
+                  <p className="text-xs sm:text-sm font-bold text-slate-700">{selectedAddress.name}</p>
+                  <p className="text-[11px] sm:text-xs text-slate-500 mt-1 leading-relaxed">{selectedAddress.street}, {selectedAddress.district}, {selectedAddress.city}</p>
+                  <p className="text-[11px] sm:text-xs text-slate-500 mt-1">{selectedAddress.phone}</p>
                 </div>
-                <p className="text-xs sm:text-sm font-bold text-slate-700">Andi Wijaya</p>
-                <p className="text-[11px] sm:text-xs text-slate-500 mt-1 leading-relaxed">Jl. Melati No. 12, Cilandak, Jakarta Selatan</p>
-                <p className="text-[11px] sm:text-xs text-slate-500 mt-1">0812-3456-7890</p>
+              ) : (
+                <div className="bg-slate-50 p-4 text-center rounded-2xl border border-slate-100">
+                  <p className="text-xs text-slate-400 font-bold">Belum ada alamat dipilih</p>
+                </div>
+              )}
+            </div>
+
+            {/* Voucher / Kode Promo */}
+            <div className="bg-white rounded-[24px] sm:rounded-[32px] p-5 sm:p-8 border border-slate-100 shadow-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <Ticket size={18} className="text-[#1a4d2e]" />
+                <h3 className="font-bold text-slate-800 text-sm sm:text-base">Gunakan Kode Promo</h3>
+              </div>
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Masukkan kode promo..."
+                    value={promoCode}
+                    onChange={(e) => {
+                      setPromoCode(e.target.value.toUpperCase());
+                      setPromoError('');
+                    }}
+                    className="flex-1 px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-xs font-semibold text-slate-800 uppercase"
+                  />
+                  <button
+                    onClick={handleApplyPromo}
+                    className="bg-[#1a4d2e] hover:bg-black text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer border-0 shadow-sm"
+                  >
+                    Terapkan
+                  </button>
+                </div>
+                {promoError && (
+                  <p className="text-[10px] text-red-500 font-bold">{promoError}</p>
+                )}
+                {appliedPromo && (
+                  <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex items-center justify-between animate-in fade-in zoom-in-95 duration-200">
+                    <div>
+                      <p className="text-[10px] font-black text-emerald-800 uppercase tracking-wider">{appliedPromo.code}</p>
+                      <p className="text-[9px] text-slate-500 font-semibold">Diskon {appliedPromo.discountPercent}% (Min. Belanja {formatter.format(appliedPromo.minPurchase)})</p>
+                    </div>
+                    <button
+                      onClick={() => setAppliedPromo(null)}
+                      className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-white rounded-lg transition-colors border-0 bg-transparent cursor-pointer"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -312,12 +465,6 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
                    <div className="w-5 h-5 bg-[#1a4d2e] rounded-full flex items-center justify-center text-white ring-4 ring-emerald-100">
                       <CheckCircle2 size={12} strokeWidth={3} />
                    </div>
-                </div>
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2">
-                  <AlertCircle size={14} className="text-amber-600 shrink-0 mt-0.5" />
-                  <p className="text-[9.5px] text-amber-800 font-medium leading-normal">
-                    Ini adalah satu-satunya metode pembayaran resmi yang tersedia saat ini untuk transaksi pre-order PanganDesa.
-                  </p>
                 </div>
               </div>
             </div>
@@ -349,11 +496,54 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
           </div>
         </div>
       </div>
+
+      {/* Address Selection Modal */}
+      {isAddressModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setIsAddressModalOpen(false)} />
+          <div className="relative bg-white rounded-[32px] w-full max-w-[500px] overflow-hidden shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
+            <div className="bg-slate-50 px-8 py-6 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="text-xl font-black text-slate-800 font-display">Pilih Alamat Pengiriman</h3>
+              <button 
+                onClick={() => setIsAddressModalOpen(false)}
+                className="p-2 text-slate-400 hover:text-slate-700 hover:bg-white rounded-xl transition-all border-0 bg-transparent cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-8 max-h-[400px] overflow-y-auto custom-scrollbar space-y-4">
+              {addresses.map((addr, index) => (
+                <div 
+                  key={addr.id || index}
+                  onClick={() => selectAddress(addr)}
+                  className={`p-5 rounded-2xl border transition-all cursor-pointer text-left hover:border-emerald-350 hover:bg-emerald-50/5 ${
+                    selectedAddress && (selectedAddress.id === addr.id || selectedAddress.street === addr.street)
+                      ? 'border-emerald-600 bg-emerald-50/10 ring-2 ring-emerald-50'
+                      : 'border-slate-100 bg-slate-50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-black uppercase text-slate-700 bg-white border border-slate-100 px-2 py-0.5 rounded">{addr.type}</span>
+                    {addr.isDefault && (
+                      <span className="text-[8px] font-black uppercase text-emerald-600 tracking-wider bg-emerald-50 px-1.5 py-0.5 rounded">Utama</span>
+                    )}
+                  </div>
+                  <p className="text-xs font-bold text-slate-800">{addr.name}</p>
+                  <p className="text-[11px] text-slate-500 mt-1 leading-normal">{addr.street}, {addr.district}, {addr.city}</p>
+                  <p className="text-[10px] text-slate-400 mt-1">{addr.phone}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
       {toast.show && (
-        <div className={`fixed bottom-8 right-8 z-50 flex items-center gap-3 px-6 py-4 rounded-2xl shadow-xl shadow-brand-950/20 border transition-all duration-300 transform translate-y-0 animate-fade-in ${
+        <div className={`fixed bottom-8 right-8 z-50 flex items-center gap-3 px-6 py-4 rounded-2xl shadow-xl shadow-[#1a4d2e]/10 border transition-all duration-300 transform translate-y-0 animate-fade-in ${
           toast.type === 'success' 
-            ? 'bg-[#1a4d2e] text-white border-emerald-800' 
-            : 'bg-red-900 text-white border-red-800'
+            ? 'bg-[#1a4d2e] text-white border-emerald-800 shadow-emerald-950/10' 
+            : 'bg-red-900 text-white border-red-800 shadow-red-950/10'
         }`}>
           <div className="w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center">
             {toast.type === 'success' ? (
@@ -362,9 +552,9 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
               <AlertCircle size={18} className="text-red-400" />
             )}
           </div>
-          <div>
+          <div className="text-left">
             <p className="text-xs font-black uppercase tracking-wider">{toast.type === 'success' ? 'Berhasil' : 'Gagal'}</p>
-            <p className="text-[11px] text-slate-100 font-medium">{toast.message}</p>
+            <p className="text-[11px] text-slate-150 font-medium">{toast.message}</p>
           </div>
         </div>
       )}

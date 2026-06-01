@@ -11,13 +11,13 @@ export default function SettingsPage({ onNavigate }: { onNavigate: (item: string
         { label: 'PIN PanganDesa', desc: 'Atur PIN transaksimu agar lebih aman', icon: <Fingerprint />, type: 'pin-keamanan' },
       ]
     },
-    {
-      group: 'Transaksi & Pembayaran',
-      items: [
-        { label: 'Rekening Bank', desc: 'Kelola rekening untuk refund atau saldo', icon: <CreditCard />, type: 'bank' },
-        { label: 'Metode Pembayaran', desc: 'E-Wallet dan VA Terhubung', icon: <ShieldCheck />, type: 'payment' },
-      ]
-    },
+    // {
+    //   group: 'Transaksi & Pembayaran',
+    //   items: [
+    //     { label: 'Rekening Bank', desc: 'Kelola rekening untuk refund atau saldo', icon: <CreditCard />, type: 'bank' },
+    //     { label: 'Metode Pembayaran', desc: 'E-Wallet dan VA Terhubung', icon: <ShieldCheck />, type: 'payment' },
+    //   ]
+    // },
     {
       group: 'Komunikasi',
       items: [

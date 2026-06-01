@@ -1,7 +1,7 @@
 import React from 'react';
 import ProductCard from '../../components/UI/ProductCard';
 import { ProductService } from '../../services/ProductService';
-import { Calendar, Info, Clock, CheckCircle2 } from 'lucide-react';
+import { Calendar, Info, Clock, CheckCircle2, Search } from 'lucide-react';
 import { Product } from '../../types';
 import { useCart } from '../../contexts/CartContext';
 import { useNavigate } from 'react-router-dom';
@@ -14,6 +14,8 @@ interface PreOrderPageProps {
 export default function PreOrderPage({ onProductSelect }: PreOrderPageProps) {
   const [products, setProducts] = React.useState<Product[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [selectedCategory, setSelectedCategory] = React.useState('Semua');
   const [toast, setToast] = React.useState<{ message: string; show: boolean }>({ message: '', show: false });
   const { addToCart } = useCart();
   const navigate = useNavigate();
@@ -49,11 +51,24 @@ export default function PreOrderPage({ onProductSelect }: PreOrderPageProps) {
     });
   }, []);
 
+  const filteredProducts = React.useMemo(() => {
+    return products.filter(product => {
+      const nameMatch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const farmerMatch = product.farmer.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = nameMatch || farmerMatch;
+      
+      const matchesCategory = selectedCategory === 'Semua' || 
+                              product.category.toLowerCase() === selectedCategory.toLowerCase();
+      
+      return matchesSearch && matchesCategory;
+    });
+  }, [products, searchQuery, selectedCategory]);
+
   return (
     <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50/30">
       <div className="max-w-[1400px] mx-auto p-4 sm:p-8 lg:p-12">
-        <div className="mb-8 sm:mb-16">
-          <div className="flex items-center gap-3 bg-brand-50 text-brand-600 px-3 py-1.5 rounded-full w-fit mb-4 sm:mb-8 border border-brand-100">
+        <div className="mb-8 sm:mb-12">
+          <div className="flex items-center gap-3 bg-brand-50 text-brand-600 px-3 py-1.5 rounded-full w-fit mb-4 sm:mb-6 border border-brand-100">
              <Clock size={14} className="animate-pulse sm:w-4 sm:h-4" />
              <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest">Sistem Pre-Order Panen Desa</span>
           </div>
@@ -61,6 +76,35 @@ export default function PreOrderPage({ onProductSelect }: PreOrderPageProps) {
           <p className="text-xs sm:text-base lg:text-lg text-slate-500 font-medium max-w-2xl leading-relaxed">
              Dukung petani dengan kepastian pasar. Pesanan Anda akan dipanen saat tingkat kematangan optimal dan dikirim langsung dalam 24 jam.
           </p>
+        </div>
+
+        {/* Search & Filter Section */}
+        <div className="mb-10 bg-white rounded-[28px] p-6 sm:p-8 border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+            <input 
+              type="text" 
+              placeholder="Cari produk tani atau petani..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-4 py-3.5 bg-slate-50 rounded-2xl border border-slate-150 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-sm font-semibold text-slate-800 transition-all placeholder:text-slate-400"
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-2.5 overflow-x-auto pb-1 md:pb-0 custom-scrollbar">
+            {['Semua', 'Beras', 'Sayuran', 'Buah', 'Lainnya'].map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all border cursor-pointer ${
+                  selectedCategory === cat
+                    ? 'bg-[#1a4d2e] text-white border-transparent shadow-md shadow-emerald-950/10'
+                    : 'bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16">
@@ -73,8 +117,8 @@ export default function PreOrderPage({ onProductSelect }: PreOrderPageProps) {
                       <div className="h-6 bg-slate-100 rounded-md w-1/3" />
                    </div>
                  ))
-              ) : products.length > 0 ? (
-                 products.map((product: any) => (
+              ) : filteredProducts.length > 0 ? (
+                 filteredProducts.map((product: any) => (
                     <ProductCard 
                       key={product.scheduleId} 
                       product={product} 
@@ -90,7 +134,7 @@ export default function PreOrderPage({ onProductSelect }: PreOrderPageProps) {
                  ))
               ) : (
                  <div className="col-span-full bg-white rounded-3xl p-10 text-center border border-slate-100">
-                    <p className="text-slate-400 font-bold uppercase">Belum ada pre-order tersedia</p>
+                    <p className="text-slate-400 font-bold uppercase">Tidak ditemukan produk yang sesuai</p>
                  </div>
               )}
            </div>
