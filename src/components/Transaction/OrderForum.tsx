@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Send, 
   Image as ImageIcon, 
@@ -9,7 +10,8 @@ import {
   ShieldCheck,
   CheckCircle2,
   AlertCircle,
-  FileText
+  FileText,
+  ArrowLeft
 } from 'lucide-react';
 import { Order, ChatMessage } from '../../types';
 import { useOrder } from '../../contexts/OrderContext';
@@ -31,6 +33,7 @@ export default function OrderForum({
   onConfirmHarvest,
   onConfirmPurchase
 }: OrderForumProps) {
+  const navigate = useNavigate();
   const { loadChatMessages } = useOrder();
   const [inputText, setInputText] = React.useState('');
   const scrollRef = React.useRef<HTMLDivElement>(null);
@@ -60,6 +63,15 @@ export default function OrderForum({
       <div className="p-4 sm:p-8 bg-brand-900 text-white">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 sm:mb-6">
           <div className="flex items-center gap-3 sm:gap-4">
+             {/* Beautiful Glassmorphic Back Button */}
+             <button 
+               onClick={() => navigate(-1)}
+               className="w-10 h-10 sm:w-14 sm:h-14 bg-white/10 backdrop-blur-md rounded-xl sm:rounded-2xl flex items-center justify-center border border-white/15 text-white hover:bg-white/20 hover:text-brand-300 active:scale-95 transition-all cursor-pointer shrink-0"
+               title="Kembali"
+             >
+                <ArrowLeft size={20} className="sm:w-7 sm:h-7" />
+             </button>
+
              <div className="w-10 h-10 sm:w-14 sm:h-14 bg-white/10 backdrop-blur-md rounded-xl sm:rounded-2xl flex items-center justify-center border border-white/10 shrink-0">
                 <FileText size={20} className="text-brand-300 sm:w-7 sm:h-7" />
              </div>
