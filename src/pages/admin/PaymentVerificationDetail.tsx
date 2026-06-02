@@ -269,8 +269,16 @@ export default function PaymentVerificationDetail({ orders, onConfirmPayment }: 
                         type="button"
                         onClick={() => {
                           if (!rejectionReason.trim()) return;
-                          onConfirmPayment(order.id, order.status === 'WAITING_ADMIN_DP' ? 'DP_REJECT' : 'FINAL_REJECT');
-                          navigate('/admin/verifikasi');
+                          const confirmReject = confirm(`Apakah Anda yakin ingin menolak pembayaran ${isDp ? 'DP' : 'Pelunasan'} untuk pesanan #${order.id.toUpperCase()}?`);
+                          if (confirmReject) {
+                            try {
+                              onConfirmPayment(order.id, order.status === 'WAITING_ADMIN_DP' ? 'DP_REJECT' : 'FINAL_REJECT');
+                              alert(`✅ Pembayaran pesanan #${order.id.toUpperCase()} berhasil ditolak! Alasan: "${rejectionReason}"`);
+                              navigate('/admin/verifikasi');
+                            } catch (error) {
+                              alert(`❌ Gagal menolak pembayaran pesanan #${order.id.toUpperCase()}. Silakan coba lagi.`);
+                            }
+                          }
                         }}
                         className="flex-1 py-2 bg-red-650 hover:bg-red-700 text-white rounded-xl font-bold text-xs uppercase tracking-wider border-0 cursor-pointer shadow-md shadow-red-950/10"
                       >
@@ -282,8 +290,16 @@ export default function PaymentVerificationDetail({ orders, onConfirmPayment }: 
                   <div className="flex flex-col gap-2">
                     <button 
                       onClick={() => {
-                        onConfirmPayment(order.id, order.status === 'WAITING_ADMIN_DP' ? 'DP' : 'FINAL');
-                        navigate('/admin/verifikasi');
+                        const confirmApprove = confirm(`Apakah Anda yakin ingin menyetujui pembayaran ${isDp ? 'DP' : 'Pelunasan'} untuk pesanan #${order.id.toUpperCase()}?`);
+                        if (confirmApprove) {
+                          try {
+                            onConfirmPayment(order.id, order.status === 'WAITING_ADMIN_DP' ? 'DP' : 'FINAL');
+                            alert(`✅ Pembayaran pesanan #${order.id.toUpperCase()} berhasil disetujui!`);
+                            navigate('/admin/verifikasi');
+                          } catch (error) {
+                            alert(`❌ Gagal menyetujui pembayaran pesanan #${order.id.toUpperCase()}. Silakan coba lagi.`);
+                          }
+                        }
                       }}
                       className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all border-0 cursor-pointer shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-1.5 font-bold"
                     >
@@ -304,9 +320,15 @@ export default function PaymentVerificationDetail({ orders, onConfirmPayment }: 
                 <button 
                   onClick={() => {
                     const isDp = ['WAITING_HARVEST', 'HARVEST_CONFIRMED_SELLER', 'WAITING_FINAL_PAYMENT'].includes(order.status);
-                    if (confirm(`Apakah Anda yakin ingin membatalkan konfirmasi pembayaran ${isDp ? 'DP' : 'Pelunasan'} untuk pesanan #${order.id.toUpperCase()}?`)) {
-                      onConfirmPayment(order.id, isDp ? 'CANCEL_DP' : 'CANCEL_FINAL');
-                      navigate('/admin/verifikasi');
+                    const confirmCancel = confirm(`Apakah Anda yakin ingin membatalkan konfirmasi pembayaran ${isDp ? 'DP' : 'Pelunasan'} untuk pesanan #${order.id.toUpperCase()}?`);
+                    if (confirmCancel) {
+                      try {
+                        onConfirmPayment(order.id, isDp ? 'CANCEL_DP' : 'CANCEL_FINAL');
+                        alert(`✅ Konfirmasi pembayaran pesanan #${order.id.toUpperCase()} berhasil dibatalkan!`);
+                        navigate('/admin/verifikasi');
+                      } catch (error) {
+                        alert(`❌ Gagal membatalkan konfirmasi pembayaran pesanan #${order.id.toUpperCase()}. Silakan coba lagi.`);
+                      }
                     }
                   }}
                   className="w-full py-3 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl font-black text-xs uppercase tracking-wider transition-all border-0 cursor-pointer flex items-center justify-center gap-1.5 font-bold"

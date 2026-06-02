@@ -204,16 +204,22 @@ export default function PaymentVerification({ orders, onConfirmPayment }: Paymen
                              </button>
 
                              <button
-                               onClick={() => {
-                                 if (confirm(`Apakah Anda yakin ingin membatalkan konfirmasi pembayaran ${isDp ? 'DP' : 'Pelunasan'} untuk pesanan #${order.id.toUpperCase()}? Status pesanan akan dikembalikan ke status Verifikasi Manual.`)) {
-                                   onConfirmPayment(order.id, isDp ? 'CANCEL_DP' : 'CANCEL_FINAL');
-                                 }
-                               }}
-                               className="bg-rose-50 text-rose-600 hover:bg-rose-100 px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider active:scale-95 transition-all flex items-center gap-1.5 border-0 cursor-pointer font-bold"
-                               title="Batalkan Konfirmasi Pembayaran"
-                             >
-                               <XCircle size={12} /> Batalkan Konfirmasi
-                             </button>
+                                onClick={() => {
+                                  const confirmCancel = confirm(`Apakah Anda yakin ingin membatalkan konfirmasi pembayaran ${isDp ? 'DP' : 'Pelunasan'} untuk pesanan #${order.id.toUpperCase()}? Status pesanan akan dikembalikan ke status Verifikasi Manual.`);
+                                  if (confirmCancel) {
+                                    try {
+                                      onConfirmPayment(order.id, isDp ? 'CANCEL_DP' : 'CANCEL_FINAL');
+                                      alert(`✅ Konfirmasi pembayaran pesanan #${order.id.toUpperCase()} berhasil dibatalkan!`);
+                                    } catch (error) {
+                                      alert(`❌ Gagal membatalkan konfirmasi pembayaran pesanan #${order.id.toUpperCase()}. Silakan coba lagi.`);
+                                    }
+                                  }
+                                }}
+                                className="bg-rose-50 text-rose-600 hover:bg-rose-100 px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider active:scale-95 transition-all flex items-center gap-1.5 border-0 cursor-pointer font-bold"
+                                title="Batalkan Konfirmasi Pembayaran"
+                              >
+                                <XCircle size={12} /> Batalkan Konfirmasi
+                              </button>
                           </div>
                         )}
                      </td>
@@ -328,8 +334,14 @@ export default function PaymentVerification({ orders, onConfirmPayment }: Paymen
 
                         <button
                           onClick={() => {
-                            if (confirm(`Apakah Anda yakin ingin membatalkan konfirmasi pembayaran ${isDp ? 'DP' : 'Pelunasan'} untuk pesanan #${order.id.toUpperCase()}?`)) {
-                              onConfirmPayment(order.id, isDp ? 'CANCEL_DP' : 'CANCEL_FINAL');
+                            const confirmCancel = confirm(`Apakah Anda yakin ingin membatalkan konfirmasi pembayaran ${isDp ? 'DP' : 'Pelunasan'} untuk pesanan #${order.id.toUpperCase()}?`);
+                            if (confirmCancel) {
+                              try {
+                                onConfirmPayment(order.id, isDp ? 'CANCEL_DP' : 'CANCEL_FINAL');
+                                alert(`✅ Konfirmasi pembayaran pesanan #${order.id.toUpperCase()} berhasil dibatalkan!`);
+                              } catch (error) {
+                                alert(`❌ Gagal membatalkan konfirmasi pembayaran pesanan #${order.id.toUpperCase()}. Silakan coba lagi.`);
+                              }
                             }
                           }}
                           className="flex-grow bg-rose-50 text-rose-600 hover:bg-rose-100 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider active:scale-95 transition-all flex items-center justify-center gap-1 border-0 cursor-pointer font-bold"
