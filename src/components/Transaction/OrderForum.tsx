@@ -81,7 +81,16 @@ export default function OrderForum({
              </div>
           </div>
           <div className="px-3 sm:px-5 py-1.5 sm:py-2.5 bg-emerald-500/20 border border-emerald-500/30 rounded-full text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-emerald-400 animate-pulse self-start sm:self-auto">
-             Menunggu Panen
+             {order.status === 'WAITING_PAYMENT_DP' ? 'Menunggu DP' :
+              order.status === 'WAITING_ADMIN_DP' ? 'Verifikasi DP' :
+              order.status === 'WAITING_HARVEST' ? 'Proses Panen' :
+              order.status === 'HARVEST_CONFIRMED_SELLER' ? 'Siap Pelunasan' :
+              order.status === 'WAITING_FINAL_PAYMENT' ? 'Menunggu Pelunasan' :
+              order.status === 'WAITING_ADMIN_FINAL' ? 'Verifikasi Lunas' :
+              order.status === 'SHIPPING' ? 'Dalam Pengiriman' :
+              order.status === 'DELIVERED' ? 'Tiba di Lokasi' :
+              order.status === 'COMPLETED' ? 'Selesai' :
+              order.status === 'CANCELLED' ? 'Dibatalkan' : 'Siklus Panen'}
           </div>
         </div>
 

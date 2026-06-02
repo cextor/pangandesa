@@ -195,6 +195,14 @@ export default function PaymentVerification({ orders, onConfirmPayment }: Paymen
                                <AlertCircle size={12} /> Detail
                              </button>
                              
+                             <button 
+                               onClick={() => navigate('/admin/transaksi-panen/' + order.id)}
+                               className="p-2 bg-slate-50 text-slate-400 rounded-xl hover:bg-brand-50 hover:text-brand-600 transition-all flex items-center justify-center cursor-pointer border-0"
+                               title="Diskusi Forum"
+                             >
+                               <MessageSquare size={14} />
+                             </button>
+
                              <button
                                onClick={() => {
                                  if (confirm(`Apakah Anda yakin ingin membatalkan konfirmasi pembayaran ${isDp ? 'DP' : 'Pelunasan'} untuk pesanan #${order.id.toUpperCase()}? Status pesanan akan dikembalikan ke status Verifikasi Manual.`)) {
@@ -305,18 +313,26 @@ export default function PaymentVerification({ orders, onConfirmPayment }: Paymen
                       <>
                         <button 
                           onClick={() => navigate(`/admin/verifikasi/${order.id}`)}
-                          className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider active:scale-95 transition-all flex items-center justify-center gap-1 border-0 cursor-pointer font-bold"
+                          className="flex-grow bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider active:scale-95 transition-all flex items-center justify-center gap-1 border-0 cursor-pointer font-bold"
                         >
                           <AlertCircle size={11} /> Detail
                         </button>
                         
+                        <button 
+                          onClick={() => navigate('/admin/transaksi-panen/' + order.id)}
+                          className="p-2.5 bg-slate-50 text-slate-400 rounded-xl hover:bg-brand-50 hover:text-brand-600 transition-all flex items-center justify-center cursor-pointer border-0 shrink-0"
+                          title="Diskusi Forum"
+                        >
+                          <MessageSquare size={13} />
+                        </button>
+
                         <button
                           onClick={() => {
                             if (confirm(`Apakah Anda yakin ingin membatalkan konfirmasi pembayaran ${isDp ? 'DP' : 'Pelunasan'} untuk pesanan #${order.id.toUpperCase()}?`)) {
                               onConfirmPayment(order.id, isDp ? 'CANCEL_DP' : 'CANCEL_FINAL');
                             }
                           }}
-                          className="flex-1 bg-rose-50 text-rose-600 hover:bg-rose-100 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider active:scale-95 transition-all flex items-center justify-center gap-1 border-0 cursor-pointer font-bold"
+                          className="flex-grow bg-rose-50 text-rose-600 hover:bg-rose-100 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider active:scale-95 transition-all flex items-center justify-center gap-1 border-0 cursor-pointer font-bold"
                         >
                           <XCircle size={11} /> Batalkan
                         </button>
