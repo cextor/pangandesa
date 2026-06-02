@@ -20,6 +20,15 @@ export default function PaymentVerification({ orders, onConfirmPayment }: Paymen
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = React.useState<'pending' | 'history'>('pending');
   const [orderSearch, setOrderSearch] = React.useState('');
+  const [toast, setToast] = React.useState<{ message: string; type: 'success' | 'error'; show: boolean }>({ message: '', type: 'success', show: false });
+  const [confirmModal, setConfirmModal] = React.useState<{ show: boolean; title: string; desc: string; type: 'approve' | 'reject' | 'cancel'; action: () => void } | null>(null);
+
+  const showToastMsg = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type, show: true });
+    setTimeout(() => {
+      setToast(prev => ({ ...prev, show: false }));
+    }, 3000);
+  };
 
   const paymentPendingOrders = orders.filter(o => 
     o.status === 'WAITING_ADMIN_DP' || o.status === 'WAITING_ADMIN_FINAL'
@@ -203,17 +212,22 @@ export default function PaymentVerification({ orders, onConfirmPayment }: Paymen
                                <MessageSquare size={14} />
                              </button>
 
-                             <button
+                              <button
                                 onClick={() => {
-                                  const confirmCancel = confirm(`Apakah Anda yakin ingin membatalkan konfirmasi pembayaran ${isDp ? 'DP' : 'Pelunasan'} untuk pesanan #${order.id.toUpperCase()}? Status pesanan akan dikembalikan ke status Verifikasi Manual.`);
-                                  if (confirmCancel) {
-                                    try {
-                                      onConfirmPayment(order.id, isDp ? 'CANCEL_DP' : 'CANCEL_FINAL');
-                                      alert(`✅ Konfirmasi pembayaran pesanan #${order.id.toUpperCase()} berhasil dibatalkan!`);
-                                    } catch (error) {
-                                      alert(`❌ Gagal membatalkan konfirmasi pembayaran pesanan #${order.id.toUpperCase()}. Silakan coba lagi.`);
+                                  setConfirmModal({
+                                    show: true,
+                                    title: 'Batalkan Konfirmasi?',
+                                    desc: `Apakah Anda yakin ingin membatalkan konfirmasi pembayaran ${isDp ? 'DP' : 'Pelunasan'} untuk pesanan #${order.id.toUpperCase()}? Status pesanan akan dikembalikan ke status Verifikasi Manual.`,
+                                    type: 'cancel',
+                                    action: () => {
+                                      try {
+                                        onConfirmPayment(order.id, isDp ? 'CANCEL_DP' : 'CANCEL_FINAL');
+                                        showToastMsg(`Konfirmasi pembayaran pesanan #${order.id.toUpperCase()} berhasil dibatalkan!`, 'success');
+                                      } catch (error) {
+                                        showToastMsg(`Gagal membatalkan konfirmasi pembayaran pesanan #${order.id.toUpperCase()}. Silakan coba lagi.`, 'error');
+                                      }
                                     }
-                                  }
+                                  });
                                 }}
                                 className="bg-rose-50 text-rose-600 hover:bg-rose-100 px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider active:scale-95 transition-all flex items-center gap-1.5 border-0 cursor-pointer font-bold"
                                 title="Batalkan Konfirmasi Pembayaran"
@@ -334,15 +348,20 @@ export default function PaymentVerification({ orders, onConfirmPayment }: Paymen
 
                         <button
                           onClick={() => {
-                            const confirmCancel = confirm(`Apakah Anda yakin ingin membatalkan konfirmasi pembayaran ${isDp ? 'DP' : 'Pelunasan'} untuk pesanan #${order.id.toUpperCase()}?`);
-                            if (confirmCancel) {
-                              try {
-                                onConfirmPayment(order.id, isDp ? 'CANCEL_DP' : 'CANCEL_FINAL');
-                                alert(`✅ Konfirmasi pembayaran pesanan #${order.id.toUpperCase()} berhasil dibatalkan!`);
-                              } catch (error) {
-                                alert(`❌ Gagal membatalkan konfirmasi pembayaran pesanan #${order.id.toUpperCase()}. Silakan coba lagi.`);
+                            setConfirmModal({
+                              show: true,
+                              title: 'Batalkan Konfirmasi?',
+                              desc: `Apakah Anda yakin ingin membatalkan konfirmasi pembayaran ${isDp ? 'DP' : 'Pelunasan'} untuk pesanan #${order.id.toUpperCase()}?`,
+                              type: 'cancel',
+                              action: () => {
+                                try {
+                                  onConfirmPayment(order.id, isDp ? 'CANCEL_DP' : 'CANCEL_FINAL');
+                                  showToastMsg(`Konfirmasi pembayaran pesanan #${order.id.toUpperCase()} berhasil dibatalkan!`, 'success');
+                                } catch (error) {
+                                  showToastMsg(`Gagal membatalkan konfirmasi pembayaran pesanan #${order.id.toUpperCase()}. Silakan coba lagi.`, 'error');
+                                }
                               }
-                            }
+                            });
                           }}
                           className="flex-grow bg-rose-50 text-rose-600 hover:bg-rose-100 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider active:scale-95 transition-all flex items-center justify-center gap-1 border-0 cursor-pointer font-bold"
                         >
@@ -367,6 +386,57 @@ export default function PaymentVerification({ orders, onConfirmPayment }: Paymen
         </div>
 
       </div>
+
+      {/* Custom Confirm Modal */}
+      {confirmModal && confirmModal.show && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setConfirmModal(null)} />
+          <div className="relative bg-white rounded-[32px] w-full max-w-[400px] overflow-hidden shadow-2xl border border-slate-100 p-8 text-center animate-in fade-in zoom-in-95 duration-200">
+            <div className={`w-16 h-16 rounded-[24px] flex items-center justify-center mx-auto mb-6 bg-rose-50 text-rose-600`}>
+              <AlertCircle size={28} />
+            </div>
+            <h3 className="text-xl font-black text-slate-800 font-display mb-2">{confirmModal.title}</h3>
+            <p className="text-slate-500 text-sm font-medium mb-8 leading-relaxed">{confirmModal.desc}</p>
+            
+            <div className="flex gap-4">
+              <button 
+                onClick={() => setConfirmModal(null)}
+                className="flex-1 py-3 border border-slate-100 text-slate-550 hover:bg-slate-55 rounded-xl font-bold text-sm transition-all cursor-pointer bg-white"
+              >
+                Batal
+              </button>
+              <button 
+                onClick={() => {
+                  confirmModal.action();
+                  setConfirmModal(null);
+                }}
+                className="flex-1 py-3 bg-rose-500 hover:bg-rose-600 shadow-lg shadow-rose-950/10 text-white rounded-xl font-bold text-sm transition-all cursor-pointer border-0"
+              >
+                Ya, Konfirmasi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast.show && (
+        <div className={`fixed bottom-8 right-8 z-[100] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-xl shadow-slate-950/20 border transition-all duration-300 transform translate-y-0 animate-fade-in ${
+          toast.type === 'success' 
+            ? 'bg-emerald-500 border-emerald-400 text-white' 
+            : 'bg-red-500 border-red-400 text-white'
+        }`}>
+            {toast.type === 'success' ? (
+              <CheckCircle2 size={18} className="text-white shrink-0" />
+            ) : (
+              <AlertCircle size={18} className="text-white shrink-0" />
+            )}
+            <div className="text-left">
+               <p className="text-xs font-black uppercase tracking-wider">{toast.type === 'success' ? 'Berhasil' : 'Gagal'}</p>
+               <p className="text-[11px] text-slate-105 font-medium leading-tight">{toast.message}</p>
+            </div>
+        </div>
+      )}
     </div>
   );
 }
