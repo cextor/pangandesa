@@ -333,7 +333,7 @@ export default function PreOrderManagement() {
                           
                           <div className="flex items-center gap-2">
                             <button 
-                              onClick={() => navigate('/seller/transaksi-panen')}
+                              onClick={() => navigate('/seller/transaksi-panen/' + order.id)}
                               className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-slate-50 border border-slate-100 hover:bg-slate-100 hover:border-slate-200 text-slate-600 px-4 py-2.5 rounded-lg md:rounded-xl text-[8.5px] md:text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 cursor-pointer"
                             >
                               <MessageSquare size={12} /> Diskusi Forum

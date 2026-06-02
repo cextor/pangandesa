@@ -27,7 +27,7 @@ interface ActiveOrdersProps {
   orders: Order[];
   onTrack: (order: Order) => void;
   onPayPelunasan?: (orderId: string) => void;
-  onOpenForum?: () => void;
+  onOpenForum?: (orderId: string) => void;
 }
 
 export default function ActiveOrders({ orders, onTrack, onPayPelunasan, onOpenForum }: ActiveOrdersProps) {
@@ -183,7 +183,7 @@ export default function ActiveOrders({ orders, onTrack, onPayPelunasan, onOpenFo
                           {/* Discuss Forum Button for active pre-orders */}
                           {(order.status === 'WAITING_HARVEST' || order.status === 'HARVEST_CONFIRMED_SELLER' || order.status === 'WAITING_FINAL_PAYMENT') && (
                             <button 
-                              onClick={onOpenForum}
+                              onClick={() => onOpenForum && onOpenForum(order.id)}
                               className="flex-1 sm:flex-none bg-white border border-slate-200 text-slate-600 px-4 py-2.5 rounded-xl font-black text-[9px] sm:text-[10px] uppercase tracking-widest hover:border-brand-500 hover:text-brand-600 transition-all cursor-pointer flex items-center justify-center gap-1.5"
                             >
                                <MessageSquare size={13} /> Diskusi Forum

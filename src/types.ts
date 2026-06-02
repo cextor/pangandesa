@@ -39,6 +39,7 @@ export interface Order {
   paymentMethod?: string;
   trackingNumber?: string;
   bastUrl?: string;
+  paymentProof?: string;
 }
 
 export interface ChatMessage {

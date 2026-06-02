@@ -12,21 +12,98 @@ import {
   CheckCircle2,
   AlertCircle,
   ArrowLeft,
-  Download
+  Download,
+  X
 } from 'lucide-react';
 import { Order } from '../../types';
 
 interface InvoiceProps {
   order: Order;
   onConfirm?: (paymentMethod: string) => void;
+  onBack?: () => void;
 }
 
-export default function Invoice({ order, onConfirm }: InvoiceProps) {
+export default function Invoice({ order, onConfirm, onBack }: InvoiceProps) {
   const navigate = useNavigate();
   const subtotal = order.items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   const ongkir = 15000;
   const biayaLayanan = Math.max(0, order.totalAmount - subtotal - ongkir);
   const [toast, setToast] = React.useState<{ message: string; type: 'success' | 'error'; show: boolean }>({ message: '', type: 'success', show: false });
+
+  const [showUploadModal, setShowUploadModal] = React.useState(false);
+  const [selectedImage, setSelectedImage] = React.useState<string | null>(null);
+  const [fileName, setFileName] = React.useState<string>('');
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setFileName(file.name);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSelectedImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const generateMockSlip = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 400;
+    canvas.height = 500;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, 400, 500);
+      
+      ctx.fillStyle = '#10b981';
+      ctx.fillRect(0, 0, 400, 80);
+      
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 20px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('TRANSFER BERHASIL', 200, 45);
+      
+      ctx.font = '10px sans-serif';
+      ctx.fillStyle = '#a7f3d0';
+      ctx.fillText('Siklus Escrow PanganDesa', 200, 65);
+      
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '12px monospace';
+      ctx.textAlign = 'left';
+      
+      const yStart = 140;
+      const lineH = 30;
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText('TANGGAL:', 40, yStart);
+      ctx.fillText('ID TRANS:', 40, yStart + lineH);
+      ctx.fillText('PENGIRIM:', 40, yStart + lineH * 2);
+      ctx.fillText('BANK:', 40, yStart + lineH * 3);
+      ctx.fillText('NOMINAL:', 40, yStart + lineH * 4);
+      
+      ctx.fillStyle = '#ffffff';
+      const dateStr = new Date().toLocaleDateString('id-ID');
+      ctx.fillText(dateStr, 150, yStart);
+      ctx.fillText('#' + order.id.toUpperCase(), 150, yStart + lineH);
+      ctx.fillText(order.buyerName || 'Mitra Pembeli Desa', 150, yStart + lineH * 2);
+      ctx.fillText('BNI (Escrow)', 150, yStart + lineH * 3);
+      
+      const amount = order.status === 'WAITING_PAYMENT_DP' ? order.dpAmount : order.remainingAmount;
+      ctx.fillStyle = '#34d399';
+      ctx.font = 'bold 14px monospace';
+      ctx.fillText('Rp ' + amount.toLocaleString('id-ID'), 150, yStart + lineH * 4);
+      
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(40, 360, 320, 2);
+      
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = 'italic 10px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('Bukti transfer ini sah dan diproses otomatis.', 200, 400);
+    }
+    const dataUrl = canvas.toDataURL('image/png');
+    setSelectedImage(dataUrl);
+    setFileName('bukti_transfer_simulasi.png');
+  };
 
   const showToastMsg = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type, show: true });
@@ -70,9 +147,9 @@ export default function Invoice({ order, onConfirm }: InvoiceProps) {
       <div className="p-4 sm:p-8 border-b border-slate-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 no-print">
         <div className="flex items-center gap-3">
           <button 
-            onClick={() => navigate('/buyer/pesanan')} 
+            onClick={() => onBack ? onBack() : navigate('/buyer/pesanan')} 
             className="p-2.5 hover:bg-slate-100 rounded-xl text-slate-600 transition-all cursor-pointer border-0 active:scale-95 flex items-center justify-center shrink-0 bg-slate-50"
-            title="Kembali ke Pesanan Saya"
+            title="Kembali"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -208,7 +285,7 @@ export default function Invoice({ order, onConfirm }: InvoiceProps) {
 
         {order.status === 'WAITING_PAYMENT_DP' || order.status === 'WAITING_FINAL_PAYMENT' || order.status === 'HARVEST_CONFIRMED_SELLER' ? (
           <button 
-            onClick={() => onConfirm && onConfirm('transfer')}
+            onClick={() => setShowUploadModal(true)}
             className="w-full bg-brand-600 text-white py-4 sm:py-6 rounded-xl sm:rounded-[32px] font-black uppercase text-[10px] sm:text-sm tracking-widest shadow-xl shadow-brand-600/20 active:scale-95 transition-all flex items-center justify-center gap-2 sm:gap-3 hover:bg-brand-700 no-print border-0 cursor-pointer"
           >
             {order.status === 'WAITING_PAYMENT_DP' ? 'Konfirmasi & Bayar DP (30%)' : 'Konfirmasi & Bayar Pelunasan (70%)'} <ArrowRight className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
@@ -239,6 +316,85 @@ export default function Invoice({ order, onConfirm }: InvoiceProps) {
           <div>
             <p className="text-xs font-black uppercase tracking-wider">{toast.type === 'success' ? 'Berhasil' : 'Gagal'}</p>
             <p className="text-[11px] text-slate-100 font-medium">{toast.message}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Upload Proof Modal */}
+      {showUploadModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setShowUploadModal(false)} />
+          <div className="relative bg-white rounded-[32px] w-full max-w-[450px] overflow-hidden shadow-2xl border border-slate-100 mx-4 animate-in fade-in zoom-in-95 duration-200 flex flex-col">
+            <div className="bg-slate-50 px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="text-sm font-black text-slate-800 font-display">Unggah Bukti Transfer</h3>
+              <button 
+                onClick={() => setShowUploadModal(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-white rounded-xl transition-all border-0 bg-transparent cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto custom-scrollbar">
+              <div className="space-y-4">
+                
+                {/* Drag and Drop File selector box */}
+                <div className="border-2 border-dashed border-slate-200 rounded-3xl p-6 text-center hover:border-brand-500 transition-colors relative cursor-pointer group bg-slate-50/50">
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    onChange={handleFileChange}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <div className="space-y-2">
+                    <div className="w-10 h-10 bg-brand-50 text-brand-650 rounded-xl flex items-center justify-center mx-auto shadow-sm group-hover:scale-105 transition-transform">
+                      <Download size={18} className="rotate-180" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-700">Pilih File Bukti Pembayaran</p>
+                      <p className="text-[9px] text-slate-400 font-medium mt-1">Mendukung format PNG, JPG, atau JPEG</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Auto generate button */}
+                <button 
+                  type="button"
+                  onClick={generateMockSlip}
+                  className="w-full py-2.5 bg-[#1a4d2e]/5 hover:bg-[#1a4d2e]/10 text-brand-650 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border-0 cursor-pointer"
+                >
+                  Simulasikan Slip Transfer Otomatis
+                </button>
+
+                {/* Selected Image Preview */}
+                {selectedImage && (
+                  <div className="space-y-2 animate-in fade-in duration-300">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Pratinjau Bukti Transfer</p>
+                    <div className="border border-slate-100 rounded-2xl overflow-hidden bg-slate-50 p-2">
+                      <img src={selectedImage} alt="Pratinjau Slip" className="w-full max-h-60 object-contain rounded-xl" />
+                      <p className="text-[8px] font-mono text-center text-slate-400 mt-1 truncate">{fileName}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Submit trigger */}
+              <button 
+                disabled={!selectedImage}
+                onClick={() => {
+                  if (!selectedImage) return;
+                  onConfirm && onConfirm(selectedImage);
+                  setShowUploadModal(false);
+                }}
+                className={`w-full py-3.5 rounded-xl font-black uppercase text-xs tracking-wider transition-all border-0 flex items-center justify-center gap-2 ${
+                  selectedImage 
+                    ? 'bg-[#1a4d2e] hover:bg-[#123520] text-white shadow-lg shadow-[#1a4d2e]/15 cursor-pointer active:scale-95' 
+                    : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                }`}
+              >
+                <CheckCircle2 size={14} /> Kirim Bukti Pembayaran
+              </button>
+            </div>
           </div>
         </div>
       )}

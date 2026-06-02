@@ -271,7 +271,7 @@ export default function AdminDashboardOverview({ orders }: AdminDashboardOvervie
                     </td>
                     <td className="p-6 pr-8 text-right">
                       <button 
-                        onClick={() => navigate('/admin/transaksi-panen')}
+                        onClick={() => navigate('/admin/transaksi-panen/' + order.id)}
                         className="p-2 bg-slate-50 hover:bg-brand-50 text-slate-400 hover:text-brand-600 rounded-lg transition-all border-0 cursor-pointer"
                         title="Buka Forum Diskusi"
                       >

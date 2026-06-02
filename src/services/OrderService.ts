@@ -29,6 +29,7 @@ export const OrderService = {
         paymentMethod: o.payment_method,
         trackingNumber: o.tracking_number,
         bastUrl: o.bast_url,
+        paymentProof: o.payment_proof,
         items: (o.items || []).map((item: any) => ({
           productId: String(item.product_id),
           name: item.name,
@@ -82,7 +83,7 @@ export const OrderService = {
     };
   },
 
-  updateOrderStatus: async (orderId: string, status: string): Promise<void> => {
-    await apiClient.put(`/orders/${orderId}/status`, { status });
+  updateOrderStatus: async (orderId: string, status: string, paymentProof?: string): Promise<void> => {
+    await apiClient.put(`/orders/${orderId}/status`, { status, payment_proof: paymentProof });
   }
 };

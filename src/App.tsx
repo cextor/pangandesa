@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom';
 import MainLayout from './components/Layout/MainLayout';
 import { useAuth } from './contexts/AuthContext';
 import { useCart } from './contexts/CartContext';
@@ -27,6 +27,7 @@ import { ensureDayMonthYear } from './utils/harvestHelper';
 
 import AdminDashboardOverview from './pages/admin/AdminDashboardOverview';
 import PaymentVerification from './pages/admin/PaymentVerification';
+import PaymentVerificationDetail from './pages/admin/PaymentVerificationDetail';
 import UserManagement from './pages/admin/UserManagement';
 import SystemReports from './pages/admin/SystemReports';
 import PromoManagement from './pages/admin/PromoManagement';
@@ -54,6 +55,35 @@ import BrowseBuyerRequests from './pages/seller/BrowseBuyerRequests';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 
+function OrderForumWrapper({ role }: { role: 'buyer' | 'seller' | 'admin' }) {
+  const { orderId } = useParams();
+  const { orders, messages, sendMessage, updateOrderStatus } = useOrder();
+  const navigate = useNavigate();
+
+  // Find order by ID, or fallback to the first active order
+  const order = orderId 
+    ? orders.find(o => o.id === orderId)
+    : orders.find(o => o.status === 'WAITING_HARVEST' || o.status === 'HARVEST_CONFIRMED_SELLER' || o.status === 'WAITING_FINAL_PAYMENT');
+
+  if (!order) {
+    return <Navigate to={`/${role}`} replace />;
+  }
+
+  return (
+    <OrderForum 
+      order={order}
+      role={role}
+      messages={messages}
+      onSendMessage={(content, attachmentType) => sendMessage(order.id, content, role, attachmentType)}
+      onConfirmHarvest={role === 'seller' ? () => updateOrderStatus(order.id, 'HARVEST_CONFIRMED_SELLER') : undefined}
+      onConfirmPurchase={role === 'buyer' ? () => {
+        updateOrderStatus(order.id, 'COMPLETED');
+        navigate('/buyer');
+      } : undefined}
+    />
+  );
+}
+
 export default function App() {
   const navigate = useNavigate();
   const { isLoggedIn, activeRole, login, setActiveRole, user } = useAuth();
@@ -69,7 +99,7 @@ export default function App() {
 
   const activeInvoiceOrder = checkoutOrder || orders.find(o => o.id === currentOrderId);
 
-  const handleAdminConfirmPayment = (orderId: string, type: 'DP' | 'FINAL' | 'DP_REJECT' | 'FINAL_REJECT') => {
+  const handleAdminConfirmPayment = (orderId: string, type: 'DP' | 'FINAL' | 'DP_REJECT' | 'FINAL_REJECT' | 'CANCEL_DP' | 'CANCEL_FINAL') => {
     if (type === 'DP') {
       updateOrderStatus(orderId, 'WAITING_HARVEST');
     } else if (type === 'FINAL') {
@@ -78,6 +108,10 @@ export default function App() {
       updateOrderStatus(orderId, 'WAITING_PAYMENT_DP');
     } else if (type === 'FINAL_REJECT') {
       updateOrderStatus(orderId, 'WAITING_FINAL_PAYMENT');
+    } else if (type === 'CANCEL_DP') {
+      updateOrderStatus(orderId, 'WAITING_ADMIN_DP');
+    } else if (type === 'CANCEL_FINAL') {
+      updateOrderStatus(orderId, 'WAITING_ADMIN_FINAL');
     }
   };
 
@@ -101,23 +135,13 @@ export default function App() {
       <Route path="/admin" element={<MainLayout />}>
         <Route index element={<AdminDashboardOverview orders={orders} />} />
         <Route path="verifikasi" element={<PaymentVerification orders={orders} onConfirmPayment={handleAdminConfirmPayment} />} />
+        <Route path="verifikasi/:orderId" element={<PaymentVerificationDetail orders={orders} onConfirmPayment={handleAdminConfirmPayment} />} />
         <Route path="pengguna" element={<UserManagement />} />
         <Route path="laporan" element={<SystemReports orders={orders} />} />
         <Route path="promo" element={<PromoManagement />} />
         <Route path="pengaturan-admin" element={<SystemConfiguration />} />
-        <Route path="transaksi-panen" element={
-          orders.find(o => o.status === 'WAITING_HARVEST' || o.status === 'HARVEST_CONFIRMED_SELLER' || o.status === 'WAITING_FINAL_PAYMENT') ? (
-            <OrderForum 
-              order={orders.find(o => o.status === 'WAITING_HARVEST' || o.status === 'HARVEST_CONFIRMED_SELLER' || o.status === 'WAITING_FINAL_PAYMENT')!} 
-              role="admin" 
-              messages={messages}
-              onSendMessage={(c, a) => {
-                const activeOrder = orders.find(o => o.status === 'WAITING_HARVEST' || o.status === 'HARVEST_CONFIRMED_SELLER' || o.status === 'WAITING_FINAL_PAYMENT')!;
-                return sendMessage(activeOrder.id, c, 'admin', a);
-              }}
-            />
-          ) : <Navigate to="/admin" />
-        } />
+        <Route path="transaksi-panen" element={<OrderForumWrapper role="admin" />} />
+        <Route path="transaksi-panen/:orderId" element={<OrderForumWrapper role="admin" />} />
       </Route>
 
       {/* BUYER ROUTES */}
@@ -160,7 +184,7 @@ export default function App() {
               localStorage.setItem('current_order_id', orderId);
               navigate('/buyer/transaksi-invoice');
             }}
-            onOpenForum={() => navigate('/buyer/transaksi-panen')}
+            onOpenForum={(orderId) => navigate(`/buyer/transaksi-panen/${orderId}`)}
           />
         } />
         <Route path="riwayat" element={<OrderHistory />} />
@@ -343,24 +367,8 @@ export default function App() {
             </div>
           );
         })()} />
-        <Route path="transaksi-panen" element={
-          orders.find(o => o.status === 'WAITING_HARVEST' || o.status === 'HARVEST_CONFIRMED_SELLER' || o.status === 'WAITING_FINAL_PAYMENT') ? (
-            <OrderForum 
-              order={orders.find(o => o.status === 'WAITING_HARVEST' || o.status === 'HARVEST_CONFIRMED_SELLER' || o.status === 'WAITING_FINAL_PAYMENT')!} 
-              role="buyer" 
-              messages={messages}
-              onSendMessage={(c, a) => {
-                const activeOrder = orders.find(o => o.status === 'WAITING_HARVEST' || o.status === 'HARVEST_CONFIRMED_SELLER' || o.status === 'WAITING_FINAL_PAYMENT')!;
-                return sendMessage(activeOrder.id, c, 'buyer', a);
-              }}
-              onConfirmPurchase={() => {
-                const activeOrder = orders.find(o => o.status === 'WAITING_HARVEST' || o.status === 'HARVEST_CONFIRMED_SELLER' || o.status === 'WAITING_FINAL_PAYMENT')!;
-                updateOrderStatus(activeOrder.id, 'COMPLETED');
-                navigate('/buyer');
-              }}
-            />
-          ) : <Navigate to="/buyer" />
-        } />
+        <Route path="transaksi-panen" element={<OrderForumWrapper role="buyer" />} />
+        <Route path="transaksi-panen/:orderId" element={<OrderForumWrapper role="buyer" />} />
       </Route>
 
       {/* SELLER ROUTES */}
@@ -378,23 +386,8 @@ export default function App() {
         <Route path="ulasan" element={<Reviews />} />
         <Route path="pengaturan-penjual" element={<SellerProfilePage onBack={() => navigate('/seller')} />} />
         <Route path="bantuan-penjual" element={<SellerHelp />} />
-        <Route path="transaksi-panen" element={
-          orders.find(o => o.status === 'WAITING_HARVEST' || o.status === 'HARVEST_CONFIRMED_SELLER' || o.status === 'WAITING_FINAL_PAYMENT') ? (
-            <OrderForum 
-              order={orders.find(o => o.status === 'WAITING_HARVEST' || o.status === 'HARVEST_CONFIRMED_SELLER' || o.status === 'WAITING_FINAL_PAYMENT')!} 
-              role="seller" 
-              messages={messages}
-              onSendMessage={(c, a) => {
-                const activeOrder = orders.find(o => o.status === 'WAITING_HARVEST' || o.status === 'HARVEST_CONFIRMED_SELLER' || o.status === 'WAITING_FINAL_PAYMENT')!;
-                return sendMessage(activeOrder.id, c, 'seller', a);
-              }}
-              onConfirmHarvest={() => {
-                const activeOrder = orders.find(o => o.status === 'WAITING_HARVEST' || o.status === 'HARVEST_CONFIRMED_SELLER' || o.status === 'WAITING_FINAL_PAYMENT')!;
-                updateOrderStatus(activeOrder.id, 'HARVEST_CONFIRMED_SELLER');
-              }}
-            />
-          ) : <Navigate to="/seller" />
-        } />
+        <Route path="transaksi-panen" element={<OrderForumWrapper role="seller" />} />
+        <Route path="transaksi-panen/:orderId" element={<OrderForumWrapper role="seller" />} />
         <Route path="ai-assistant" element={<AIChatPage role="seller" onBack={() => navigate('/seller')} />} />
         <Route path="profil-detail" element={<SellerProfilePage onBack={() => navigate('/seller')} />} />
         <Route path="ganti-password" element={<ChangePasswordPage onBack={() => navigate('/seller')} />} />

@@ -88,7 +88,11 @@ class OrderController extends ResourceController
         $db = \Config\Database::connect();
         $db->transStart();
 
-        $this->model->update($id, ['status' => $data['status']]);
+        $updateData = ['status' => $data['status']];
+        if (isset($data['payment_proof'])) {
+            $updateData['payment_proof'] = $data['payment_proof'];
+        }
+        $this->model->update($id, $updateData);
 
         // If status changed to WAITING_HARVEST, the buyer has paid the DP! We must reduce the product stock.
         if ($data['status'] === 'WAITING_HARVEST') {

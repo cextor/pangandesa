@@ -8,7 +8,7 @@ interface OrderContextType {
   orders: Order[];
   messages: ChatMessage[];
   addOrder: (order: Order) => Promise<void>;
-  updateOrderStatus: (orderId: string, status: string) => Promise<void>;
+  updateOrderStatus: (orderId: string, status: string, paymentProof?: string) => Promise<void>;
   sendMessage: (orderId: string, content: string, role: string, attachmentType?: 'image' | 'file') => Promise<void>;
   loadChatMessages: (orderId: string) => Promise<void>;
 }
@@ -33,9 +33,9 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setOrders(prev => [newOrder, ...prev]);
   };
 
-  const updateOrderStatus = async (orderId: string, status: string) => {
-    await OrderService.updateOrderStatus(orderId, status);
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: status as any } : o));
+  const updateOrderStatus = async (orderId: string, status: string, paymentProof?: string) => {
+    await OrderService.updateOrderStatus(orderId, status, paymentProof);
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: status as any, paymentProof: paymentProof || o.paymentProof } : o));
   };
 
   const loadChatMessages = async (orderId: string) => {

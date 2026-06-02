@@ -315,7 +315,7 @@ export default function Orders() {
                       
                       <div className="flex items-center gap-3">
                         <button 
-                          onClick={() => navigate('/seller/transaksi-panen')}
+                          onClick={() => navigate('/seller/transaksi-panen/' + order.id)}
                           className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-slate-50 border border-slate-100 hover:bg-slate-100 hover:border-slate-200 text-slate-600 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 cursor-pointer"
                         >
                           <MessageSquare size={14} /> Diskusi Forum
