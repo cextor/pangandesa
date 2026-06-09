@@ -50,10 +50,13 @@ export default function ActiveOrders({ orders, onTrack, onPayPelunasan, onOpenFo
 
   const activeOrdersList = orders.filter(o => activeStatuses.includes(o.status));
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
+  const getStatusBadge = (order: Order) => {
+    const hasProof = !!order.paymentProof;
+    switch (order.status) {
       case 'WAITING_PAYMENT_DP':
-        return { label: 'Bayar DP (30%)', style: 'bg-amber-50 text-amber-600 border-amber-100' };
+        return hasProof
+          ? { label: 'DP Ditolak (Kirim Ulang)', style: 'bg-red-50 text-red-650 border-red-100 font-bold animate-pulse' }
+          : { label: 'Bayar DP (30%)', style: 'bg-amber-50 text-amber-600 border-amber-100' };
       case 'WAITING_ADMIN_DP':
         return { label: 'Verifikasi DP', style: 'bg-blue-50 text-blue-600 border-blue-100' };
       case 'WAITING_HARVEST':
@@ -61,7 +64,9 @@ export default function ActiveOrders({ orders, onTrack, onPayPelunasan, onOpenFo
       case 'HARVEST_CONFIRMED_SELLER':
         return { label: 'Siap Pelunasan', style: 'bg-teal-50 text-teal-600 border-teal-100' };
       case 'WAITING_FINAL_PAYMENT':
-        return { label: 'Menunggu Pelunasan', style: 'bg-indigo-50 text-indigo-600 border-indigo-100' };
+        return hasProof
+          ? { label: 'Pelunasan Ditolak (Kirim Ulang)', style: 'bg-red-50 text-red-650 border-red-100 font-bold animate-pulse' }
+          : { label: 'Menunggu Pelunasan', style: 'bg-indigo-50 text-indigo-600 border-indigo-100' };
       case 'WAITING_ADMIN_FINAL':
         return { label: 'Verifikasi Lunas', style: 'bg-violet-50 text-violet-600 border-violet-100' };
       case 'SHIPPING':
@@ -69,7 +74,7 @@ export default function ActiveOrders({ orders, onTrack, onPayPelunasan, onOpenFo
       case 'DELIVERED':
         return { label: 'Tiba di Lokasi', style: 'bg-pink-50 text-pink-600 border-pink-100' };
       default:
-        return { label: status, style: 'bg-slate-50 text-slate-600 border-slate-100' };
+        return { label: order.status, style: 'bg-slate-50 text-slate-600 border-slate-100' };
     }
   };
 
@@ -91,7 +96,7 @@ export default function ActiveOrders({ orders, onTrack, onPayPelunasan, onOpenFo
              </div>
              <h3 className="text-xl sm:text-2xl font-black text-slate-800 uppercase tracking-tight mb-2">Belum Ada Transaksi</h3>
              <p className="text-xs sm:text-sm text-slate-400 font-medium max-w-sm leading-relaxed">
-               Anda belum memiliki pesanan aktif. Mulai pre-order pangan segar hasil panen optimal hari ini!
+                Anda belum memiliki pesanan aktif. Mulai pre-order pangan segar hasil panen optimal hari ini!
              </p>
              <button 
                onClick={() => navigate('/buyer/preorder')}
@@ -103,7 +108,7 @@ export default function ActiveOrders({ orders, onTrack, onPayPelunasan, onOpenFo
         ) : (
           <div className="space-y-6">
              {activeOrdersList.map((order) => {
-               const badge = getStatusBadge(order.status);
+                const badge = getStatusBadge(order);
                return (
                  <div key={order.id} className="bg-white rounded-[24px] sm:rounded-[36px] border border-slate-100 shadow-sm hover:shadow-md transition-all group overflow-hidden">
                     <div className="p-5 sm:p-8">

@@ -1,24 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, Plus, Trash2, Edit2, CheckCircle2, Home, Briefcase, Heart, X, Check, AlertCircle } from 'lucide-react';
-
-interface Address {
-  id: string;
-  type: string;
-  name: string;
-  phone: string;
-  street: string;
-  district: string;
-  city: string;
-  isDefault: boolean;
-}
-
-const DEFAULT_ADDRESSES: Address[] = [
-  { id: '1', type: 'Rumah', name: 'Andi Wijaya', phone: '0812-3456-7890', street: 'Jl. Melati No. 12, Perumahan Asri', district: 'Cilandak', city: 'Jakarta Selatan', isDefault: true },
-  { id: '2', type: 'Kantor', name: 'Andi Wijaya (Office)', phone: '0812-3456-7890', street: 'Sudirman Central Business District, Tower 2', district: 'Senayan', city: 'Jakarta Pusat', isDefault: false },
-  { id: '3', type: 'Apartemen', name: 'Andi Wijaya', phone: '0899-7766-5544', street: 'Gading Marina Apartment, Lt 15', district: 'Kelapa Gading', city: 'Jakarta Utara', isDefault: false },
-];
+import { useAuth } from '../../contexts/AuthContext';
+import { AddressService, Address } from '../../services/AddressService';
 
 export default function AddressPage() {
+  const { user } = useAuth();
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
@@ -42,24 +28,15 @@ export default function AddressPage() {
   });
 
   useEffect(() => {
-    const raw = localStorage.getItem('user_addresses');
-    if (raw) {
-      try {
-        setAddresses(JSON.parse(raw));
-      } catch (e) {
-        setAddresses(DEFAULT_ADDRESSES);
-        localStorage.setItem('user_addresses', JSON.stringify(DEFAULT_ADDRESSES));
-      }
-    } else {
-      setAddresses(DEFAULT_ADDRESSES);
-      localStorage.setItem('user_addresses', JSON.stringify(DEFAULT_ADDRESSES));
+    if (user?.id) {
+      AddressService.getAddresses(user.id)
+        .then(setAddresses)
+        .catch(err => {
+          console.error("Failed to load addresses", err);
+          showToastMsg("Gagal memuat daftar alamat.", "error");
+        });
     }
-  }, []);
-
-  const saveToLocalStorage = (newAddresses: Address[]) => {
-    setAddresses(newAddresses);
-    localStorage.setItem('user_addresses', JSON.stringify(newAddresses));
-  };
+  }, [user?.id]);
 
   const showToastMsg = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type, show: true });
@@ -101,70 +78,80 @@ export default function AddressPage() {
     setIsModalOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !phone.trim() || !street.trim() || !district.trim() || !city.trim()) {
       showToastMsg('Harap lengkapi semua bidang!', 'error');
       return;
     }
+    if (!user?.id) return;
 
-    if (editingAddress) {
-      // Edit mode
-      const updated = addresses.map(addr => {
-        if (addr.id === editingAddress.id) {
-          return {
-            ...addr,
-            type,
-            name,
-            phone,
-            street,
-            district,
-            city
-          };
-        }
-        return addr;
-      });
-      saveToLocalStorage(updated);
-      showToastMsg('Alamat berhasil diperbarui!');
-    } else {
-      // Add mode
-      const newAddr: Address = {
-        id: String(Date.now()),
-        type,
-        name,
-        phone,
-        street,
-        district,
-        city,
-        isDefault: addresses.length === 0 // If it's the first address, make it default
-      };
-      saveToLocalStorage([...addresses, newAddr]);
-      showToastMsg('Alamat baru berhasil ditambahkan!');
+    try {
+      if (editingAddress) {
+        // Edit mode
+        const updatedAddr = await AddressService.updateAddress(editingAddress.id, {
+          type,
+          name,
+          phone,
+          street,
+          district,
+          city,
+          isDefault: editingAddress.isDefault
+        });
+        setAddresses(addresses.map(addr => addr.id === editingAddress.id ? updatedAddr : addr));
+        showToastMsg('Alamat berhasil diperbarui!');
+      } else {
+        // Add mode
+        const newAddr = await AddressService.createAddress({
+          userId: user.id,
+          type,
+          name,
+          phone,
+          street,
+          district,
+          city,
+          isDefault: addresses.length === 0
+        });
+        setAddresses([...addresses, newAddr]);
+        showToastMsg('Alamat baru berhasil ditambahkan!');
+      }
+      setIsModalOpen(false);
+    } catch (err) {
+      console.error(err);
+      showToastMsg('Gagal menyimpan alamat.', 'error');
     }
-    setIsModalOpen(false);
   };
 
-  const handleDelete = (id: string) => {
-    const addrToDelete = addresses.find(a => a.id === id);
-    if (!addrToDelete) return;
-    
-    let updated = addresses.filter(a => a.id !== id);
-    // If we deleted the default address, and we still have other addresses, make the first one default
-    if (addrToDelete.isDefault && updated.length > 0) {
-      updated[0].isDefault = true;
+  const handleDelete = async (id: string) => {
+    try {
+      await AddressService.deleteAddress(id);
+      const addrToDelete = addresses.find(a => a.id === id);
+      let updated = addresses.filter(a => a.id !== id);
+      if (addrToDelete?.isDefault && updated.length > 0) {
+        updated[0].isDefault = true;
+      }
+      setAddresses(updated);
+      showToastMsg('Alamat berhasil dihapus!');
+      setDeleteConfirmId(null);
+    } catch (err) {
+      console.error(err);
+      showToastMsg('Gagal menghapus alamat.', 'error');
     }
-    saveToLocalStorage(updated);
-    showToastMsg('Alamat berhasil dihapus!');
-    setDeleteConfirmId(null);
   };
 
-  const handleSetDefault = (id: string) => {
-    const updated = addresses.map(addr => ({
-      ...addr,
-      isDefault: addr.id === id
-    }));
-    saveToLocalStorage(updated);
-    showToastMsg('Alamat utama berhasil diubah!');
+  const handleSetDefault = async (id: string) => {
+    try {
+      await AddressService.setDefault(id);
+      const updated = addresses.map(addr => ({
+        ...addr,
+        isDefault: addr.id === id
+      }));
+      setAddresses(updated);
+      showToastMsg('Alamat utama berhasil diubah!');
+    } catch (err) {
+      console.error(err);
+      showToastMsg('Gagal mengubah alamat utama.', 'error');
+    }
   };
 
   return (

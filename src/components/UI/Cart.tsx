@@ -19,17 +19,20 @@ import {
   Edit2
 } from 'lucide-react';
 import { useCart } from '../../contexts/CartContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { ensureDayMonthYear } from '../../utils/harvestHelper';
 import { CartItem, Promo } from '../../types';
 import { PromoService } from '../../services/PromoService';
+import { AddressService } from '../../services/AddressService';
 
 interface CartProps {
   onBack: () => void;
-  onCheckout: (selectedItems: CartItem[], appliedPromo?: Promo | null, selectedBank?: string) => void;
+  onCheckout: (selectedItems: CartItem[], appliedPromo?: Promo | null, selectedBank?: string, shippingAddress?: string) => void;
 }
 
 export default function Cart({ onBack, onCheckout }: CartProps) {
   const { cartItems, removeFromCart, updateCartQuantity } = useCart();
+  const { user } = useAuth();
   const [tempQuantities, setTempQuantities] = React.useState<Record<string, string>>({});
   const [toast, setToast] = React.useState<{ message: string; type: 'success' | 'error'; show: boolean }>({ message: '', type: 'success', show: false });
 
@@ -70,8 +73,8 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
     e.stopPropagation();
     setEditingAddress(null);
     setAddrType('Rumah');
-    setAddrName('');
-    setAddrPhone('');
+    setAddrName(user?.pic_name || user?.name || '');
+    setAddrPhone(user?.phone || '');
     setAddrStreet('');
     setAddrDistrict('');
     setAddrCity('');
@@ -90,58 +93,75 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
     setAddressModalView('form');
   };
 
-  const handleDeleteAddress = (e: React.MouseEvent, id: string | number) => {
+  const handleDeleteAddress = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    const updated = addresses.filter((a: any) => a.id !== id);
-    const deletedAddr = addresses.find((a: any) => a.id === id);
-    if (deletedAddr?.isDefault && updated.length > 0) {
-      updated[0].isDefault = true;
+    try {
+      await AddressService.deleteAddress(id);
+      const updated = addresses.filter((a: any) => a.id !== id);
+      const deletedAddr = addresses.find((a: any) => a.id === id);
+      if (deletedAddr?.isDefault && updated.length > 0) {
+        updated[0].isDefault = true;
+      }
+      setAddresses(updated);
+      if (selectedAddress?.id === id) {
+        setSelectedAddress(updated.find((a: any) => a.isDefault) || updated[0] || null);
+      }
+      showToastMsg('Alamat berhasil dihapus!');
+    } catch (err) {
+      console.error(err);
+      showToastMsg('Gagal menghapus alamat.', 'error');
     }
-    saveAddresses(updated);
-    showToastMsg('Alamat berhasil dihapus!');
   };
 
-  const handleAddressSubmit = (e: React.FormEvent) => {
+  const handleAddressSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!addrName.trim() || !addrPhone.trim() || !addrStreet.trim() || !addrDistrict.trim() || !addrCity.trim()) {
       showToastMsg('Harap lengkapi semua bidang!', 'error');
       return;
     }
+    if (!user?.id) return;
 
-    if (editingAddress) {
-      // Edit
-      const updated = addresses.map((addr: any) => {
-        if (addr.id === editingAddress.id) {
-          return {
-            ...addr,
-            type: addrType,
-            name: addrName.trim(),
-            phone: addrPhone.trim(),
-            street: addrStreet.trim(),
-            district: addrDistrict.trim(),
-            city: addrCity.trim(),
-          };
+    try {
+      if (editingAddress) {
+        // Edit
+        const updatedAddr = await AddressService.updateAddress(editingAddress.id, {
+          type: addrType,
+          name: addrName.trim(),
+          phone: addrPhone.trim(),
+          street: addrStreet.trim(),
+          district: addrDistrict.trim(),
+          city: addrCity.trim(),
+          isDefault: editingAddress.isDefault
+        });
+        const newAddrs = addresses.map((addr: any) => addr.id === editingAddress.id ? updatedAddr : addr);
+        setAddresses(newAddrs);
+        if (selectedAddress?.id === editingAddress.id) {
+          setSelectedAddress(updatedAddr);
         }
-        return addr;
-      });
-      saveAddresses(updated);
-      showToastMsg('Alamat berhasil diperbarui!');
-    } else {
-      // Add
-      const newAddr = {
-        id: String(Date.now()),
-        type: addrType,
-        name: addrName.trim(),
-        phone: addrPhone.trim(),
-        street: addrStreet.trim(),
-        district: addrDistrict.trim(),
-        city: addrCity.trim(),
-        isDefault: addresses.length === 0
-      };
-      saveAddresses([...addresses, newAddr]);
-      showToastMsg('Alamat baru berhasil ditambahkan!');
+        showToastMsg('Alamat berhasil diperbarui!');
+      } else {
+        // Add
+        const newAddr = await AddressService.createAddress({
+          userId: user.id,
+          type: addrType,
+          name: addrName.trim(),
+          phone: addrPhone.trim(),
+          street: addrStreet.trim(),
+          district: addrDistrict.trim(),
+          city: addrCity.trim(),
+          isDefault: addresses.length === 0
+        });
+        setAddresses([...addresses, newAddr]);
+        if (addresses.length === 0) {
+          setSelectedAddress(newAddr);
+        }
+        showToastMsg('Alamat baru berhasil ditambahkan!');
+      }
+      setAddressModalView('list');
+    } catch (err) {
+      console.error(err);
+      showToastMsg('Gagal menyimpan alamat.', 'error');
     }
-    setAddressModalView('list');
   };
 
   // Promo states
@@ -153,6 +173,7 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
   // Dynamic Bank Accounts states
   const [paymentAccounts, setPaymentAccounts] = React.useState<any[]>([]);
   const [selectedPaymentAccount, setSelectedPaymentAccount] = React.useState<any>(null);
+  const [deleteConfirm, setDeleteConfirm] = React.useState<{ id: string; date?: string; name: string } | null>(null);
 
   const showToastMsg = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type, show: true });
@@ -170,33 +191,8 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
     }
   }, [cartItems.length]);
 
-  // Load addresses & promos
+  // Load promos & bank accounts
   React.useEffect(() => {
-    // Addresses
-    const rawAddr = localStorage.getItem('user_addresses');
-    if (rawAddr) {
-      try {
-        const parsed = JSON.parse(rawAddr);
-        setAddresses(parsed);
-        const def = parsed.find((a: any) => a.isDefault) || parsed[0];
-        setSelectedAddress(def);
-      } catch (e) {
-        console.error(e);
-      }
-    } else {
-      const fallback = {
-        type: 'Rumah',
-        name: 'Andi Wijaya',
-        phone: '0812-3456-7890',
-        street: 'Jl. Melati No. 12, Perumahan Asri',
-        district: 'Cilandak',
-        city: 'Jakarta Selatan',
-        isDefault: true
-      };
-      setSelectedAddress(fallback);
-      setAddresses([fallback]);
-    }
-
     // Promos
     PromoService.getAllPromos().then(data => {
       setAvailablePromos(data);
@@ -220,6 +216,19 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
     setPaymentAccounts(loadedBanks);
     setSelectedPaymentAccount(loadedBanks[0]);
   }, []);
+
+  // Load dynamic user addresses
+  React.useEffect(() => {
+    if (user?.id) {
+      AddressService.getAddresses(user.id)
+        .then(data => {
+          setAddresses(data);
+          const def = data.find((a: any) => a.isDefault) || data[0] || null;
+          setSelectedAddress(def);
+        })
+        .catch(e => console.error("Failed to load addresses", e));
+    }
+  }, [user?.id]);
 
   const toggleSelectItem = (id: string, selectedHarvestDate?: string) => {
     const key = `${id}-${selectedHarvestDate || ''}`;
@@ -361,57 +370,60 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
                           <p className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider">{item.quantity} {item.unit} x {formatter.format(item.price)}</p>
                           
                           {/* Interactive Quantity Selector in Cart */}
-                          <div className="flex items-center bg-slate-50 border border-slate-100 rounded-lg p-0.5 shadow-xs shrink-0 scale-90 sm:scale-100 origin-left">
-                            <button 
-                              onClick={() => {
-                                const newQty = item.quantity - 1;
-                                updateCartQuantity(item.id, newQty, item.selectedHarvestDate);
-                                setTempQuantities(prev => ({ ...prev, [key]: String(newQty) }));
-                              }}
-                              disabled={item.quantity <= 1}
-                              className="p-1 text-slate-400 hover:text-[#1a4d2e] hover:bg-white rounded-md transition-all border-0 bg-transparent cursor-pointer disabled:opacity-40"
-                            >
-                              <Minus size={12} />
-                            </button>
-                            <input 
-                              type="text"
-                              value={tempQuantities[key] !== undefined ? tempQuantities[key] : String(item.quantity)}
-                              onChange={(e) => {
-                                const valStr = e.target.value.replace(/[^0-9]/g, '');
-                                setTempQuantities(prev => ({ ...prev, [key]: valStr }));
-                                if (valStr !== '') {
-                                  const val = parseInt(valStr, 10);
-                                  if (val > item.stock) {
-                                    showToastMsg(`Stok tidak mencukupi! Stok maksimal tersedia: ${item.stock} ${item.unit}`, 'error');
-                                    updateCartQuantity(item.id, item.stock, item.selectedHarvestDate);
-                                    setTempQuantities(prev => ({ ...prev, [key]: String(item.stock) }));
-                                  } else {
-                                    updateCartQuantity(item.id, Math.max(1, val), item.selectedHarvestDate);
-                                  }
-                                }
-                              }}
-                              onBlur={() => {
-                                if (tempQuantities[key] === '' || tempQuantities[key] === '0') {
-                                  updateCartQuantity(item.id, 1, item.selectedHarvestDate);
-                                  setTempQuantities(prev => ({ ...prev, [key]: '1' }));
-                                }
-                              }}
-                              className="w-10 bg-white border border-slate-200 rounded-md py-0.5 text-xs font-black text-slate-800 text-center outline-none focus:ring-1 focus:ring-[#1a4d2e] focus:border-[#1a4d2e] transition-all"
-                            />
-                            <button 
-                              onClick={() => {
-                                if (item.quantity >= item.stock) {
-                                  showToastMsg(`Stok tidak mencukupi! Stok maksimal tersedia: ${item.stock} ${item.unit}`, 'error');
-                                } else {
-                                  const newQty = item.quantity + 1;
+                          <div className="flex items-center gap-1.5 shrink-0 scale-90 sm:scale-100 origin-left">
+                            <span className="text-[10px] sm:text-xs font-bold text-slate-500">Jumlah:</span>
+                            <div className="flex items-center bg-slate-50 border border-slate-100 rounded-lg p-0.5 shadow-xs">
+                              <button 
+                                onClick={() => {
+                                  const newQty = item.quantity - 1;
                                   updateCartQuantity(item.id, newQty, item.selectedHarvestDate);
                                   setTempQuantities(prev => ({ ...prev, [key]: String(newQty) }));
-                                }
-                              }}
-                              className="p-1 text-slate-400 hover:text-[#1a4d2e] hover:bg-white rounded-md transition-all border-0 bg-transparent cursor-pointer"
-                            >
-                              <Plus size={12} />
-                            </button>
+                                }}
+                                disabled={item.quantity <= 1}
+                                className="p-1 text-slate-400 hover:text-[#1a4d2e] hover:bg-white rounded-md transition-all border-0 bg-transparent cursor-pointer disabled:opacity-40"
+                              >
+                                <Minus size={12} />
+                              </button>
+                              <input 
+                                type="text"
+                                value={tempQuantities[key] !== undefined ? tempQuantities[key] : String(item.quantity)}
+                                onChange={(e) => {
+                                  const valStr = e.target.value.replace(/[^0-9]/g, '');
+                                  setTempQuantities(prev => ({ ...prev, [key]: valStr }));
+                                  if (valStr !== '') {
+                                    const val = parseInt(valStr, 10);
+                                    if (val > item.stock) {
+                                      showToastMsg(`Stok tidak mencukupi! Stok maksimal tersedia: ${item.stock} ${item.unit}`, 'error');
+                                      updateCartQuantity(item.id, item.stock, item.selectedHarvestDate);
+                                      setTempQuantities(prev => ({ ...prev, [key]: String(item.stock) }));
+                                    } else {
+                                      updateCartQuantity(item.id, Math.max(1, val), item.selectedHarvestDate);
+                                    }
+                                  }
+                                }}
+                                onBlur={() => {
+                                  if (tempQuantities[key] === '' || tempQuantities[key] === '0') {
+                                    updateCartQuantity(item.id, 1, item.selectedHarvestDate);
+                                    setTempQuantities(prev => ({ ...prev, [key]: '1' }));
+                                  }
+                                }}
+                                className="w-10 bg-white border border-slate-200 rounded-md py-0.5 text-xs font-black text-slate-800 text-center outline-none focus:ring-1 focus:ring-[#1a4d2e] focus:border-[#1a4d2e] transition-all"
+                              />
+                              <button 
+                                onClick={() => {
+                                  if (item.quantity >= item.stock) {
+                                    showToastMsg(`Stok tidak mencukupi! Stok maksimal tersedia: ${item.stock} ${item.unit}`, 'error');
+                                  } else {
+                                    const newQty = item.quantity + 1;
+                                    updateCartQuantity(item.id, newQty, item.selectedHarvestDate);
+                                    setTempQuantities(prev => ({ ...prev, [key]: String(newQty) }));
+                                  }
+                                }}
+                                className="p-1 text-slate-400 hover:text-[#1a4d2e] hover:bg-white rounded-md transition-all border-0 bg-transparent cursor-pointer"
+                              >
+                                <Plus size={12} />
+                              </button>
+                            </div>
                           </div>
                           <span className="text-[9px] text-slate-450 font-bold uppercase tracking-wider bg-slate-100 px-2 py-0.5 rounded">Maks: {item.stock}</span>
                         </div>
@@ -429,7 +441,7 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
                                <span className="text-[8.5px] sm:text-[9.5px] font-black uppercase tracking-wider">Ready for Harvest</span>
                             </div>
                             <button 
-                              onClick={() => removeFromCart(item.id, item.selectedHarvestDate)}
+                              onClick={() => setDeleteConfirm({ id: item.id, date: item.selectedHarvestDate, name: item.name })}
                               className="text-[9px] sm:text-[10px] font-bold text-red-500 transition-opacity flex items-center gap-1 cursor-pointer border-0 bg-transparent opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                             >
                               <Trash2 size={11} /> Hapus
@@ -481,7 +493,12 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
                     const bankStr = selectedPaymentAccount 
                       ? `${selectedPaymentAccount.bankName} - ${selectedPaymentAccount.accountNumber} a.n ${selectedPaymentAccount.accountHolder}`
                       : 'BNI - 1384354499 a.n SRIWIJAYA DIGITAL INDONESIA';
-                    onCheckout(selectedCartItems, appliedPromo, bankStr);
+                    
+                    const addressStr = selectedAddress
+                      ? `${selectedAddress.name} (${selectedAddress.phone}) - ${selectedAddress.street}, Kec. ${selectedAddress.district}, ${selectedAddress.city}`
+                      : undefined;
+
+                    onCheckout(selectedCartItems, appliedPromo, bankStr, addressStr);
                   }}
                   disabled={selectedCartItems.length === 0}
                   className={`w-full py-4 rounded-xl sm:rounded-[20px] font-black text-sm uppercase tracking-wider shadow-lg transition-all mt-4 border-0 cursor-pointer ${
@@ -505,14 +522,26 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
                   <MapPin size={18} className="text-[#1a4d2e]" />
                   Alamat Pengiriman
                 </h3>
-                {addresses.length > 0 && (
-                  <button 
-                    onClick={() => setIsAddressModalOpen(true)}
-                    className="text-xs font-bold text-emerald-700 hover:underline bg-transparent border-0 cursor-pointer"
-                  >
-                    Ubah
-                  </button>
-                )}
+                <button 
+                  onClick={() => {
+                    setIsAddressModalOpen(true);
+                    if (addresses.length === 0) {
+                      setEditingAddress(null);
+                      setAddrType('Rumah');
+                      setAddrName(user?.pic_name || user?.name || '');
+                      setAddrPhone(user?.phone || '');
+                      setAddrStreet('');
+                      setAddrDistrict('');
+                      setAddrCity('');
+                      setAddressModalView('form');
+                    } else {
+                      setAddressModalView('list');
+                    }
+                  }}
+                  className="text-xs font-bold text-emerald-700 hover:underline bg-transparent border-0 cursor-pointer"
+                >
+                  {addresses.length > 0 ? 'Ubah' : 'Tambah Alamat'}
+                </button>
               </div>
               {selectedAddress ? (
                 <div className="bg-slate-50 p-4 sm:p-6 rounded-2xl border border-slate-100">
@@ -533,7 +562,7 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
               )}
             </div>
 
-            {/* Voucher / Kode Promo */}
+            {/* Voucher / Kode Promo - Hidden
             <div className="bg-white rounded-[24px] sm:rounded-[32px] p-5 sm:p-8 border border-slate-100 shadow-sm">
               <div className="flex items-center gap-2 mb-4">
                 <Ticket size={18} className="text-[#1a4d2e]" />
@@ -577,6 +606,7 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
                 )}
               </div>
             </div>
+            */}
 
             {/* Metode Pembayaran */}
             <div className="bg-white rounded-[24px] sm:rounded-[32px] p-5 sm:p-8 border border-slate-100 shadow-sm">
@@ -669,48 +699,56 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
             {addressModalView === 'list' ? (
               <div className="p-8 max-h-[450px] overflow-y-auto custom-scrollbar space-y-4">
                 <div className="space-y-3">
-                  {addresses.map((addr, index) => (
-                    <div 
-                      key={addr.id || index}
-                      className={`p-4 rounded-2xl border transition-all flex items-center justify-between hover:border-emerald-350 hover:bg-emerald-50/5 ${
-                        selectedAddress && (selectedAddress.id === addr.id || selectedAddress.street === addr.street)
-                          ? 'border-emerald-600 bg-emerald-50/10 ring-2 ring-emerald-50'
-                          : 'border-slate-100 bg-slate-50'
-                      }`}
-                    >
-                      <div 
-                        onClick={() => selectAddress(addr)}
-                        className="flex-1 cursor-pointer text-left mr-4"
-                      >
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <span className="text-[9px] font-black uppercase text-slate-700 bg-white border border-slate-100 px-1.5 py-0.5 rounded">{addr.type}</span>
-                          {addr.isDefault && (
-                            <span className="text-[8px] font-black uppercase text-emerald-600 tracking-wider bg-emerald-50 px-1.5 py-0.5 rounded">Utama</span>
-                          )}
-                        </div>
-                        <p className="text-xs font-bold text-slate-800">{addr.name}</p>
-                        <p className="text-[11px] text-slate-500 mt-0.5 leading-normal">{addr.street}, {addr.district}, {addr.city}</p>
-                        <p className="text-[10px] text-slate-400 mt-0.5">{addr.phone}</p>
-                      </div>
-
-                      <div className="flex flex-col gap-2 shrink-0">
-                        <button 
-                          onClick={(e) => openEditAddressForm(e, addr)}
-                          className="p-2 text-slate-400 hover:text-emerald-700 hover:bg-white rounded-lg transition-colors border-0 bg-transparent cursor-pointer"
-                          title="Edit Alamat"
-                        >
-                          <Edit2 size={13} />
-                        </button>
-                        <button 
-                          onClick={(e) => handleDeleteAddress(e, addr.id)}
-                          className="p-2 text-slate-350 hover:text-red-500 hover:bg-white rounded-lg transition-colors border-0 bg-transparent cursor-pointer"
-                          title="Hapus Alamat"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
+                  {addresses.length === 0 ? (
+                    <div className="text-center py-8 px-4 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col items-center">
+                      <MapPin size={32} className="text-slate-300 mb-2" />
+                      <p className="text-xs font-bold text-slate-700">Belum ada alamat pengiriman</p>
+                      <p className="text-[10px] text-slate-400 font-medium mt-1">Silakan tambahkan alamat baru untuk pengiriman pangan segar Anda.</p>
                     </div>
-                  ))}
+                  ) : (
+                    addresses.map((addr, index) => (
+                      <div 
+                        key={addr.id || index}
+                        className={`p-4 rounded-2xl border transition-all flex items-center justify-between hover:border-emerald-350 hover:bg-emerald-50/5 ${
+                          selectedAddress && (selectedAddress.id === addr.id || selectedAddress.street === addr.street)
+                            ? 'border-emerald-600 bg-emerald-50/10 ring-2 ring-emerald-50'
+                            : 'border-slate-100 bg-slate-50'
+                        }`}
+                      >
+                        <div 
+                          onClick={() => selectAddress(addr)}
+                          className="flex-1 cursor-pointer text-left mr-4"
+                        >
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className="text-[9px] font-black uppercase text-slate-700 bg-white border border-slate-100 px-1.5 py-0.5 rounded">{addr.type}</span>
+                            {addr.isDefault && (
+                              <span className="text-[8px] font-black uppercase text-emerald-600 tracking-wider bg-emerald-50 px-1.5 py-0.5 rounded">Utama</span>
+                            )}
+                          </div>
+                          <p className="text-xs font-bold text-slate-800">{addr.name}</p>
+                          <p className="text-[11px] text-slate-500 mt-0.5 leading-normal">{addr.street}, {addr.district}, {addr.city}</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5">{addr.phone}</p>
+                        </div>
+
+                        <div className="flex flex-col gap-2 shrink-0">
+                          <button 
+                            onClick={(e) => openEditAddressForm(e, addr)}
+                            className="p-2 text-slate-400 hover:text-emerald-700 hover:bg-white rounded-lg transition-colors border-0 bg-transparent cursor-pointer"
+                            title="Edit Alamat"
+                          >
+                            <Edit2 size={13} />
+                          </button>
+                          <button 
+                            onClick={(e) => handleDeleteAddress(e, addr.id)}
+                            className="p-2 text-slate-350 hover:text-red-500 hover:bg-white rounded-lg transition-colors border-0 bg-transparent cursor-pointer"
+                            title="Hapus Alamat"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
 
                 <button 
@@ -815,6 +853,42 @@ export default function Cart({ onBack, onCheckout }: CartProps) {
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setDeleteConfirm(null)} />
+          <div className="relative bg-white rounded-[32px] w-full max-w-[400px] overflow-hidden shadow-2xl border border-slate-100 p-6 text-center animate-in fade-in zoom-in-95 duration-200">
+             <div className="w-14 h-14 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trash2 size={24} />
+             </div>
+             <h3 className="text-lg font-black text-slate-800 font-display mb-2">Hapus Produk?</h3>
+             <p className="text-xs text-slate-500 font-medium mb-6 leading-relaxed">
+                Apakah Anda yakin ingin menghapus <span className="font-extrabold text-slate-700">"{deleteConfirm.name}"</span> dari keranjang belanja Anda?
+             </p>
+             <div className="flex gap-3 justify-center">
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirm(null)}
+                  className="px-5 py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-500 rounded-xl text-xs font-bold transition-all border-0 cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    removeFromCart(deleteConfirm.id, deleteConfirm.date);
+                    setDeleteConfirm(null);
+                    showToastMsg('Produk berhasil dihapus dari keranjang!');
+                  }}
+                  className="px-5 py-2.5 bg-red-500 hover:bg-red-650 text-white rounded-xl text-xs font-bold shadow-lg shadow-red-500/10 transition-all border-0 cursor-pointer"
+                >
+                  Ya, Hapus
+                </button>
+             </div>
           </div>
         </div>
       )}

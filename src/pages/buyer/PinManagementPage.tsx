@@ -1,16 +1,31 @@
-import React from 'react';
-import { Fingerprint, ShieldAlert, Key, ChevronLeft, CheckCircle2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Fingerprint, ShieldAlert, Key, ChevronLeft, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { AuthService } from '../../services/AuthService';
 
 interface PinManagementProps {
   onBack: () => void;
 }
 
 export default function PinManagementPage({ onBack }: PinManagementProps) {
-  const [pin, setPin] = React.useState(['', '', '', '', '', '']);
-  const [step, setStep] = React.useState<'current' | 'new' | 'confirm' | 'success'>('new'); // simplify for demo
+  const { user } = useAuth();
+  const [pin, setPin] = useState(['', '', '', '', '', '']);
+  const [tempPin, setTempPin] = useState('');
+  const [step, setStep] = useState<'new' | 'confirm' | 'success'>('new');
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error'; show: boolean }>({ message: '', type: 'success', show: false });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const showToastMsg = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type, show: true });
+    setTimeout(() => {
+      setToast(prev => ({ ...prev, show: false }));
+    }, 3000);
+  };
 
   const handleInput = (idx: number, val: string) => {
-    if (val.length > 1) return;
+    // Only accept numeric inputs
+    if (val && !/^\d$/.test(val)) return;
+    
     const newPin = [...pin];
     newPin[idx] = val;
     setPin(newPin);
@@ -22,14 +37,63 @@ export default function PinManagementPage({ onBack }: PinManagementProps) {
     }
   };
 
+  const handleKeyDown = (idx: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !pin[idx] && idx > 0) {
+      const prev = document.getElementById(`pin-${idx - 1}`);
+      prev?.focus();
+    }
+  };
+
+  const handleAction = async () => {
+    const enteredPin = pin.join('');
+    if (enteredPin.length < 6) {
+      showToastMsg('Harap masukkan 6 digit PIN lengkap!', 'error');
+      return;
+    }
+
+    if (step === 'new') {
+      setTempPin(enteredPin);
+      setPin(['', '', '', '', '', '']);
+      setStep('confirm');
+      // Focus first input of confirm step
+      setTimeout(() => {
+        document.getElementById('pin-0')?.focus();
+      }, 100);
+    } else if (step === 'confirm') {
+      if (enteredPin !== tempPin) {
+        showToastMsg('Konfirmasi PIN tidak cocok! Silakan coba lagi.', 'error');
+        setPin(['', '', '', '', '', '']);
+        // Focus first input
+        setTimeout(() => {
+          document.getElementById('pin-0')?.focus();
+        }, 100);
+        return;
+      }
+
+      setIsSubmitting(true);
+      try {
+        if (!user?.id) return;
+        await AuthService.changePin(user.id, enteredPin);
+        setStep('success');
+      } catch (err: any) {
+        const errMsg = err.response?.data?.message || 'Gagal menyimpan PIN Keamanan.';
+        showToastMsg(errMsg, 'error');
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
+  };
+
+  const isPinComplete = pin.every(d => d !== '');
+
   return (
-    <div className="flex-1 bg-slate-50 overflow-y-auto custom-scrollbar p-4 md:p-8">
+    <div className="flex-1 bg-slate-50 overflow-y-auto custom-scrollbar p-4 md:p-8 relative">
       <div className="max-w-xl mx-auto space-y-6 md:space-y-8">
         {/* Header */}
         <div className="flex items-center gap-4">
            <button 
              onClick={onBack}
-             className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center hover:bg-white rounded-xl md:rounded-2xl transition-all text-slate-400 hover:text-slate-800 border border-slate-100 bg-white/50 shadow-sm"
+             className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center hover:bg-white rounded-xl md:rounded-2xl transition-all text-slate-400 hover:text-slate-800 border border-slate-100 bg-white/50 shadow-sm cursor-pointer"
            >
              <ChevronLeft size={20} className="md:w-6 md:h-6" />
            </button>
@@ -45,7 +109,7 @@ export default function PinManagementPage({ onBack }: PinManagementProps) {
               <p className="text-slate-400 text-xs font-medium mb-8 md:mb-10 leading-relaxed uppercase tracking-widest px-4">Gunakan PIN ini untuk setiap transaksi di PanganDesa.</p>
               <button 
                 onClick={onBack}
-                className="w-full bg-brand-900 text-white py-4 md:py-5 rounded-xl md:rounded-[24px] text-xs md:text-sm font-black uppercase tracking-widest shadow-xl shadow-brand-900/20 hover:bg-black active:scale-95 transition-all"
+                className="w-full bg-brand-900 text-white py-4 md:py-5 rounded-xl md:rounded-[24px] text-xs md:text-sm font-black uppercase tracking-widest shadow-xl shadow-brand-900/20 hover:bg-black active:scale-95 transition-all border-0 cursor-pointer"
               >
                 Selesai
               </button>
@@ -73,6 +137,7 @@ export default function PinManagementPage({ onBack }: PinManagementProps) {
                     maxLength={1}
                     value={digit}
                     onChange={(e) => handleInput(idx, e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(idx, e)}
                     className="w-10 h-14 md:w-14 md:h-20 bg-slate-50 border-2 border-slate-100 rounded-xl md:rounded-2xl text-center text-2xl md:text-3xl font-black focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-500/5 outline-none transition-all shadow-inner"
                   />
                 ))}
@@ -80,14 +145,15 @@ export default function PinManagementPage({ onBack }: PinManagementProps) {
 
              <div className="space-y-4 md:space-y-6">
                 <button 
-                  onClick={() => setStep('confirm')}
-                  className={`w-full py-4 md:py-5 rounded-xl md:rounded-[24px] text-xs md:text-sm font-black uppercase tracking-widest transition-all ${
-                     pin.every(d => d !== '') 
-                      ? 'bg-brand-900 text-white shadow-xl shadow-brand-900/20 active:scale-95' 
+                  onClick={handleAction}
+                  disabled={!isPinComplete || isSubmitting}
+                  className={`w-full py-4 md:py-5 rounded-xl md:rounded-[24px] text-xs md:text-sm font-black uppercase tracking-widest transition-all border-0 ${
+                     isPinComplete && !isSubmitting
+                      ? 'bg-brand-900 text-white shadow-xl shadow-brand-900/20 active:scale-95 cursor-pointer' 
                       : 'bg-slate-100 text-slate-300 cursor-not-allowed'
                   }`}
                 >
-                   Lanjutkan
+                   {isSubmitting ? 'Memproses...' : 'Lanjutkan'}
                 </button>
                 
                 <div className="bg-orange-50 p-4 md:p-6 rounded-[24px] md:rounded-[32px] border border-orange-100 flex gap-3 md:gap-4 items-start">
@@ -105,6 +171,25 @@ export default function PinManagementPage({ onBack }: PinManagementProps) {
            <p className="text-[9px] md:text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">Hardware Secured with AES-256</p>
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {toast.show && (
+        <div className={`fixed bottom-8 right-8 z-[100] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-xl shadow-slate-950/20 border transition-all duration-300 transform translate-y-0 animate-fade-in ${
+          toast.type === 'success' 
+            ? 'bg-emerald-500 border-emerald-400 text-white' 
+            : 'bg-red-500 border-red-400 text-white'
+        }`}>
+            {toast.type === 'success' ? (
+              <CheckCircle2 size={18} className="text-white shrink-0" />
+            ) : (
+              <AlertCircle size={18} className="text-white shrink-0" />
+            )}
+            <div className="text-left">
+               <p className="text-xs font-black uppercase tracking-wider">{toast.type === 'success' ? 'Berhasil' : 'Gagal'}</p>
+               <p className="text-[11px] text-slate-100 font-medium leading-tight">{toast.message}</p>
+            </div>
+        </div>
+      )}
     </div>
   );
 }

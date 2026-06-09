@@ -10,6 +10,7 @@ interface ProductCardProps {
 }
 
 import { parseHarvestSchedules, ensureDayMonthYear } from '../../utils/harvestHelper';
+import { triggerFlyToCartAnimation } from '../../utils/cartAnimation';
 
 const cleanHarvestDate = (dateStr?: string) => {
   if (!dateStr) return '';
@@ -91,6 +92,7 @@ export default function ProductCard({ product, onAddToCart, onPreview, layout = 
              <button 
                onClick={(e) => {
                  e.stopPropagation();
+                 triggerFlyToCartAnimation(e, product.image);
                  onAddToCart?.(product);
                }}
                className="bg-brand-600 hover:bg-brand-700 text-white rounded-xl py-2 px-4 flex items-center justify-center gap-2 shadow-lg shadow-brand-600/10 active:scale-95 transition-all text-[9px] sm:text-[10px] font-black uppercase tracking-widest cursor-pointer"
@@ -112,7 +114,7 @@ export default function ProductCard({ product, onAddToCart, onPreview, layout = 
       onClick={() => onPreview?.(product)}
       className="bg-white rounded-3xl border border-slate-100 overflow-hidden group hover:shadow-2xl hover:shadow-brand-500/10 transition-all duration-500 flex flex-col cursor-pointer"
     >
-      <div className="relative aspect-[4/3] overflow-hidden bg-slate-50 flex items-center justify-center">
+      <div className="relative aspect-[16/10] overflow-hidden bg-slate-50 flex items-center justify-center">
         {product.image ? (
           <img 
             src={product.image} 
@@ -140,33 +142,34 @@ export default function ProductCard({ product, onAddToCart, onPreview, layout = 
         </button>
       </div>
 
-      <div className="p-4 sm:p-5 flex-1 flex flex-col">
+      <div className="p-3.5 sm:p-4 flex-1 flex flex-col">
         <div className="mb-1">
-          <h3 className="text-sm sm:text-[15px] font-black text-slate-800 group-hover:text-brand-600 transition-colors uppercase tracking-tight leading-tight sm:leading-snug line-clamp-2 sm:line-clamp-none">{product.name}</h3>
+          <h3 className="text-xs sm:text-[14px] font-black text-slate-800 group-hover:text-brand-600 transition-colors uppercase tracking-tight leading-tight line-clamp-2">{product.name}</h3>
         </div>
 
-        <div className="flex items-center gap-1 text-emerald-700 font-bold text-[8.5px] sm:text-[10px] uppercase tracking-wider mb-2">
+        <div className="flex items-center gap-1 text-emerald-700 font-bold text-[8px] sm:text-[9.5px] uppercase tracking-wider mb-1.5">
            <span>🧑‍🌾 {product.farmer || 'Petani PanganDesa'}</span>
         </div>
 
         <div className="mt-auto pt-1 flex items-baseline">
-          <span className="text-sm sm:text-base font-black text-slate-800 leading-none">{formatter.format(product.price)}</span>
+          <span className="text-xs sm:text-sm font-black text-slate-800 leading-none">{formatter.format(product.price)}</span>
           <span className="text-[9px] sm:text-[10px] text-slate-400 font-bold ml-1">/{product.unit}</span>
         </div>
 
-        <div className="flex items-center gap-1.5 sm:gap-2 mt-2 sm:mt-3 text-slate-400">
+        <div className="flex items-center gap-1.5 sm:gap-2 mt-1.5 sm:mt-2 text-slate-400">
            <Calendar size={12} className="text-brand-500 shrink-0" />
            <p className="text-[9px] sm:text-[10px] font-bold truncate">Panen: <span className="text-slate-700">{(product as any).selectedHarvestDate ? ensureDayMonthYear((product as any).selectedHarvestDate) : cleanHarvestDate(product.harvestDate)}</span></p>
         </div>
 
-        <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-slate-50 flex items-center justify-between">
+        <div className="mt-2.5 sm:mt-3 pt-2.5 sm:pt-3 border-t border-slate-50 flex items-center justify-between">
            <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
               <Star size={10} className="text-yellow-400 fill-yellow-400 shrink-0" />
-              <span className="text-[10px] sm:text-[11px] font-black text-slate-800 truncate">{product.rating} <span className="hidden xs:inline text-slate-400 font-bold ml-0.5">({Math.floor(Math.random() * 100) + 20})</span></span>
+              <span className="text-[9.5px] sm:text-[10.5px] font-black text-slate-800 truncate">{product.rating} <span className="hidden xs:inline text-slate-400 font-bold ml-0.5">({Math.floor(Math.random() * 100) + 20})</span></span>
            </div>
            <button 
              onClick={(e) => {
                e.stopPropagation();
+               triggerFlyToCartAnimation(e, product.image);
                onAddToCart?.(product);
              }}
              className="w-7 h-7 sm:w-8 sm:h-8 bg-brand-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-brand-600/20 hover:scale-110 active:scale-95 transition-all shrink-0"

@@ -86,7 +86,9 @@ try {
         'pic_name'     => "VARCHAR(100) NULL COMMENT 'Nama PIC' AFTER `company_name`",
         'nib'          => "VARCHAR(100) NULL COMMENT 'NIB atau SK Kemenkumham' AFTER `address`",
         'npwp'         => "VARCHAR(50) NULL COMMENT 'NPWP' AFTER `nib`",
-        'bank_account' => "VARCHAR(50) NULL COMMENT 'Nomor Rekening' AFTER `npwp`"
+        'bank_account' => "VARCHAR(50) NULL COMMENT 'Nomor Rekening' AFTER `npwp`",
+        'avatar'       => "TEXT NULL COMMENT 'Avatar URL' AFTER `bank_account`",
+        'pin'          => "VARCHAR(255) NULL COMMENT 'Security PIN' AFTER `avatar`"
     ];
     
     foreach ($columnsToAdd as $colName => $colDef) {
@@ -133,6 +135,70 @@ try {
         echo "<div class='info'>Seed data 'notifications' berhasil diisikan...</div>";
     }
     
+    // 7. Create chat_messages table if not exists
+    $chatTableExists = false;
+    try {
+        $pdo->query("SELECT 1 FROM `chat_messages` LIMIT 1");
+        $chatTableExists = true;
+    } catch (Exception $e) {
+        $chatTableExists = false;
+    }
+
+    if (!$chatTableExists) {
+        $pdo->exec("CREATE TABLE `chat_messages` (
+            `id` INT AUTO_INCREMENT PRIMARY KEY,
+            `order_id` VARCHAR(50) NOT NULL,
+            `sender_id` INT NOT NULL,
+            `content` TEXT,
+            `attachment_url` VARCHAR(255),
+            `attachment_type` ENUM('image', 'file', 'none') DEFAULT 'none',
+            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`) ON DELETE CASCADE,
+            FOREIGN KEY (`sender_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+        ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;");
+        echo "<div class='info'>Tabel 'chat_messages' berhasil dibuat...</div>";
+    }
+    // 8. Create user_addresses table if not exists
+    $addressesTableExists = false;
+    try {
+        $pdo->query("SELECT 1 FROM `user_addresses` LIMIT 1");
+        $addressesTableExists = true;
+    } catch (Exception $e) {
+        $addressesTableExists = false;
+    }
+
+    if (!$addressesTableExists) {
+        $pdo->exec("CREATE TABLE `user_addresses` (
+            `id` INT AUTO_INCREMENT PRIMARY KEY,
+            `user_id` INT NOT NULL,
+            `type` VARCHAR(50) NOT NULL,
+            `name` VARCHAR(100) NOT NULL,
+            `phone` VARCHAR(20) NOT NULL,
+            `street` TEXT NOT NULL,
+            `district` VARCHAR(100) NOT NULL,
+            `city` VARCHAR(100) NOT NULL,
+            `is_default` BOOLEAN DEFAULT FALSE,
+            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+        ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;");
+        echo "<div class='info'>Tabel 'user_addresses' berhasil dibuat...</div>";
+
+        // Seed some initial addresses for users in the database
+        // User ID 3 is Andi Wijaya (buyer)
+        $pdo->exec("INSERT INTO `user_addresses` (`user_id`, `type`, `name`, `phone`, `street`, `district`, `city`, `is_default`) VALUES
+        (3, 'Rumah', 'Andi Wijaya', '0812-3456-7890', 'Jl. Melati No. 12, Perumahan Asri', 'Cilandak', 'Jakarta Selatan', 1),
+        (3, 'Kantor', 'Andi Wijaya (Office)', '0812-3456-7890', 'Sudirman Central Business District, Tower 2', 'Senayan', 'Jakarta Pusat', 0);");
+        echo "<div class='info'>Seed data 'user_addresses' berhasil diisikan...</div>";
+    }
+
+    // 9. Add shipping_address column to orders table if not exists
+    $checkShippingAddressCol = $pdo->query("SHOW COLUMNS FROM `orders` LIKE 'shipping_address'")->fetch();
+    if (!$checkShippingAddressCol) {
+        $pdo->exec("ALTER TABLE `orders` ADD COLUMN `shipping_address` TEXT NULL COMMENT 'Alamat Pengiriman Lengkap'");
+        echo "<div class='info'>Kolom 'shipping_address' berhasil ditambahkan ke tabel 'orders'...</div>";
+    }
+
     echo "<div class='success'>🎉 Database and table migrations completed successfully!</div>";
     echo "<p>Semua kolom pendaftaran Buyer & Seller serta tabel notifikasi telah ditambahkan ke database.</p>";
     echo "<a href='http://localhost:3000/login' class='btn'>Buka Halaman Login</a>";

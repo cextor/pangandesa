@@ -214,11 +214,13 @@ export default function AdminDashboardOverview({ orders }: AdminDashboardOvervie
 
                 <div className="space-y-2">
                   <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Menu Jalan Pintas</span>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 gap-2">
+                    {/* Kelola Promo button hidden for now
                     <button onClick={() => navigate('/admin/promo')} className="p-3 bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 rounded-xl text-left transition-all cursor-pointer">
                       <span className="text-[8px] font-black text-emerald-400 uppercase tracking-wider block mb-0.5">Kode Diskon</span>
                       <span className="text-[10px] font-bold text-white">Kelola Promo</span>
                     </button>
+                    */}
                     <button onClick={() => navigate('/admin/pengaturan-admin')} className="p-3 bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 rounded-xl text-left transition-all cursor-pointer">
                       <span className="text-[8px] font-black text-emerald-400 uppercase tracking-wider block mb-0.5">Finansial</span>
                       <span className="text-[10px] font-bold text-white">Tarif Layanan</span>

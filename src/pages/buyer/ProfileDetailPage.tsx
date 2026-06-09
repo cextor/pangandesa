@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Camera, Mail, Phone, MapPin, User, ChevronLeft, Save, CheckCircle2 } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Camera, Mail, Phone, MapPin, User, ChevronLeft, Save, CheckCircle2, Loader2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface ProfileDetailProps {
@@ -7,12 +7,14 @@ interface ProfileDetailProps {
 }
 
 export default function ProfileDetailPage({ onBack }: ProfileDetailProps) {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, uploadAvatar } = useAuth();
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
   const [phone, setPhone] = useState(user?.phone || '');
   const [address, setAddress] = useState(user?.address || '');
   const [isSaved, setIsSaved] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,11 +27,36 @@ export default function ProfileDetailPage({ onBack }: ProfileDetailProps) {
     }
   };
 
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      await uploadAvatar(file);
+    } catch (err) {
+      console.error("Failed to upload avatar", err);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const defaultAvatar = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=200&auto=format&fit=crop';
   const userAvatar = user?.avatar || defaultAvatar;
 
   return (
     <div className="flex-1 bg-slate-50 overflow-y-auto custom-scrollbar p-4 md:p-8">
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handleFileChange} 
+        accept="image/jpeg,image/png,image/webp" 
+        className="hidden" 
+      />
       <div className="max-w-2xl mx-auto space-y-6 md:space-y-8">
         {/* Header */}
         <div className="flex items-center gap-4">
@@ -45,14 +72,24 @@ export default function ProfileDetailPage({ onBack }: ProfileDetailProps) {
         {/* Profile Image Section */}
         <div className="bg-white p-6 sm:p-10 rounded-[28px] sm:rounded-[40px] border border-slate-100 shadow-sm flex flex-col items-center gap-4 sm:gap-6">
            <div className="relative">
-               <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-[28px] sm:rounded-[40px] overflow-hidden border-4 border-white shadow-xl bg-slate-50 flex items-center justify-center ring-1 ring-slate-100 shrink-0">
+               <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-[28px] sm:rounded-[40px] overflow-hidden border-4 border-white shadow-xl bg-slate-50 flex items-center justify-center ring-1 ring-slate-100 shrink-0 relative">
                   {user?.avatar ? (
                      <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
                   ) : (
                      <User className="w-10 h-10 sm:w-14 sm:h-14 text-slate-300" />
                   )}
+                  {isUploading && (
+                     <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center text-white">
+                        <Loader2 className="animate-spin" size={24} />
+                     </div>
+                   )}
                </div>
-               <button className="absolute -bottom-1 -right-1 sm:-bottom-2 sm:-right-2 bg-brand-600 text-white w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg hover:bg-brand-700 transition-all border-4 border-white cursor-pointer">
+               <button 
+                 type="button"
+                 onClick={handleAvatarClick}
+                 disabled={isUploading}
+                 className="absolute -bottom-1 -right-1 sm:-bottom-2 sm:-right-2 bg-brand-600 text-white w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg hover:bg-brand-700 transition-all border-4 border-white cursor-pointer disabled:opacity-50"
+               >
                   <Camera size={14} className="sm:w-[18px] sm:h-[18px]" />
                </button>
             </div>

@@ -3,6 +3,7 @@ namespace App\Controllers\Api;
 use CodeIgniter\RESTful\ResourceController;
 use App\Models\OrderModel;
 use App\Models\OrderItemModel;
+use App\Helpers\PathHelper;
 
 class OrderController extends ResourceController
 {
@@ -24,7 +25,16 @@ class OrderController extends ResourceController
         // Attach items for each order
         $itemModel = new OrderItemModel();
         foreach ($orders as &$order) {
-            $order['items'] = $itemModel->where('order_id', $order['id'])->findAll();
+            if (isset($order['payment_proof'])) {
+                $order['payment_proof'] = PathHelper::toAbsolute($order['payment_proof']);
+            }
+            $items = $itemModel->where('order_id', $order['id'])->findAll();
+            foreach ($items as &$item) {
+                if (isset($item['image'])) {
+                    $item['image'] = PathHelper::toAbsolute($item['image']);
+                }
+            }
+            $order['items'] = $items;
         }
 
         return $this->respond(['status' => 200, 'data' => $orders]);
@@ -46,7 +56,8 @@ class OrderController extends ResourceController
             'total_amount' => $data['totalAmount'],
             'dp_amount' => $data['dpAmount'],
             'remaining_amount' => $data['remainingAmount'],
-            'status' => 'WAITING_PAYMENT_DP'
+            'status' => 'WAITING_PAYMENT_DP',
+            'shipping_address' => $data['shippingAddress'] ?? $data['shipping_address'] ?? null
         ];
 
         $this->db = \Config\Database::connect();
@@ -63,7 +74,7 @@ class OrderController extends ResourceController
                     'price' => $item['price'],
                     'quantity' => $item['quantity'],
                     'unit' => $item['unit'] ?? 'kg',
-                    'image' => $item['image'] ?? null
+                    'image' => isset($item['image']) ? PathHelper::toRelative($item['image']) : null
                 ];
                 $itemModel->insert($itemData);
             }
@@ -90,7 +101,7 @@ class OrderController extends ResourceController
 
         $updateData = ['status' => $data['status']];
         if (isset($data['payment_proof'])) {
-            $updateData['payment_proof'] = $data['payment_proof'];
+            $updateData['payment_proof'] = PathHelper::saveBase64Image($data['payment_proof'], 'payments');
         }
         $this->model->update($id, $updateData);
 

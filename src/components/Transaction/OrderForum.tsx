@@ -23,6 +23,7 @@ interface OrderForumProps {
   onSendMessage: (content: string, attachmentType?: 'image' | 'file') => void;
   onConfirmHarvest?: () => void;
   onConfirmPurchase?: () => void;
+  hideHeader?: boolean;
 }
 
 export default function OrderForum({ 
@@ -31,23 +32,37 @@ export default function OrderForum({
   messages, 
   onSendMessage,
   onConfirmHarvest,
-  onConfirmPurchase
+  onConfirmPurchase,
+  hideHeader = false
 }: OrderForumProps) {
   const navigate = useNavigate();
   const { loadChatMessages } = useOrder();
   const [inputText, setInputText] = React.useState('');
   const scrollRef = React.useRef<HTMLDivElement>(null);
 
+  const lastCountRef = React.useRef(messages.length);
+
   React.useEffect(() => {
-    if (order?.id) {
+    if (!order?.id) return;
+    
+    loadChatMessages(order.id);
+
+    // Polling setiap 3 detik agar pembeli, penjual, dan admin tersinkronisasi secara real-time
+    const interval = setInterval(() => {
       loadChatMessages(order.id);
-    }
+    }, 3000);
+
+    return () => clearInterval(interval);
   }, [order?.id]);
 
   React.useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    // Hanya gulir ke bawah jika jumlah pesan bertambah (untuk kenyamanan membaca history)
+    if (messages.length > lastCountRef.current) {
+      if (scrollRef.current) {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      }
     }
+    lastCountRef.current = messages.length;
   }, [messages]);
 
   const handleSend = (e: React.FormEvent) => {
@@ -58,9 +73,10 @@ export default function OrderForum({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white lg:rounded-[40px] overflow-hidden shadow-2xl">
+    <div className={`flex flex-col h-full bg-white ${hideHeader ? '' : 'lg:rounded-[40px] shadow-2xl'} overflow-hidden`}>
       {/* Header Info */}
-      <div className="p-4 sm:p-8 bg-brand-900 text-white">
+      {!hideHeader && (
+        <div className="p-4 sm:p-8 bg-brand-900 text-white">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 sm:mb-6">
           <div className="flex items-center gap-3 sm:gap-4">
              {/* Beautiful Glassmorphic Back Button */}
@@ -137,6 +153,7 @@ export default function OrderForum({
            </div>
         </div>
       </div>
+      )}
 
       {/* Chat Area */}
       <div 

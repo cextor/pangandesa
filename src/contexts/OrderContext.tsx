@@ -6,6 +6,7 @@ import { useAuth } from './AuthContext';
 
 interface OrderContextType {
   orders: Order[];
+  ordersLoaded: boolean;
   messages: ChatMessage[];
   addOrder: (order: Order) => Promise<void>;
   updateOrderStatus: (orderId: string, status: string, paymentProof?: string) => Promise<void>;
@@ -17,14 +18,20 @@ const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
 export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [ordersLoaded, setOrdersLoaded] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const { user, activeRole } = useAuth();
 
   useEffect(() => {
     if (user) {
-      OrderService.getOrders(user.id, activeRole).then(setOrders);
+      setOrdersLoaded(false);
+      OrderService.getOrders(user.id, activeRole).then(data => {
+        setOrders(data);
+        setOrdersLoaded(true);
+      });
     } else {
       setOrders([]);
+      setOrdersLoaded(false);
     }
   }, [user, activeRole]);
 
@@ -55,7 +62,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   return (
-    <OrderContext.Provider value={{ orders, messages, addOrder, updateOrderStatus, sendMessage, loadChatMessages }}>
+    <OrderContext.Provider value={{ orders, ordersLoaded, messages, addOrder, updateOrderStatus, sendMessage, loadChatMessages }}>
       {children}
     </OrderContext.Provider>
   );

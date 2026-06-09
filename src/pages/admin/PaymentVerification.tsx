@@ -35,12 +35,14 @@ export default function PaymentVerification({ orders, onConfirmPayment }: Paymen
   );
 
   const confirmedOrders = orders.filter(o => 
+    o.status === 'WAITING_PAYMENT_DP' ||
     o.status === 'WAITING_HARVEST' || 
     o.status === 'HARVEST_CONFIRMED_SELLER' || 
     o.status === 'WAITING_FINAL_PAYMENT' || 
     o.status === 'SHIPPING' || 
     o.status === 'DELIVERED' || 
-    o.status === 'COMPLETED'
+    o.status === 'COMPLETED' ||
+    o.status === 'CANCELLED'
   );
 
   const currentTabOrders = activeTab === 'pending' ? paymentPendingOrders : confirmedOrders;
@@ -51,7 +53,7 @@ export default function PaymentVerification({ orders, onConfirmPayment }: Paymen
   );
 
   return (
-    <div className="flex-1 bg-slate-50 overflow-y-auto custom-scrollbar flex flex-col">
+    <div className="flex-1 bg-slate-50 overflow-y-auto custom-scrollbar flex flex-col h-full">
       {/* Header - Not sticky */}
       <div className="p-4 sm:p-6 bg-white border-b border-slate-100 shrink-0">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -118,148 +120,169 @@ export default function PaymentVerification({ orders, onConfirmPayment }: Paymen
 
         {/* 1. Desktop Tabular View */}
         <div className="hidden md:block bg-white rounded-[32px] border border-slate-100 shadow-sm overflow-hidden animate-in fade-in duration-300">
-          <table className="w-full text-left">
-            <thead>
-               <tr className="border-b border-slate-50 bg-slate-50/50">
-                  <th className="p-6 pl-8 text-[9px] font-black text-slate-400 uppercase tracking-widest">Transaksi</th>
-                  <th className="p-6 text-[9px] font-black text-slate-400 uppercase tracking-widest">Nama Pembeli</th>
-                  <th className="p-6 text-[9px] font-black text-slate-400 uppercase tracking-widest">Nominal</th>
-                  <th className="p-6 text-[9px] font-black text-slate-400 uppercase tracking-widest">Jenis</th>
-                  <th className="p-6 text-[9px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                  <th className="p-6 pr-8 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Aksi</th>
-               </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50 font-display">
-               {filteredOrders.length > 0 ? filteredOrders.map((order) => {
-                 const isDp = order.status === 'WAITING_ADMIN_DP' || ['WAITING_HARVEST', 'HARVEST_CONFIRMED_SELLER', 'WAITING_FINAL_PAYMENT'].includes(order.status);
-                 return (
-                   <tr key={order.id} className="hover:bg-slate-50/30 transition-colors group">
-                     <td className="p-6 pl-8">
-                        <div className="flex items-center gap-4">
-                           <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-white transition-colors">
-                              <AlertCircle size={18} />
-                           </div>
-                           <div>
-                              <p className="text-xs font-black text-slate-800">#{order.id.toUpperCase()}</p>
-                              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{order.createdAt}</p>
-                           </div>
+          <div className="overflow-x-auto custom-scrollbar">
+            <table className="w-full text-left min-w-[1000px]">
+              <thead>
+                 <tr className="border-b border-slate-50 bg-slate-50/50">
+                    <th className="p-6 pl-8 text-[9px] font-black text-slate-400 uppercase tracking-widest">Transaksi</th>
+                    <th className="p-6 text-[9px] font-black text-slate-400 uppercase tracking-widest">Nama Pembeli</th>
+                    <th className="p-6 text-[9px] font-black text-slate-400 uppercase tracking-widest">Nominal</th>
+                    <th className="p-6 text-[9px] font-black text-slate-400 uppercase tracking-widest">Jenis</th>
+                    <th className="p-6 text-[9px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                    <th className="p-6 pr-8 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Aksi</th>
+                 </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50 font-display">
+                 {filteredOrders.length > 0 ? filteredOrders.map((order) => {
+                   const isDp = order.status === 'WAITING_ADMIN_DP' || order.status === 'WAITING_PAYMENT_DP' || ['WAITING_HARVEST', 'HARVEST_CONFIRMED_SELLER'].includes(order.status);
+                   const isRejected = order.status === 'WAITING_PAYMENT_DP' || order.status === 'WAITING_FINAL_PAYMENT';
+                   return (
+                     <tr key={order.id} className="hover:bg-slate-50/30 transition-colors group">
+                       <td className="p-6 pl-8">
+                          <div className="flex items-center gap-4">
+                             <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-white transition-colors">
+                                <AlertCircle size={18} />
+                             </div>
+                             <div>
+                                <p className="text-xs font-black text-slate-800">#{order.id.toUpperCase()}</p>
+                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{order.createdAt}</p>
+                             </div>
+                          </div>
+                       </td>
+                       <td className="p-6">
+                          <p className="text-xs font-black text-slate-800">{order.buyerName || 'Mitra Pembeli Desa'}</p>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase">{order.buyerVillage || 'Sukamaju'}</p>
+                       </td>
+                       <td className="p-6">
+                          <p className="text-xs font-black text-slate-800">
+                            Rp {(isDp ? order.dpAmount : order.remainingAmount).toLocaleString('id-ID')}
+                          </p>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase">Screenshot Terlampir</p>
+                       </td>
+                       <td className="p-6">
+                          <span className={`px-2 py-1 rounded text-[8px] font-black uppercase tracking-tight ${
+                            isDp ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'
+                          }`}>
+                            {isDp ? 'Down Payment' : 'Pelunasan'}
+                          </span>
+                       </td>
+                       <td className="p-6">
+                          {activeTab === 'pending' ? (
+                            <div className="flex items-center gap-1.5 text-orange-500">
+                               <Clock size={12} />
+                               <span className="text-[9px] font-black uppercase tracking-tight">Verifikasi Manual</span>
+                            </div>
+                           ) : (
+                             <div className={`flex items-center gap-1.5 ${
+                               order.status === 'WAITING_PAYMENT_DP' || order.status === 'WAITING_FINAL_PAYMENT' ? 'text-red-500' :
+                               order.status === 'CANCELLED' ? 'text-rose-500' : 'text-emerald-600'
+                             }`}>
+                                {order.status === 'WAITING_PAYMENT_DP' || order.status === 'WAITING_FINAL_PAYMENT' ? <XCircle size={12} /> :
+                                 order.status === 'CANCELLED' ? <XCircle size={12} /> : <CheckCircle2 size={12} />}
+                                <span className="text-[9px] font-black uppercase tracking-tight">
+                                  {order.status === 'WAITING_PAYMENT_DP' ? 'DP DITOLAK' :
+                                   order.status === 'WAITING_FINAL_PAYMENT' ? 'PELUNASAN DITOLAK' :
+                                   order.status === 'CANCELLED' ? 'DIBATALKAN' :
+                                   isDp ? 'DP TERKONFIRMASI' : 'LUNAS TERKONFIRMASI'}
+                                </span>
+                             </div>
+                           )}
+                       </td>
+                       <td className="p-6 pr-8 text-right">
+                          {activeTab === 'pending' ? (
+                            <div className="flex items-center justify-end gap-2">
+                               <button 
+                                 onClick={() => navigate(`/admin/verifikasi/${order.id}`)}
+                                 className="bg-emerald-500 text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider shadow-md shadow-emerald-500/10 active:scale-95 transition-all hover:bg-emerald-600 flex items-center gap-1.5 border-0 cursor-pointer font-bold animate-in fade-in"
+                               >
+                                 <AlertCircle size={12} /> Detail
+                               </button>
+ 
+                               <button 
+                                 onClick={() => navigate('/admin/transaksi-panen/' + order.id)}
+                                 className="p-2 bg-slate-50 text-slate-400 rounded-xl hover:bg-brand-50 hover:text-brand-600 transition-all flex items-center justify-center cursor-pointer border-0"
+                                 title="Diskusi Forum"
+                               >
+                                 <MessageSquare size={14} />
+                               </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-end gap-2">
+                               <button 
+                                 onClick={() => navigate(`/admin/verifikasi/${order.id}`)}
+                                 className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider active:scale-95 transition-all flex items-center gap-1.5 border-0 cursor-pointer font-bold"
+                               >
+                                 <AlertCircle size={12} /> Detail
+                               </button>
+                               
+                               <button 
+                                 onClick={() => navigate('/admin/transaksi-panen/' + order.id)}
+                                 className="p-2 bg-slate-50 text-slate-400 rounded-xl hover:bg-brand-50 hover:text-brand-600 transition-all flex items-center justify-center cursor-pointer border-0"
+                                 title="Diskusi Forum"
+                               >
+                                 <MessageSquare size={14} />
+                               </button>
+ 
+                               {['WAITING_PAYMENT_DP', 'WAITING_HARVEST', 'HARVEST_CONFIRMED_SELLER', 'WAITING_FINAL_PAYMENT', 'SHIPPING', 'DELIVERED', 'COMPLETED'].includes(order.status) && (
+                                 <button
+                                   onClick={() => {
+                                     const isRejected = order.status === 'WAITING_PAYMENT_DP' || order.status === 'WAITING_FINAL_PAYMENT';
+                                     setConfirmModal({
+                                       show: true,
+                                       title: isRejected ? 'Batalkan Penolakan?' : 'Batalkan Konfirmasi?',
+                                       desc: isRejected 
+                                         ? `Apakah Anda yakin ingin membatalkan penolakan pembayaran ${isDp ? 'DP' : 'Pelunasan'} untuk pesanan #${order.id.toUpperCase()}? Status pesanan akan dikembalikan ke antrean Verifikasi Manual.`
+                                         : `Apakah Anda yakin ingin membatalkan konfirmasi pembayaran ${isDp ? 'DP' : 'Pelunasan'} untuk pesanan #${order.id.toUpperCase()}? Status pesanan akan dikembalikan ke status Verifikasi Manual.`,
+                                       type: 'cancel',
+                                       action: () => {
+                                         try {
+                                           onConfirmPayment(order.id, isDp ? 'CANCEL_DP' : 'CANCEL_FINAL');
+                                           showToastMsg(
+                                             isRejected 
+                                               ? `Penolakan pembayaran pesanan #${order.id.toUpperCase()} berhasil dibatalkan!`
+                                               : `Konfirmasi pembayaran pesanan #${order.id.toUpperCase()} berhasil dibatalkan!`, 
+                                             'success'
+                                           );
+                                         } catch (error) {
+                                           showToastMsg(`Gagal memproses aksi pesanan #${order.id.toUpperCase()}. Silakan coba lagi.`, 'error');
+                                         }
+                                       }
+                                     });
+                                   }}
+                                   className="bg-rose-50 text-rose-600 hover:bg-rose-100 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider active:scale-95 transition-all flex items-center gap-1.5 border-0 cursor-pointer font-bold"
+                                   title={isRejected ? 'Batalkan Penolakan Pembayaran' : 'Batalkan Konfirmasi Pembayaran'}
+                                 >
+                                   <XCircle size={12} /> {isRejected ? 'Batal Tolak' : 'Batal Konfirmasi'}
+                                 </button>
+                               )}
+                            </div>
+                          )}
+                       </td>
+                     </tr>
+                   );
+                 }) : (
+                   <tr>
+                     <td colSpan={6} className="p-20 text-center">
+                        <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-200">
+                           <ShieldCheck size={32} />
                         </div>
-                     </td>
-                     <td className="p-6">
-                        <p className="text-xs font-black text-slate-800">{order.buyerName || 'Mitra Pembeli Desa'}</p>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase">{order.buyerVillage || 'Sukamaju'}</p>
-                     </td>
-                     <td className="p-6">
-                        <p className="text-xs font-black text-slate-800">
-                          Rp {(isDp ? order.dpAmount : order.remainingAmount).toLocaleString('id-ID')}
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                           {activeTab === 'pending' ? 'Tidak ada antrean verifikasi' : 'Tidak ada riwayat pembayaran'}
                         </p>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase">Screenshot Terlampir</p>
-                     </td>
-                     <td className="p-6">
-                        <span className={`px-2 py-1 rounded text-[8px] font-black uppercase tracking-tight ${
-                          isDp ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'
-                        }`}>
-                          {isDp ? 'Down Payment' : 'Pelunasan'}
-                        </span>
-                     </td>
-                     <td className="p-6">
-                        {activeTab === 'pending' ? (
-                          <div className="flex items-center gap-1.5 text-orange-500">
-                             <Clock size={12} />
-                             <span className="text-[9px] font-black uppercase tracking-tight">Verifikasi Manual</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1.5 text-emerald-600">
-                             <CheckCircle2 size={12} />
-                             <span className="text-[9px] font-black uppercase tracking-tight">
-                               {isDp ? 'DP TERKONFIRMASI' : 'LUNAS TERKONFIRMASI'}
-                             </span>
-                          </div>
-                        )}
-                     </td>
-                     <td className="p-6 pr-8 text-right">
-                        {activeTab === 'pending' ? (
-                          <div className="flex items-center justify-end gap-2">
-                             <button 
-                               onClick={() => navigate(`/admin/verifikasi/${order.id}`)}
-                               className="bg-emerald-500 text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider shadow-md shadow-emerald-500/10 active:scale-95 transition-all hover:bg-emerald-600 flex items-center gap-1.5 border-0 cursor-pointer font-bold animate-in fade-in"
-                             >
-                               <AlertCircle size={12} /> Detail
-                             </button>
-
-                             <button 
-                               onClick={() => navigate('/admin/transaksi-panen/' + order.id)}
-                               className="p-2 bg-slate-50 text-slate-400 rounded-xl hover:bg-brand-50 hover:text-brand-600 transition-all flex items-center justify-center cursor-pointer border-0"
-                               title="Diskusi Forum"
-                             >
-                               <MessageSquare size={14} />
-                             </button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-end gap-2">
-                             <button 
-                               onClick={() => navigate(`/admin/verifikasi/${order.id}`)}
-                               className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider active:scale-95 transition-all flex items-center gap-1.5 border-0 cursor-pointer font-bold"
-                             >
-                               <AlertCircle size={12} /> Detail
-                             </button>
-                             
-                             <button 
-                               onClick={() => navigate('/admin/transaksi-panen/' + order.id)}
-                               className="p-2 bg-slate-50 text-slate-400 rounded-xl hover:bg-brand-50 hover:text-brand-600 transition-all flex items-center justify-center cursor-pointer border-0"
-                               title="Diskusi Forum"
-                             >
-                               <MessageSquare size={14} />
-                             </button>
-
-                              <button
-                                onClick={() => {
-                                  setConfirmModal({
-                                    show: true,
-                                    title: 'Batalkan Konfirmasi?',
-                                    desc: `Apakah Anda yakin ingin membatalkan konfirmasi pembayaran ${isDp ? 'DP' : 'Pelunasan'} untuk pesanan #${order.id.toUpperCase()}? Status pesanan akan dikembalikan ke status Verifikasi Manual.`,
-                                    type: 'cancel',
-                                    action: () => {
-                                      try {
-                                        onConfirmPayment(order.id, isDp ? 'CANCEL_DP' : 'CANCEL_FINAL');
-                                        showToastMsg(`Konfirmasi pembayaran pesanan #${order.id.toUpperCase()} berhasil dibatalkan!`, 'success');
-                                      } catch (error) {
-                                        showToastMsg(`Gagal membatalkan konfirmasi pembayaran pesanan #${order.id.toUpperCase()}. Silakan coba lagi.`, 'error');
-                                      }
-                                    }
-                                  });
-                                }}
-                                className="bg-rose-50 text-rose-600 hover:bg-rose-100 px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider active:scale-95 transition-all flex items-center gap-1.5 border-0 cursor-pointer font-bold"
-                                title="Batalkan Konfirmasi Pembayaran"
-                              >
-                                <XCircle size={12} /> Batalkan Konfirmasi
-                              </button>
-                          </div>
-                        )}
                      </td>
                    </tr>
-                 );
-               }) : (
-                 <tr>
-                   <td colSpan={6} className="p-20 text-center">
-                      <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-200">
-                         <ShieldCheck size={32} />
-                      </div>
-                      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                         {activeTab === 'pending' ? 'Tidak ada antrean verifikasi' : 'Tidak ada riwayat pembayaran'}
-                      </p>
-                   </td>
-                 </tr>
-               )}
-            </tbody>
-          </table>
+                 )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* 2. Mobile Responsive Card List */}
         <div className="block md:hidden space-y-4 animate-in fade-in duration-300">
           {filteredOrders.length > 0 ? filteredOrders.map((order) => {
-            const isDp = order.status === 'WAITING_ADMIN_DP' || ['WAITING_HARVEST', 'HARVEST_CONFIRMED_SELLER', 'WAITING_FINAL_PAYMENT'].includes(order.status);
+            const isDp = order.status === 'WAITING_ADMIN_DP' || order.status === 'WAITING_PAYMENT_DP' || ['WAITING_HARVEST', 'HARVEST_CONFIRMED_SELLER'].includes(order.status);
             const amount = isDp ? order.dpAmount : order.remainingAmount;
+            const isRejected = order.status === 'WAITING_PAYMENT_DP' || order.status === 'WAITING_FINAL_PAYMENT';
             
             return (
               <div key={order.id} className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm space-y-4">
@@ -305,8 +328,16 @@ export default function PaymentVerification({ orders, onConfirmPayment }: Paymen
                          <Clock size={10} /> Verifikasi Manual
                       </div>
                     ) : (
-                      <div className="flex items-center gap-1 text-emerald-600 font-bold text-[8px] uppercase tracking-wider">
-                         <CheckCircle2 size={10} /> {isDp ? 'DP OK' : 'LUNAS OK'}
+                      <div className={`flex items-center gap-1 font-bold text-[8px] uppercase tracking-wider ${
+                        order.status === 'WAITING_PAYMENT_DP' || order.status === 'WAITING_FINAL_PAYMENT' ? 'text-red-500' :
+                        order.status === 'CANCELLED' ? 'text-rose-500' : 'text-emerald-600'
+                      }`}>
+                         {order.status === 'WAITING_PAYMENT_DP' || order.status === 'WAITING_FINAL_PAYMENT' ? <XCircle size={10} /> :
+                          order.status === 'CANCELLED' ? <XCircle size={10} /> : <CheckCircle2 size={10} />}
+                         {order.status === 'WAITING_PAYMENT_DP' ? 'DP DITOLAK' :
+                          order.status === 'WAITING_FINAL_PAYMENT' ? 'PELUNASAN DITOLAK' :
+                          order.status === 'CANCELLED' ? 'BATAL' :
+                          isDp ? 'DP OK' : 'LUNAS OK'}
                       </div>
                     )}
                   </div>
@@ -345,28 +376,38 @@ export default function PaymentVerification({ orders, onConfirmPayment }: Paymen
                         >
                           <MessageSquare size={13} />
                         </button>
-
-                        <button
-                          onClick={() => {
-                            setConfirmModal({
-                              show: true,
-                              title: 'Batalkan Konfirmasi?',
-                              desc: `Apakah Anda yakin ingin membatalkan konfirmasi pembayaran ${isDp ? 'DP' : 'Pelunasan'} untuk pesanan #${order.id.toUpperCase()}?`,
-                              type: 'cancel',
-                              action: () => {
-                                try {
-                                  onConfirmPayment(order.id, isDp ? 'CANCEL_DP' : 'CANCEL_FINAL');
-                                  showToastMsg(`Konfirmasi pembayaran pesanan #${order.id.toUpperCase()} berhasil dibatalkan!`, 'success');
-                                } catch (error) {
-                                  showToastMsg(`Gagal membatalkan konfirmasi pembayaran pesanan #${order.id.toUpperCase()}. Silakan coba lagi.`, 'error');
+ 
+                        {['WAITING_PAYMENT_DP', 'WAITING_HARVEST', 'HARVEST_CONFIRMED_SELLER', 'WAITING_FINAL_PAYMENT', 'SHIPPING', 'DELIVERED', 'COMPLETED'].includes(order.status) && (
+                          <button
+                            onClick={() => {
+                              const isRejected = order.status === 'WAITING_PAYMENT_DP' || order.status === 'WAITING_FINAL_PAYMENT';
+                              setConfirmModal({
+                                show: true,
+                                title: isRejected ? 'Batalkan Penolakan?' : 'Batalkan Konfirmasi?',
+                                desc: isRejected 
+                                  ? `Apakah Anda yakin ingin membatalkan penolakan pembayaran ${isDp ? 'DP' : 'Pelunasan'} untuk pesanan #${order.id.toUpperCase()}?`
+                                  : `Apakah Anda yakin ingin membatalkan konfirmasi pembayaran ${isDp ? 'DP' : 'Pelunasan'} untuk pesanan #${order.id.toUpperCase()}?`,
+                                type: 'cancel',
+                                action: () => {
+                                  try {
+                                    onConfirmPayment(order.id, isDp ? 'CANCEL_DP' : 'CANCEL_FINAL');
+                                    showToastMsg(
+                                      isRejected 
+                                        ? `Penolakan pembayaran pesanan #${order.id.toUpperCase()} berhasil dibatalkan!`
+                                        : `Konfirmasi pembayaran pesanan #${order.id.toUpperCase()} berhasil dibatalkan!`, 
+                                      'success'
+                                    );
+                                  } catch (error) {
+                                    showToastMsg(`Gagal memproses aksi pesanan #${order.id.toUpperCase()}. Silakan coba lagi.`, 'error');
+                                  }
                                 }
-                              }
-                            });
-                          }}
-                          className="flex-grow bg-rose-50 text-rose-600 hover:bg-rose-100 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider active:scale-95 transition-all flex items-center justify-center gap-1 border-0 cursor-pointer font-bold"
-                        >
-                          <XCircle size={11} /> Batalkan
-                        </button>
+                              });
+                            }}
+                            className="flex-grow bg-rose-50 text-rose-600 hover:bg-rose-100 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider active:scale-95 transition-all flex items-center justify-center gap-1 border-0 cursor-pointer font-bold"
+                          >
+                            <XCircle size={11} /> {isRejected ? 'Batal Tolak' : 'Batal Konfirmasi'}
+                          </button>
+                        )}
                       </>
                     )}
                   </div>

@@ -8,7 +8,7 @@ class OrderModel extends Model
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = false; // Karena id menggunakan string (UUID/custom format)
     protected $returnType       = 'array';
-    protected $allowedFields    = ['id', 'buyer_id', 'seller_id', 'total_amount', 'dp_amount', 'remaining_amount', 'status', 'payment_method', 'tracking_number', 'bast_url', 'harvest_confirmed_seller', 'purchase_confirmed_buyer', 'payment_proof'];
+    protected $allowedFields    = ['id', 'buyer_id', 'seller_id', 'total_amount', 'dp_amount', 'remaining_amount', 'status', 'payment_method', 'tracking_number', 'bast_url', 'harvest_confirmed_seller', 'purchase_confirmed_buyer', 'payment_proof', 'shipping_address'];
     protected $useTimestamps    = true;
     
     public function getOrdersByUserId($userId, $role)

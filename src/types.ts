@@ -40,6 +40,7 @@ export interface Order {
   trackingNumber?: string;
   bastUrl?: string;
   paymentProof?: string;
+  shippingAddress?: string;
 }
 
 export interface ChatMessage {
@@ -75,6 +76,7 @@ export interface ProductImage {
   productId?: string;
   imagePath: string;
   isMain: boolean;
+  file?: File;
 }
 
 export interface Product {

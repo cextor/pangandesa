@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useAuth } from '../contexts/AuthContext';
+import { useOrder } from '../contexts/OrderContext';
 
 const SALES_DATA = [
   { name: 'Tomat Segar', value: 40, color: '#f97316' },
@@ -70,6 +71,7 @@ function ActionModal({ isOpen, onClose, title, children }: DashboardModalProps) 
 
 export default function SellerDashboard({ orders = [], onNavigate }: { orders?: any[], onNavigate: (item: string) => void }) {
   const { user } = useAuth();
+  const { ordersLoaded } = useOrder();
   const [modalContent, setModalContent] = React.useState<{ title: string, content: React.ReactNode } | null>(null);
 
   // Filter States
@@ -274,6 +276,7 @@ export default function SellerDashboard({ orders = [], onNavigate }: { orders?: 
     const totalSalesVal = salesList.reduce((sum, item) => sum + item.value, 0);
 
     if (totalSalesVal === 0) {
+      if (ordersLoaded) return [];
       // Fallback to mock data if there are no sales in this timeframe
       return [
         { name: 'Tomat Segar', value: 40, color: '#f97316' },
@@ -311,7 +314,7 @@ export default function SellerDashboard({ orders = [], onNavigate }: { orders?: 
         });
       }
     });
-    if (totalKg === 0) return '245 kg'; // Mock fallback
+    if (totalKg === 0) return ordersLoaded ? '0 kg' : '245 kg'; // Mock fallback
     return `${totalKg} kg`;
   }, [filteredOrders]);
 
@@ -342,6 +345,7 @@ export default function SellerDashboard({ orders = [], onNavigate }: { orders?: 
     sellerList.sort((a, b) => b.revenueNum - a.revenueNum);
 
     if (sellerList.length === 0) {
+      if (ordersLoaded) return [];
       // Fallback
       return [
         {
@@ -372,6 +376,7 @@ export default function SellerDashboard({ orders = [], onNavigate }: { orders?: 
   const dynamicTimeline = React.useMemo(() => {
     const harvestOrders = filteredOrders.filter(o => o.status === 'WAITING_HARVEST');
     if (harvestOrders.length === 0) {
+      if (ordersLoaded) return [];
       return [
         { date: "10 Mei 2024", name: "Tomat Segar", type: "Panen" },
         { date: "11 Mei 2024", name: "Jagung Manis", type: "Panen" },
@@ -529,6 +534,10 @@ export default function SellerDashboard({ orders = [], onNavigate }: { orders?: 
                         }}
                      />
                    ))
+                 ) : ordersLoaded ? (
+                    <div className="text-center py-12 text-slate-400 font-bold uppercase text-xs tracking-wider">
+                       Belum ada pre-order masuk
+                    </div>
                  ) : (
                    <>
                      <OrderItem 
@@ -636,16 +645,22 @@ export default function SellerDashboard({ orders = [], onNavigate }: { orders?: 
               </button>
             </div>
             <div className="space-y-5 sm:space-y-6">
-              {dynamicBestSellers.map((item, idx) => (
-                <BestSellerItem 
-                  key={idx}
-                  img={item.img || "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?q=80&w=200"} 
-                  name={item.name}
-                  amount={item.amount}
-                  revenue={item.revenue}
-                  onClick={() => handleAction(`Performa: ${item.name}`, <p className="font-medium text-slate-600">{item.name} menyumbang volume penjualan sebesar {item.amount} dengan total omzet {item.revenue} pada periode ini.</p>)}
-                />
-              ))}
+              {dynamicBestSellers.length > 0 ? (
+                dynamicBestSellers.map((item, idx) => (
+                  <BestSellerItem 
+                    key={idx}
+                    img={item.img || "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?q=80&w=200"} 
+                    name={item.name}
+                    amount={item.amount}
+                    revenue={item.revenue}
+                    onClick={() => handleAction(`Performa: ${item.name}`, <p className="font-medium text-slate-600">{item.name} menyumbang volume penjualan sebesar {item.amount} dengan total omzet {item.revenue} pada periode ini.</p>)}
+                  />
+                ))
+              ) : (
+                <div className="text-center py-8 text-slate-400 font-bold uppercase text-xs tracking-wider">
+                  Belum ada data penjualan
+                </div>
+              )}
             </div>
           </div>
 
@@ -663,9 +678,15 @@ export default function SellerDashboard({ orders = [], onNavigate }: { orders?: 
                 </button>
               </div>
               <div className="relative pl-6 sm:pl-8 space-y-6 sm:space-y-8 before:content-[''] before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-100">
-                {dynamicTimeline.map((item, idx) => (
-                  <TimelineItem key={idx} date={item.date} name={item.name} type={item.type} />
-                ))}
+                {dynamicTimeline.length > 0 ? (
+                  dynamicTimeline.map((item, idx) => (
+                    <TimelineItem key={idx} date={item.date} name={item.name} type={item.type} />
+                  ))
+                ) : (
+                  <div className="text-center py-6 text-slate-400 font-bold uppercase text-xs tracking-wider">
+                    Belum ada jadwal panen
+                  </div>
+                )}
               </div>
             </div>
 

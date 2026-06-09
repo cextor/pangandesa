@@ -69,8 +69,25 @@ export const ProductService = {
         categoryId = 3;
       }
 
+      let sellerId = 2;
+      let farmerName = 'Petani Maju';
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          const parsed = JSON.parse(storedUser);
+          if (parsed && parsed.id) {
+            sellerId = Number(parsed.id);
+          }
+          if (parsed && parsed.name) {
+            farmerName = parsed.name;
+          }
+        } catch (e) {
+          console.error('Failed to parse user from localStorage in ProductService', e);
+        }
+      }
+
       const payload = {
-        seller_id: 2, // Default seller: Petani Maju has ID 2
+        seller_id: sellerId,
         category_id: categoryId,
         name: productData.name,
         description: productData.description,
@@ -94,7 +111,7 @@ export const ProductService = {
         name: p.name,
         price: Number(p.price),
         unit: p.unit,
-        farmer: 'Petani Maju',
+        farmer: farmerName,
         category: productData.category || 'Sayur',
         image: p.image,
         harvestDate: p.harvest_date,
@@ -140,12 +157,23 @@ export const ProductService = {
       const response = await apiClient.put(`/products/${id}`, payload);
       const p = response.data.data;
 
+      let farmerName = 'Petani Maju';
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          const parsed = JSON.parse(storedUser);
+          if (parsed && parsed.name) {
+            farmerName = parsed.name;
+          }
+        } catch (e) {}
+      }
+
       return {
         id: String(id),
         name: productData.name || '',
         price: Number(productData.price || 0),
         unit: productData.unit || 'kg',
-        farmer: 'Petani Maju',
+        farmer: farmerName,
         category: productData.category || 'Sayur',
         image: productData.image || '',
         harvestDate: productData.harvestDate || '',
@@ -158,6 +186,22 @@ export const ProductService = {
       };
     } catch (error) {
       console.error('Failed to update product:', error);
+      throw error;
+    }
+  },
+
+  uploadProductImage: async (file: File): Promise<string> => {
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const response = await apiClient.post('/products/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      return response.data.url;
+    } catch (error) {
+      console.error('Failed to upload product image:', error);
       throw error;
     }
   },

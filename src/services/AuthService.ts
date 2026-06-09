@@ -46,5 +46,41 @@ export const AuthService = {
       console.error('Update profile failed:', error);
       throw error;
     }
+  },
+
+  changePassword: async (userId: string | number, payload: any): Promise<any> => {
+    try {
+      const response = await apiClient.put(`/auth/change-password/${userId}`, payload);
+      return response.data;
+    } catch (error) {
+      console.error('Change password failed:', error);
+      throw error;
+    }
+  },
+
+  changePin: async (userId: string | number, pin: string): Promise<any> => {
+    try {
+      const response = await apiClient.put(`/auth/change-pin/${userId}`, { pin });
+      return response.data;
+    } catch (error) {
+      console.error('Change PIN failed:', error);
+      throw error;
+    }
+  },
+
+  uploadAvatar: async (userId: string | number, file: File): Promise<any> => {
+    try {
+      const formData = new FormData();
+      formData.append('avatar', file);
+      const response = await apiClient.post(`/auth/upload-avatar/${userId}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Upload avatar failed:', error);
+      throw error;
+    }
   }
 };

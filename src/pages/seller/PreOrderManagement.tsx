@@ -27,7 +27,7 @@ import { useNavigate } from 'react-router-dom';
 import { ensureDayMonthYear } from '../../utils/harvestHelper';
 
 export default function PreOrderManagement() {
-  const { orders, updateOrderStatus } = useOrder();
+  const { orders, updateOrderStatus, ordersLoaded } = useOrder();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -58,8 +58,8 @@ export default function PreOrderManagement() {
     'CANCELLED'
   ];
 
-  // Map database orders or fall back to mock orders for interactive testing
-  const baseOrders = orders.length > 0 ? orders : [
+  // Map database orders or fall back to mock orders for interactive testing if not loaded
+  const baseOrders = ordersLoaded ? orders : (orders.length > 0 ? orders : [
     {
       id: 'po-101',
       buyerName: 'Andi Wijaya',
@@ -102,7 +102,7 @@ export default function PreOrderManagement() {
         }
       ]
     }
-  ];
+  ]);
 
   const filteredOrders = baseOrders.filter(order => {
     const matchesSearch = 
@@ -372,7 +372,7 @@ export default function PreOrderManagement() {
            </div>
         </section>
 
-        {/* Real-time Demand Analytics */}
+        {/* Real-time Demand Analytics (Hidden for now)
         <section className="space-y-6">
            <div className="flex items-center justify-between">
               <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight flex items-center gap-3">
@@ -409,8 +409,9 @@ export default function PreOrderManagement() {
               ))}
            </div>
         </section>
+        */}
 
-        {/* Capacity Confirmation */}
+        {/* Capacity Confirmation (Hidden for now)
         <section className="bg-white rounded-[40px] border border-slate-100 p-10 shadow-sm overflow-hidden relative">
            <div className="relative z-10 flex flex-col lg:flex-row gap-12">
               <div className="lg:w-1/3">
@@ -450,9 +451,9 @@ export default function PreOrderManagement() {
               </div>
            </div>
            
-           {/* Background Accents */}
            <div className="absolute top-0 right-0 w-64 h-64 bg-brand-50 rounded-full blur-[100px] -mr-32 -mt-32 opacity-50" />
         </section>
+        */}
 
         {/* AI Insight Banner */}
         <div className="bg-emerald-950 rounded-[40px] p-10 flex flex-col md:flex-row items-center gap-10 text-white relative overflow-hidden group">

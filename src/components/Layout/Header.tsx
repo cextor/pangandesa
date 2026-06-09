@@ -38,10 +38,14 @@ export default function Header({ onCartClick, onMenuClick, onLogout, onNavigate,
   const profileRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
 
-  const isAdmin = activeRole === 'seller';
-  const userName = user?.name || (isAdmin ? 'Pak Joko' : 'Andi Wijaya');
-  const userLocation = user?.village ? `Desa ${user.village}` : (isAdmin ? 'Desa Sukamaju' : 'Jakarta');
-  const userStatus = isAdmin ? 'Penjual Verified' : 'Pembeli Verified';
+  const isSeller = activeRole === 'seller';
+  const isAdminRole = activeRole === 'admin';
+  const userName = user?.name || (isAdminRole ? 'Admin PanganDesa' : (isSeller ? 'Pak Joko' : 'Andi Wijaya'));
+  const userLocation = user?.village ? `Desa ${user.village}` : (isAdminRole ? 'Kantor Pusat' : (isSeller ? 'Desa Sukamaju' : 'Jakarta'));
+  
+  let userStatus = 'Pembeli Verified';
+  if (isSeller) userStatus = 'Penjual Verified';
+  if (isAdminRole) userStatus = 'Administrator';
 
   const fetchNotifications = async () => {
     const userId = user?.id || (activeRole === 'seller' ? 2 : 3);
@@ -174,6 +178,7 @@ export default function Header({ onCartClick, onMenuClick, onLogout, onNavigate,
           )}
           {activeRole === 'buyer' && (
             <button 
+              id="header-cart-btn"
               onClick={onCartClick}
               className="p-2 sm:p-3 rounded-full text-slate-400 hover:bg-slate-50 hover:text-brand-500 transition-all relative border border-transparent group"
             >
@@ -303,7 +308,7 @@ export default function Header({ onCartClick, onMenuClick, onLogout, onNavigate,
               <div className="p-2 px-3 border-b border-slate-50 mb-1 flex flex-col">
                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Status Akun</p>
                  <div className="flex items-center gap-1.5">
-                    <div className={`w-1.5 h-1.5 ${activeRole === 'seller' ? 'bg-brand-500' : 'bg-emerald-500'} rounded-full animate-pulse`} />
+                    <div className={`w-1.5 h-1.5 ${activeRole === 'admin' ? 'bg-red-500' : activeRole === 'seller' ? 'bg-brand-500' : 'bg-emerald-500'} rounded-full animate-pulse`} />
                     <span className="text-[10px] font-black text-slate-650 uppercase tracking-tight leading-none">{userStatus}</span>
                  </div>
               </div>

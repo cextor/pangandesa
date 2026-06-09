@@ -10,7 +10,7 @@ class UserModel extends Model
     protected $returnType       = 'array';
     protected $allowedFields    = [
         'name', 'email', 'password', 'role', 'phone', 'address', 'village', 'rating',
-        'company_name', 'pic_name', 'nib', 'npwp', 'bank_account', 'avatar'
+        'company_name', 'pic_name', 'nib', 'npwp', 'bank_account', 'avatar', 'pin'
     ];
     protected $useTimestamps    = true;
     

@@ -14,7 +14,8 @@ import {
   Package,
   AlertCircle,
   LayoutGrid,
-  List
+  List,
+  CheckCircle2
 } from 'lucide-react';
 import { Product } from '../../types';
 import ProductForm from '../../components/Seller/ProductForm';
@@ -47,6 +48,7 @@ export default function ProductManagement() {
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [viewMode, setViewMode] = React.useState<'grid' | 'list'>('grid');
   const [filterPreOrder, setFilterPreOrder] = React.useState<'ALL' | 'PRE_ORDER' | 'READY'>('ALL');
+  const [successToast, setSuccessToast] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     ProductService.getAllProducts().then((data) => {
@@ -76,6 +78,8 @@ export default function ProductManagement() {
       try {
         const updated = await ProductService.updateProduct(editingProduct.id, productData);
         setProducts(products.map(p => p.id === editingProduct.id ? updated : p));
+        setSuccessToast('Produk berhasil diperbarui!');
+        setTimeout(() => setSuccessToast(null), 3000);
       } catch (err) {
         alert('Gagal memperbarui produk di database.');
       }
@@ -83,6 +87,8 @@ export default function ProductManagement() {
       try {
         const newProduct = await ProductService.createProduct(productData);
         setProducts([newProduct, ...products]);
+        setSuccessToast('Produk baru berhasil ditambahkan!');
+        setTimeout(() => setSuccessToast(null), 3000);
       } catch (err) {
         alert('Gagal menambahkan produk baru ke database.');
       }
@@ -103,7 +109,7 @@ export default function ProductManagement() {
   if (isAddingMode || editingProduct) {
     return (
       <div className="flex-1 bg-slate-50 p-0 lg:p-10 flex flex-col items-center min-h-screen lg:h-full lg:overflow-hidden">
-        <div className="w-full max-w-2xl h-full lg:h-auto shadow-2xl lg:rounded-[40px] flex flex-col bg-white overflow-hidden">
+        <div className="w-full max-w-5xl h-full lg:h-auto shadow-2xl lg:rounded-[40px] flex flex-col bg-white overflow-hidden">
           <ProductForm 
             product={editingProduct || undefined} 
             onSave={handleSave} 
@@ -540,6 +546,19 @@ export default function ProductManagement() {
                </button>
             </div>
           </motion.div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {successToast && (
+        <div className="fixed bottom-8 right-8 z-50 bg-[#1a4d2e] text-white px-6 py-4 rounded-2xl shadow-xl shadow-brand-950/20 border border-emerald-800 flex items-center gap-3 animate-fade-in">
+          <div className="w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center">
+            <CheckCircle2 size={18} className="text-emerald-400" />
+          </div>
+          <div>
+            <p className="text-xs font-black uppercase tracking-wider">Berhasil</p>
+            <p className="text-[11px] text-slate-100 font-medium">{successToast}</p>
+          </div>
         </div>
       )}
     </div>

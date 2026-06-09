@@ -48,7 +48,7 @@ export default function Sidebar({ activeRole, onRoleChange, activeItem, onItemCh
     { id: 'kategori', label: 'Kategori', icon: Grid },
     { id: 'preorder', label: 'Pre-Order', icon: Calendar },
     { id: 'request-po', label: 'Request PO', icon: Sprout },
-    { id: 'promo', label: 'Promo', icon: Tag },
+    // { id: 'promo', label: 'Promo', icon: Tag },
     { id: 'favorit', label: 'Favorit', icon: Heart },
     { id: 'pesanan', label: 'Pesanan Saya', icon: ShoppingBag },
     { id: 'lacak', label: 'Lacak Pesanan', icon: Truck },
@@ -78,7 +78,7 @@ export default function Sidebar({ activeRole, onRoleChange, activeItem, onItemCh
     { id: 'verifikasi', label: 'Verifikasi Pembayaran', icon: CreditCard, badge: '!' },
     { id: 'pengguna', label: 'Daftar User', icon: Users },
     { id: 'laporan', label: 'Laporan Transaksi', icon: BarChart3 },
-    { id: 'promo', label: 'Kelola Promo', icon: Tag },
+    // { id: 'promo', label: 'Kelola Promo', icon: Tag },
     { id: 'pengaturan-admin', label: 'Konfigurasi Sistem', icon: Settings },
   ];
 
@@ -163,15 +163,7 @@ export default function Sidebar({ activeRole, onRoleChange, activeItem, onItemCh
           ))}
           
           <div className="p-4 space-y-4">
-             {/* Promo Card */}
-             <div className="bg-brand-900 rounded-[28px] p-6 text-white relative overflow-hidden group cursor-pointer shadow-xl shadow-brand-900/10">
-                <div className="relative z-10">
-                   <h4 className="text-[11px] font-black uppercase tracking-widest mb-1">Pre-Order Minggu Ini</h4>
-                   <p className="text-xs text-brand-100 leading-tight">Diskon ongkir hingga <span className="text-white font-black text-lg block">50%</span></p>
-                   <button className="mt-4 w-full bg-white text-brand-900 py-2.5 rounded-xl text-[10px] font-black hover:bg-brand-50 transition-colors uppercase tracking-wider shadow-sm"> Lihat Semua </button>
-                </div>
-                <Percent className="absolute -bottom-4 -right-4 w-20 h-20 text-white/10 transform rotate-12 group-hover:scale-110 transition-transform opacity-30" />
-             </div>
+             {/* Promo Card Hidden */}
 
              {/* Security Banner */}
              <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 flex items-center gap-3">

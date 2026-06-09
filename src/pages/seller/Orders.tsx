@@ -21,7 +21,7 @@ import { useOrder } from '../../contexts/OrderContext';
 import { useNavigate } from 'react-router-dom';
 
 export default function Orders() {
-  const { orders, updateOrderStatus } = useOrder();
+  const { orders, updateOrderStatus, ordersLoaded } = useOrder();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'active' | 'history'>('active');
   const [searchQuery, setSearchQuery] = useState('');
@@ -42,8 +42,8 @@ export default function Orders() {
 
   const historyStatuses = ['COMPLETED', 'CANCELLED'];
 
-  // Add some mock cancelled orders for complete history testing if none exists
-  const baseOrders = orders.length > 0 ? orders : [
+  // Add some mock cancelled orders for complete history testing if none exists and not loaded from DB
+  const baseOrders = ordersLoaded ? orders : (orders.length > 0 ? orders : [
     {
       id: 'ord-101',
       buyerName: 'Andi Wijaya',
@@ -55,9 +55,9 @@ export default function Orders() {
       createdAt: '30/05/2026',
       items: [{ productId: 'p1', name: 'Tomat Segar', quantity: 2, price: 16000, unit: 'kg', image: 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?q=80&w=200' }]
     }
-  ];
+  ]);
 
-  const processedOrders = [
+  const processedOrders = ordersLoaded ? orders : [
     ...baseOrders,
     // Add mock cancelled/completed history if it is empty to ensure maximum premium experience
     {

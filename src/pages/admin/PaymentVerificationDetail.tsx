@@ -59,7 +59,8 @@ export default function PaymentVerificationDetail({ orders, onConfirmPayment }: 
     );
   }
 
-  const isDp = order.status === 'WAITING_ADMIN_DP' || ['WAITING_HARVEST', 'HARVEST_CONFIRMED_SELLER', 'WAITING_FINAL_PAYMENT'].includes(order.status);
+  const isDp = order.status === 'WAITING_ADMIN_DP' || order.status === 'WAITING_PAYMENT_DP' || ['WAITING_HARVEST', 'HARVEST_CONFIRMED_SELLER'].includes(order.status);
+  const isRejected = order.status === 'WAITING_PAYMENT_DP' || order.status === 'WAITING_FINAL_PAYMENT';
   const subtotal = (order.items || []).reduce((acc, item) => acc + (item.price * item.quantity), 0);
   const ongkir = 15000;
   const biayaLayanan = Math.max(0, order.totalAmount - subtotal - ongkir);
@@ -75,7 +76,7 @@ export default function PaymentVerificationDetail({ orders, onConfirmPayment }: 
   const bankHolder = bankSubParts[1] || 'SRIWIJAYA DIGITAL INDONESIA';
 
   return (
-    <div className="flex-1 bg-slate-50 overflow-y-auto custom-scrollbar flex flex-col min-h-screen">
+    <div className="flex-1 bg-slate-50 overflow-y-auto custom-scrollbar flex flex-col h-full">
       {/* Header */}
       <div className="p-4 sm:p-6 bg-white border-b border-slate-100 shrink-0">
         <div className="max-w-4xl mx-auto flex items-center gap-4">
@@ -336,29 +337,53 @@ export default function PaymentVerificationDetail({ orders, onConfirmPayment }: 
                   </div>
                 )
               ) : (
-                <button 
-                  onClick={() => {
-                    const isDp = ['WAITING_HARVEST', 'HARVEST_CONFIRMED_SELLER', 'WAITING_FINAL_PAYMENT'].includes(order.status);
-                    setConfirmModal({
-                      show: true,
-                      title: 'Batalkan Verifikasi?',
-                      desc: `Apakah Anda yakin ingin membatalkan konfirmasi pembayaran ${isDp ? 'DP' : 'Pelunasan'} untuk pesanan #${order.id.toUpperCase()}?`,
-                      type: 'cancel',
-                      action: () => {
-                        try {
-                          onConfirmPayment(order.id, isDp ? 'CANCEL_DP' : 'CANCEL_FINAL');
-                          showToastMsg(`Konfirmasi pembayaran pesanan #${order.id.toUpperCase()} berhasil dibatalkan!`, 'success');
-                          setTimeout(() => navigate('/admin/verifikasi'), 2000);
-                        } catch (error) {
-                          showToastMsg(`Gagal membatalkan konfirmasi pembayaran pesanan #${order.id.toUpperCase()}. Silakan coba lagi.`, 'error');
-                        }
-                      }
-                    });
-                  }}
-                  className="w-full py-3 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl font-black text-xs uppercase tracking-wider transition-all border-0 cursor-pointer flex items-center justify-center gap-1.5 font-bold"
-                >
-                  <XCircle size={14} /> Batalkan Verifikasi
-                </button>
+                ['WAITING_PAYMENT_DP', 'WAITING_HARVEST', 'HARVEST_CONFIRMED_SELLER', 'WAITING_FINAL_PAYMENT', 'SHIPPING', 'DELIVERED', 'COMPLETED'].includes(order.status) ? (
+                  <div className="space-y-3 w-full">
+                    {order.status === 'WAITING_PAYMENT_DP' && (
+                      <div className="bg-red-50 text-red-650 p-4 rounded-2xl border border-red-100 text-xs font-bold text-center uppercase tracking-wider animate-in fade-in">
+                        Pembayaran DP Ditolak
+                      </div>
+                    )}
+                    {order.status === 'WAITING_FINAL_PAYMENT' && order.paymentProof && (
+                      <div className="bg-red-50 text-red-650 p-4 rounded-2xl border border-red-100 text-xs font-bold text-center uppercase tracking-wider animate-in fade-in">
+                        Pembayaran Pelunasan Ditolak
+                      </div>
+                    )}
+                    <button 
+                      onClick={() => {
+                        setConfirmModal({
+                          show: true,
+                          title: isRejected ? 'Batalkan Penolakan?' : 'Batalkan Konfirmasi?',
+                          desc: isRejected
+                            ? `Apakah Anda yakin ingin membatalkan penolakan pembayaran ${isDp ? 'DP' : 'Pelunasan'} untuk pesanan #${order.id.toUpperCase()}?`
+                            : `Apakah Anda yakin ingin membatalkan konfirmasi pembayaran ${isDp ? 'DP' : 'Pelunasan'} untuk pesanan #${order.id.toUpperCase()}?`,
+                          type: 'cancel',
+                          action: () => {
+                            try {
+                              onConfirmPayment(order.id, isDp ? 'CANCEL_DP' : 'CANCEL_FINAL');
+                              showToastMsg(
+                                isRejected
+                                  ? `Penolakan pembayaran pesanan #${order.id.toUpperCase()} berhasil dibatalkan!`
+                                  : `Konfirmasi pembayaran pesanan #${order.id.toUpperCase()} berhasil dibatalkan!`, 
+                                'success'
+                              );
+                              setTimeout(() => navigate('/admin/verifikasi'), 2000);
+                            } catch (error) {
+                              showToastMsg(`Gagal membatalkan aksi pesanan #${order.id.toUpperCase()}. Silakan coba lagi.`, 'error');
+                            }
+                          }
+                        });
+                      }}
+                      className="w-full py-3 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl font-black text-xs uppercase tracking-wider transition-all border-0 cursor-pointer flex items-center justify-center gap-1.5 font-bold"
+                    >
+                      <XCircle size={14} /> {isRejected ? 'Batal Tolak' : 'Batal Konfirmasi'}
+                    </button>
+                  </div>
+                ) : order.status === 'CANCELLED' ? (
+                  <div className="bg-slate-50 text-slate-500 p-4 rounded-2xl border border-slate-200 text-xs font-bold text-center uppercase tracking-wider">
+                    Pesanan Dibatalkan
+                  </div>
+                ) : null
               )}
             </div>
 

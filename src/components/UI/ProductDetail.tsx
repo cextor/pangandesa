@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { Star, MapPin, Calendar, User, Sprout, ChevronLeft, Minus, Plus, Heart, Share2, ShoppingCart } from 'lucide-react';
 import { Product } from '../../types';
 import { parseHarvestSchedules, ensureDayMonthYear } from '../../utils/harvestHelper';
+import { triggerFlyToCartAnimation } from '../../utils/cartAnimation';
 
 const cleanHarvestDate = (dateStr?: string) => {
   if (!dateStr) return '';
@@ -212,15 +213,18 @@ export default function ProductDetail({ product, onBack, onPreOrder }: ProductDe
                     </button>
                   </div>
                   <button 
-                    onClick={() => onPreOrder(
-                      {
-                        ...product,
-                        price: activePrice,
-                        stock: activeStock
-                      },
-                      quantity,
-                      selectedSchedule?.date
-                    )}
+                    onClick={(e) => {
+                      triggerFlyToCartAnimation(e, product.image);
+                      onPreOrder(
+                        {
+                          ...product,
+                          price: activePrice,
+                          stock: activeStock
+                        },
+                        quantity,
+                        selectedSchedule?.date
+                      );
+                    }}
                     disabled={activeStock <= 0}
                     className={`flex-1 py-3.5 sm:py-5 rounded-xl sm:rounded-2xl font-black text-xs sm:text-base lg:text-lg shadow-xl transition-all flex items-center justify-center gap-2 sm:gap-3 uppercase tracking-tight border-0 ${
                       activeStock <= 0

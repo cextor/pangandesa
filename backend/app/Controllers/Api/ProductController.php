@@ -2,6 +2,7 @@
 namespace App\Controllers\Api;
 use CodeIgniter\RESTful\ResourceController;
 use App\Models\ProductModel;
+use App\Helpers\PathHelper;
 
 class ProductController extends ResourceController
 {
@@ -44,7 +45,7 @@ class ProductController extends ResourceController
             'unit' => $data['unit'] ?? 'kg',
             'stock' => $data['stock'] ?? 0,
             'is_preorder' => $data['is_preorder'] ?? 0,
-            'image' => $data['image'] ?? '',
+            'image' => PathHelper::toRelative($data['image'] ?? ''),
             'harvest_date' => $data['harvest_date'] ?? '',
             'rating' => $data['rating'] ?? 0,
             'review_count' => $data['review_count'] ?? 0
@@ -86,7 +87,7 @@ class ProductController extends ResourceController
                 foreach ($images as $img) {
                     $imgBuilder->insert([
                         'product_id' => $productId,
-                        'image_path' => $img['imagePath'] ?? $img['image_path'] ?? '',
+                        'image_path' => PathHelper::toRelative($img['imagePath'] ?? $img['image_path'] ?? ''),
                         'is_main' => (int)($img['isMain'] ?? $img['is_main'] ?? 0)
                     ]);
                 }
@@ -94,7 +95,7 @@ class ProductController extends ResourceController
                 // Fallback to single main image if images array is empty
                 $imgBuilder->insert([
                     'product_id' => $productId,
-                    'image_path' => $productData['image'],
+                    'image_path' => PathHelper::toRelative($productData['image']),
                     'is_main' => 1
                 ]);
             }
@@ -128,7 +129,7 @@ class ProductController extends ResourceController
         if (isset($data['unit'])) $productData['unit'] = $data['unit'];
         if (isset($data['stock'])) $productData['stock'] = $data['stock'];
         if (isset($data['is_preorder'])) $productData['is_preorder'] = $data['is_preorder'];
-        if (isset($data['image'])) $productData['image'] = $data['image'];
+        if (isset($data['image'])) $productData['image'] = PathHelper::toRelative($data['image']);
         if (isset($data['harvest_date'])) $productData['harvest_date'] = $data['harvest_date'];
         
         if ($this->model->update($id, $productData)) {
@@ -166,7 +167,7 @@ class ProductController extends ResourceController
                 foreach ($data['images'] as $img) {
                     $imgBuilder->insert([
                         'product_id' => $id,
-                        'image_path' => $img['imagePath'] ?? $img['image_path'] ?? '',
+                        'image_path' => PathHelper::toRelative($img['imagePath'] ?? $img['image_path'] ?? ''),
                         'is_main' => (int)($img['isMain'] ?? $img['is_main'] ?? 0)
                     ]);
                 }
@@ -175,11 +176,11 @@ class ProductController extends ResourceController
                 $imgBuilder = $db->table('product_images');
                 $existing = $imgBuilder->where(['product_id' => $id, 'is_main' => 1])->get()->getRowArray();
                 if ($existing) {
-                    $imgBuilder->where(['product_id' => $id, 'is_main' => 1])->update(['image_path' => $data['image']]);
+                    $imgBuilder->where(['product_id' => $id, 'is_main' => 1])->update(['image_path' => PathHelper::toRelative($data['image'])]);
                 } else {
                     $imgBuilder->insert([
                         'product_id' => $id,
-                        'image_path' => $data['image'],
+                        'image_path' => PathHelper::toRelative($data['image']),
                         'is_main' => 1
                     ]);
                 }
@@ -205,5 +206,36 @@ class ProductController extends ResourceController
         }
         
         return $this->failServerError('Failed to delete product');
+    }
+
+    public function uploadImage()
+    {
+        $file = $this->request->getFile('image');
+        if (!$file || !$file->isValid()) {
+            return $this->fail('Invalid image file');
+        }
+
+        if ($file->getSize() > 2 * 1024 * 1024) {
+            return $this->fail('Image file exceeds the 2MB size limit');
+        }
+
+        $newName = $file->getRandomName();
+        $uploadDir = FCPATH . 'uploads/products/';
+        
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
+
+        if ($file->move($uploadDir, $newName)) {
+            $imageRelative = 'uploads/products/' . $newName;
+            $imageUrl = PathHelper::toAbsolute($imageRelative);
+            return $this->respond([
+                'status' => 200,
+                'message' => 'Image uploaded successfully',
+                'url' => $imageUrl
+            ]);
+        }
+
+        return $this->failServerError('Failed to move uploaded image');
     }
 }

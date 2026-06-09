@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion } from 'motion/react';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
@@ -14,7 +14,8 @@ import {
   Info,
   ShieldCheck,
   CheckCircle2,
-  CreditCard
+  CreditCard,
+  Loader2
 } from 'lucide-react';
 
 interface SellerProfileProps {
@@ -22,7 +23,7 @@ interface SellerProfileProps {
 }
 
 export default function SellerProfilePage({ onBack }: SellerProfileProps) {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, uploadAvatar } = useAuth();
   
   // Dynamic state bindings initialized from database
   const [name, setName] = useState(user?.name || '');
@@ -34,6 +35,26 @@ export default function SellerProfilePage({ onBack }: SellerProfileProps) {
   const [address, setAddress] = useState(user?.address || '');
   
   const [isSaved, setIsSaved] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      await uploadAvatar(file);
+    } catch (err) {
+      console.error("Failed to upload seller avatar", err);
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,6 +80,13 @@ export default function SellerProfilePage({ onBack }: SellerProfileProps) {
 
   return (
     <div className="flex-1 bg-slate-50 overflow-y-auto custom-scrollbar p-4 md:p-8 lg:p-10">
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handleFileChange} 
+        accept="image/jpeg,image/png,image/webp" 
+        className="hidden" 
+      />
       <div className="max-w-4xl mx-auto space-y-6 md:space-y-10 pb-20">
         {/* Header Navigation */}
         <div className="flex items-center gap-4 md:gap-6">
@@ -83,7 +111,7 @@ export default function SellerProfilePage({ onBack }: SellerProfileProps) {
            
            <div className="relative pt-12 md:pt-16 px-6 md:px-10 pb-8 md:pb-10 flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-8">
               <div className="relative">
-                  <div className="w-32 h-32 md:w-40 md:h-40 rounded-[32px] md:rounded-[48px] overflow-hidden border-4 md:border-8 border-white shadow-2xl bg-slate-50 flex items-center justify-center ring-1 ring-slate-100 shrink-0">
+                  <div className="w-32 h-32 md:w-40 md:h-40 rounded-[32px] md:rounded-[48px] overflow-hidden border-4 md:border-8 border-white shadow-2xl bg-slate-50 flex items-center justify-center ring-1 ring-slate-100 shrink-0 relative">
                      {user?.avatar ? (
                         <img 
                           src={user.avatar} 
@@ -93,8 +121,18 @@ export default function SellerProfilePage({ onBack }: SellerProfileProps) {
                      ) : (
                         <User className="w-16 h-16 md:w-20 md:h-20 text-slate-300" />
                      )}
+                     {isUploading && (
+                       <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center text-white">
+                          <Loader2 className="animate-spin" size={32} />
+                       </div>
+                     )}
                   </div>
-                  <button className="absolute -bottom-1 -right-1 md:-bottom-2 md:-right-2 bg-brand-600 text-white w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-[20px] flex items-center justify-center shadow-xl hover:bg-brand-700 hover:rotate-6 transition-all border-4 border-white cursor-pointer group/cam">
+                  <button 
+                    type="button"
+                    onClick={handleAvatarClick}
+                    disabled={isUploading}
+                    className="absolute -bottom-1 -right-1 md:-bottom-2 md:-right-2 bg-brand-600 text-white w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-[20px] flex items-center justify-center shadow-xl hover:bg-brand-700 hover:rotate-6 transition-all border-4 border-white cursor-pointer group/cam disabled:opacity-50"
+                  >
                      <Camera size={18} className="md:w-[22px] md:h-[22px] group-hover/cam:scale-110 transition-transform" />
                   </button>
               </div>

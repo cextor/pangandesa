@@ -30,6 +30,7 @@ export const OrderService = {
         trackingNumber: o.tracking_number,
         bastUrl: o.bast_url,
         paymentProof: o.payment_proof,
+        shippingAddress: o.shipping_address,
         items: (o.items || []).map((item: any) => ({
           productId: String(item.product_id),
           name: item.name,
@@ -54,6 +55,7 @@ export const OrderService = {
       totalAmount: orderData.totalAmount,
       dpAmount: orderData.dpAmount,
       remainingAmount: orderData.remainingAmount,
+      shipping_address: orderData.shippingAddress,
       items: (orderData.items || []).map(item => ({
         productId: item.productId,
         name: item.name,
@@ -75,6 +77,7 @@ export const OrderService = {
       dpAmount: Number(o.dp_amount),
       remainingAmount: Number(o.remaining_amount),
       status: o.status,
+      shippingAddress: o.shipping_address,
       createdAt: new Date().toLocaleDateString('id-ID'),
       createdAtRaw: o.created_at || new Date().toISOString(),
       harvestConfirmedBySeller: false,
@@ -84,6 +87,6 @@ export const OrderService = {
   },
 
   updateOrderStatus: async (orderId: string, status: string, paymentProof?: string): Promise<void> => {
-    await apiClient.put(`/orders/${orderId}/status`, { status, payment_proof: paymentProof });
+    await apiClient.post(`/orders/${orderId}/status`, { status, payment_proof: paymentProof });
   }
 };

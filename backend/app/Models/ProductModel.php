@@ -1,6 +1,7 @@
 <?php
 namespace App\Models;
 use CodeIgniter\Model;
+use App\Helpers\PathHelper;
 
 class ProductModel extends Model
 {
@@ -51,7 +52,7 @@ class ProductModel extends Model
             $product['images'][] = [
                 'id' => (string)$img['id'],
                 'productId' => (string)$img['product_id'],
-                'imagePath' => $img['image_path'],
+                'imagePath' => PathHelper::toAbsolute($img['image_path']),
                 'isMain' => (int)$img['is_main'] == 1
             ];
             if ((int)$img['is_main'] == 1) {
@@ -66,7 +67,9 @@ class ProductModel extends Model
         
         // Populate the main single 'image' field for backward compatibility
         if ($mainImage) {
-            $product['image'] = $mainImage;
+            $product['image'] = PathHelper::toAbsolute($mainImage);
+        } else if (isset($product['image'])) {
+            $product['image'] = PathHelper::toAbsolute($product['image']);
         }
         
         // 2. Fetch schedules

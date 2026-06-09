@@ -30,7 +30,7 @@ import PaymentVerification from './pages/admin/PaymentVerification';
 import PaymentVerificationDetail from './pages/admin/PaymentVerificationDetail';
 import UserManagement from './pages/admin/UserManagement';
 import SystemReports from './pages/admin/SystemReports';
-import PromoManagement from './pages/admin/PromoManagement';
+// import PromoManagement from './pages/admin/PromoManagement';
 import SystemConfiguration from './pages/admin/SystemConfiguration';
 import Invoice from './components/Transaction/Invoice';
 import OrderForum from './components/Transaction/OrderForum';
@@ -47,7 +47,7 @@ import ChangePasswordPage from './pages/buyer/ChangePasswordPage';
 import PinManagementPage from './pages/buyer/PinManagementPage';
 import AddressPage from './pages/buyer/AddressPage';
 import PreOrderPage from './pages/buyer/PreOrderPage';
-import PromoPage from './pages/buyer/PromoPage';
+// import PromoPage from './pages/buyer/PromoPage';
 import HelpPage from './pages/buyer/HelpPage';
 import ActiveOrders from './pages/buyer/ActiveOrders';
 import BuyerRequestPO from './pages/buyer/BuyerRequestPO';
@@ -81,6 +81,133 @@ function OrderForumWrapper({ role }: { role: 'buyer' | 'seller' | 'admin' }) {
         navigate('/buyer');
       } : undefined}
     />
+  );
+}
+
+function WaitingVerification() {
+  const { orders, messages, sendMessage, loadChatMessages } = useOrder();
+  const navigate = useNavigate();
+
+  const latestWaitingOrder = React.useMemo(() => {
+    return [...orders]
+      .reverse()
+      .find(o => o.status === 'WAITING_ADMIN_DP' || o.status === 'WAITING_ADMIN_FINAL');
+  }, [orders]);
+
+  React.useEffect(() => {
+    if (latestWaitingOrder?.id) {
+      loadChatMessages(latestWaitingOrder.id);
+    }
+  }, [latestWaitingOrder?.id]);
+
+  if (!latestWaitingOrder) {
+    return <Navigate to="/buyer" replace />;
+  }
+
+  const amountToPay = latestWaitingOrder.status === 'WAITING_ADMIN_DP' 
+    ? latestWaitingOrder.dpAmount 
+    : latestWaitingOrder.remainingAmount;
+
+  const typeText = latestWaitingOrder.status === 'WAITING_ADMIN_DP' 
+    ? 'Down Payment (30%)' 
+    : 'Pelunasan (70%)';
+
+  const bankParts = latestWaitingOrder.paymentMethod 
+    ? latestWaitingOrder.paymentMethod.split(' - ')
+    : ['BNI', '1384354499 a.n SRIWIJAYA DIGITAL INDONESIA'];
+  
+  const bankName = bankParts[0] || 'BNI';
+  const bankRest = bankParts[1] || '1384354499 a.n SRIWIJAYA DIGITAL INDONESIA';
+  const bankSubParts = bankRest.split(' a.n ');
+  const bankNum = bankSubParts[0] || '1384354499';
+  const bankHolder = bankSubParts[1] || 'SRIWIJAYA DIGITAL INDONESIA';
+
+  return (
+    <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50/50 p-4 sm:p-8 md:p-12 flex flex-col items-center gap-6 animate-in fade-in duration-300">
+      <div className="max-w-md w-full space-y-6 bg-white rounded-[32px] p-8 sm:p-10 border border-slate-100 shadow-xl shadow-slate-100/50">
+        <div className="w-16 h-16 bg-emerald-50 rounded-[24px] flex items-center justify-center mx-auto text-emerald-600 animate-bounce-slow border-4 border-emerald-100 shrink-0">
+          <Clock size={28} />
+        </div>
+        <div className="text-center">
+          <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight font-display mb-1.5">Menunggu Verifikasi</h2>
+          <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
+            Bukti transfer pembayaran Anda sedang diverifikasi secara manual oleh Admin PanganDesa.
+          </p>
+        </div>
+
+        <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 text-left space-y-4">
+          <div className="flex justify-between items-center pb-3 border-b border-slate-200/60">
+            <div>
+              <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider">ID Pesanan</p>
+              <p className="text-xs font-black text-slate-800">#{latestWaitingOrder.id.toUpperCase()}</p>
+            </div>
+            <span className="bg-orange-50 text-orange-650 border border-orange-100 text-[8px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">
+              Pending
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mb-1">Rekening Bank Tujuan Transfer</p>
+              <div className="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-xl">
+                <div className="w-10 h-10 bg-[#1a4d2e] rounded-xl flex items-center justify-center text-white font-black text-xs font-display shrink-0">
+                  {bankName}
+                </div>
+                <div>
+                  <p className="text-[11px] font-black text-emerald-950">Transfer Bank {bankName} (Manual)</p>
+                  <p className="text-xs font-black text-[#1a4d2e] tracking-wider">{bankNum}</p>
+                  <p className="text-[8px] font-bold text-slate-500 uppercase tracking-tight mt-0.5">a.n {bankHolder}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 pt-1">
+              <div>
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider">Jenis Pembayaran</p>
+                <p className="text-xs font-bold text-slate-700">{typeText}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider">Jumlah Ditransfer</p>
+                <p className="text-xs font-black text-[#1a4d2e]">
+                  Rp {amountToPay.toLocaleString('id-ID')}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3 pt-2">
+          <button 
+            onClick={() => navigate('/buyer/pesanan')}
+            className="flex-1 py-3 bg-[#1a4d2e] hover:bg-black text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all border-0 cursor-pointer shadow-md shadow-emerald-950/10 active:scale-95"
+          >
+            Pantau Pesanan Saya
+          </button>
+          <button 
+            onClick={() => navigate('/buyer')}
+            className="flex-1 py-3 border border-slate-200 text-slate-500 hover:bg-slate-50 rounded-xl font-black text-xs uppercase tracking-wider transition-all cursor-pointer bg-white"
+          >
+            Kembali ke Beranda
+          </button>
+        </div>
+      </div>
+
+      <div className="max-w-md w-full bg-white rounded-[32px] p-5 sm:p-6 border border-slate-100 shadow-xl shadow-slate-100/50 space-y-4 text-left">
+        <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+          <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+          <h3 className="font-bold text-slate-800 text-sm sm:text-base">Diskusi Forum Transaksi</h3>
+        </div>
+        <div className="h-[400px] border border-slate-100 rounded-2xl overflow-hidden flex flex-col w-full">
+          <OrderForum 
+            order={latestWaitingOrder}
+            role="buyer"
+            messages={messages}
+            onSendMessage={(content, attachmentType) => sendMessage(latestWaitingOrder.id, content, 'buyer', attachmentType)}
+            hideHeader={true}
+          />
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -138,10 +265,13 @@ export default function App() {
         <Route path="verifikasi/:orderId" element={<PaymentVerificationDetail orders={orders} onConfirmPayment={handleAdminConfirmPayment} />} />
         <Route path="pengguna" element={<UserManagement />} />
         <Route path="laporan" element={<SystemReports orders={orders} />} />
-        <Route path="promo" element={<PromoManagement />} />
+        {/* <Route path="promo" element={<PromoManagement />} /> */}
         <Route path="pengaturan-admin" element={<SystemConfiguration />} />
         <Route path="transaksi-panen" element={<OrderForumWrapper role="admin" />} />
         <Route path="transaksi-panen/:orderId" element={<OrderForumWrapper role="admin" />} />
+        <Route path="profil-detail" element={<ProfileDetailPage onBack={() => navigate('/admin')} />} />
+        <Route path="ganti-password" element={<ChangePasswordPage onBack={() => navigate('/admin')} />} />
+        <Route path="pin-keamanan" element={<PinManagementPage onBack={() => navigate('/admin')} />} />
       </Route>
 
       {/* BUYER ROUTES */}
@@ -172,7 +302,7 @@ export default function App() {
         <Route path="produk" element={<AllProducts onProductSelect={setSelectedProduct} initialCategory={selectedCategory} />} />
         <Route path="preorder" element={<PreOrderPage onProductSelect={setSelectedProduct} />} />
         <Route path="kategori" element={<CategoriesPage onCategorySelect={(cat) => { setSelectedCategory(cat); navigate('/buyer/produk'); }} />} />
-        <Route path="promo" element={<PromoPage />} />
+        {/* <Route path="promo" element={<PromoPage />} /> */}
         <Route path="bantuan" element={<HelpPage />} />
         <Route path="favorit" element={<FavoritesPage onProductSelect={setSelectedProduct} />} />
         <Route path="pesanan" element={
@@ -205,7 +335,7 @@ export default function App() {
         <Route path="cart" element={
           <Cart 
             onBack={() => navigate('/buyer')} 
-            onCheckout={(selectedItems, appliedPromo, selectedBank) => {
+            onCheckout={(selectedItems, appliedPromo, selectedBank, shippingAddress) => {
               if (selectedItems.length === 0) return;
               const serviceFeePercent = Number(localStorage.getItem('service_fee') || '7');
               const subtotal = selectedItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
@@ -240,7 +370,8 @@ export default function App() {
                 status: 'WAITING_PAYMENT_DP',
                 createdAt: new Date().toLocaleDateString('id-ID'),
                 harvestConfirmedBySeller: false, purchaseConfirmedByBuyer: false,
-                paymentMethod: selectedBank || 'BNI - 1384354499 a.n SRIWIJAYA DIGITAL INDONESIA'
+                paymentMethod: selectedBank || 'BNI - 1384354499 a.n SRIWIJAYA DIGITAL INDONESIA',
+                shippingAddress: shippingAddress
               };
               addOrder(newOrder);
               setCheckoutOrder(newOrder);
@@ -256,9 +387,9 @@ export default function App() {
            activeInvoiceOrder ? (
              <Invoice 
               order={activeInvoiceOrder} 
-              onConfirm={() => {
+              onConfirm={(proof) => {
                 const newStatus = activeInvoiceOrder.status === 'WAITING_PAYMENT_DP' ? 'WAITING_ADMIN_DP' : 'WAITING_ADMIN_FINAL';
-                updateOrderStatus(activeInvoiceOrder.id, newStatus);
+                updateOrderStatus(activeInvoiceOrder.id, newStatus, proof);
                 navigate('/buyer/transaksi-waiting');
                 
                 // Clear the state in the next tick to allow navigation to complete smoothly
@@ -270,103 +401,7 @@ export default function App() {
             />
            ) : <Navigate to="/buyer" />
         } />
-        <Route path="transaksi-waiting" element={(() => {
-          const latestWaitingOrder = [...orders]
-            .reverse()
-            .find(o => o.status === 'WAITING_ADMIN_DP' || o.status === 'WAITING_ADMIN_FINAL');
-          
-          const amountToPay = latestWaitingOrder 
-            ? (latestWaitingOrder.status === 'WAITING_ADMIN_DP' ? latestWaitingOrder.dpAmount : latestWaitingOrder.remainingAmount)
-            : 0;
-
-          const typeText = latestWaitingOrder
-            ? (latestWaitingOrder.status === 'WAITING_ADMIN_DP' ? 'Down Payment (30%)' : 'Pelunasan (70%)')
-            : 'Pembayaran';
-
-          const bankParts = latestWaitingOrder?.paymentMethod 
-            ? latestWaitingOrder.paymentMethod.split(' - ')
-            : ['BNI', '1384354499 a.n SRIWIJAYA DIGITAL INDONESIA'];
-          
-          const bankName = bankParts[0] || 'BNI';
-          const bankRest = bankParts[1] || '1384354499 a.n SRIWIJAYA DIGITAL INDONESIA';
-          const bankSubParts = bankRest.split(' a.n ');
-          const bankNum = bankSubParts[0] || '1384354499';
-          const bankHolder = bankSubParts[1] || 'SRIWIJAYA DIGITAL INDONESIA';
-
-          return (
-            <div className="flex-1 flex items-center justify-center bg-slate-50/50 p-6 sm:p-12 text-center animate-in fade-in duration-300">
-              <div className="max-w-md w-full space-y-6 bg-white rounded-[32px] p-8 sm:p-10 border border-slate-100 shadow-xl shadow-slate-100/50">
-                <div className="w-16 h-16 bg-emerald-50 rounded-[24px] flex items-center justify-center mx-auto text-emerald-600 animate-bounce-slow border-4 border-emerald-100 shrink-0">
-                  <Clock size={28} />
-                </div>
-                <div>
-                  <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight font-display mb-1.5">Menunggu Verifikasi</h2>
-                  <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
-                    Bukti transfer pembayaran Anda sedang diverifikasi secara manual oleh Admin PanganDesa.
-                  </p>
-                </div>
-
-                {latestWaitingOrder && (
-                  <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 text-left space-y-4">
-                    <div className="flex justify-between items-center pb-3 border-b border-slate-200/60">
-                      <div>
-                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider">ID Pesanan</p>
-                        <p className="text-xs font-black text-slate-800">#{latestWaitingOrder.id.toUpperCase()}</p>
-                      </div>
-                      <span className="bg-orange-50 text-orange-650 border border-orange-100 text-[8px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">
-                        Pending
-                      </span>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div>
-                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mb-1">Rekening Bank Tujuan Transfer</p>
-                        <div className="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-xl">
-                          <div className="w-10 h-10 bg-[#1a4d2e] rounded-xl flex items-center justify-center text-white font-black text-xs font-display shrink-0">
-                            {bankName}
-                          </div>
-                          <div>
-                            <p className="text-[11px] font-black text-emerald-950">Transfer Bank {bankName} (Manual)</p>
-                            <p className="text-xs font-black text-[#1a4d2e] tracking-wider">{bankNum}</p>
-                            <p className="text-[8px] font-bold text-slate-500 uppercase tracking-tight mt-0.5">a.n {bankHolder}</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4 pt-1">
-                        <div>
-                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider">Jenis Pembayaran</p>
-                          <p className="text-xs font-bold text-slate-700">{typeText}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider">Jumlah Ditransfer</p>
-                          <p className="text-xs font-black text-[#1a4d2e]">
-                            Rp {amountToPay.toLocaleString('id-ID')}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                  <button 
-                    onClick={() => navigate('/buyer/pesanan')}
-                    className="flex-1 py-3 bg-[#1a4d2e] hover:bg-black text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all border-0 cursor-pointer shadow-md shadow-emerald-950/10 active:scale-95"
-                  >
-                    Pantau Pesanan Saya
-                  </button>
-                  <button 
-                    onClick={() => navigate('/buyer')}
-                    className="flex-1 py-3 border border-slate-200 text-slate-500 hover:bg-slate-50 rounded-xl font-black text-xs uppercase tracking-wider transition-all cursor-pointer bg-white"
-                  >
-                    Kembali ke Beranda
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })()} />
+        <Route path="transaksi-waiting" element={<WaitingVerification />} />
         <Route path="transaksi-panen" element={<OrderForumWrapper role="buyer" />} />
         <Route path="transaksi-panen/:orderId" element={<OrderForumWrapper role="buyer" />} />
       </Route>
